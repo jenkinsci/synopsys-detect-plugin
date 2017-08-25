@@ -16,6 +16,8 @@ import javax.inject.Inject;
 import org.jenkinsci.plugins.workflow.steps.AbstractSynchronousNonBlockingStepExecution;
 import org.jenkinsci.plugins.workflow.steps.StepContextParameter;
 
+import com.blackducksoftware.integration.detect.jenkins.common.DetectCommonStep;
+
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Launcher;
@@ -48,7 +50,8 @@ public class DetectPipelineExecution extends AbstractSynchronousNonBlockingStepE
 
     @Override
     protected Void run() throws Exception {
-        // TODO call the common step
+        final DetectCommonStep detectCommonStep = new DetectCommonStep(computer.getNode(), launcher, listener, envVars, workspace, run);
+        detectCommonStep.runCommonDetectStep();
         return null;
     }
 

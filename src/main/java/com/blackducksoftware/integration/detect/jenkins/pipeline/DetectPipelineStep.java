@@ -18,7 +18,7 @@ public class DetectPipelineStep extends AbstractStepImpl {
 
     @DataBoundConstructor
     public DetectPipelineStep() {
-
+        // TODO Get User configuration
     }
 
     @Override

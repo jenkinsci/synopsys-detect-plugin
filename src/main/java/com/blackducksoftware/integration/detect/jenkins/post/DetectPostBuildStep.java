@@ -15,6 +15,9 @@ import java.io.IOException;
 
 import org.kohsuke.stapler.DataBoundConstructor;
 
+import com.blackducksoftware.integration.detect.jenkins.common.DetectCommonStep;
+
+import hudson.FilePath;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
@@ -25,7 +28,7 @@ public class DetectPostBuildStep extends Recorder {
 
     @DataBoundConstructor
     public DetectPostBuildStep() {
-
+        // TODO Get User configuration
     }
 
     @Override
@@ -40,8 +43,20 @@ public class DetectPostBuildStep extends Recorder {
 
     @Override
     public boolean perform(final AbstractBuild<?, ?> build, final Launcher launcher, final BuildListener listener) throws InterruptedException, IOException {
-        // TODO call the common step
+        final DetectCommonStep detectCommonStep = new DetectCommonStep(build.getBuiltOn(), launcher, listener, build.getEnvironment(listener), getWorkingDirectory(build), build);
+        detectCommonStep.runCommonDetectStep();
         return true;
+    }
+
+    public FilePath getWorkingDirectory(final AbstractBuild<?, ?> build) throws InterruptedException {
+        String workingDirectory = "";
+        if (build.getWorkspace() == null) {
+            // might be using custom workspace
+            workingDirectory = build.getProject().getCustomWorkspace();
+        } else {
+            workingDirectory = build.getWorkspace().getRemote();
+        }
+        return new FilePath(build.getBuiltOn().getChannel(), workingDirectory);
     }
 
 }

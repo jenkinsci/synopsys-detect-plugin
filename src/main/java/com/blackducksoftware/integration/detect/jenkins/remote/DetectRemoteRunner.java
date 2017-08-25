@@ -22,7 +22,7 @@ public class DetectRemoteRunner implements Callable<String, HubIntegrationExcept
 
     @Override
     public String call() throws HubIntegrationException {
-
+        // TODO Run Hub detect
         return null;
     }
 
