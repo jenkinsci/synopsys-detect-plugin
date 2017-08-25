@@ -15,10 +15,12 @@ import java.io.Serializable;
 
 import com.blackducksoftware.integration.detect.jenkins.Messages;
 
+import hudson.Extension;
 import hudson.model.AbstractProject;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Publisher;
 
+@Extension()
 public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher> implements Serializable {
 
     @Override
