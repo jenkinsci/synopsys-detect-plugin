@@ -65,63 +65,63 @@ public class JenkinsDetectLogger extends IntLogger implements Serializable {
 
     @Override
     public void debug(final String txt) {
-        if (LogLevel.isLoggable(level, LogLevel.DEBUG)) {
+        if (level.isLoggable(LogLevel.DEBUG)) {
             printLog(txt, null);
         }
     }
 
     @Override
     public void debug(final String txt, final Throwable e) {
-        if (LogLevel.isLoggable(level, LogLevel.DEBUG)) {
+        if (level.isLoggable(LogLevel.DEBUG)) {
             printLog(txt, e);
         }
     }
 
     @Override
     public void error(final Throwable e) {
-        if (LogLevel.isLoggable(level, LogLevel.ERROR)) {
+        if (level.isLoggable(LogLevel.ERROR)) {
             printLog(null, e);
         }
     }
 
     @Override
     public void error(final String txt) {
-        if (LogLevel.isLoggable(level, LogLevel.ERROR)) {
+        if (level.isLoggable(LogLevel.ERROR)) {
             printLog(txt, null);
         }
     }
 
     @Override
     public void error(final String txt, final Throwable e) {
-        if (LogLevel.isLoggable(level, LogLevel.ERROR)) {
+        if (level.isLoggable(LogLevel.ERROR)) {
             printLog(txt, e);
         }
     }
 
     @Override
     public void info(final String txt) {
-        if (LogLevel.isLoggable(level, LogLevel.INFO)) {
+        if (level.isLoggable(LogLevel.INFO)) {
             printLog(txt, null);
         }
     }
 
     @Override
     public void trace(final String txt) {
-        if (LogLevel.isLoggable(level, LogLevel.TRACE)) {
+        if (level.isLoggable(LogLevel.TRACE)) {
             printLog(txt, null);
         }
     }
 
     @Override
     public void trace(final String txt, final Throwable e) {
-        if (LogLevel.isLoggable(level, LogLevel.TRACE)) {
+        if (level.isLoggable(LogLevel.TRACE)) {
             printLog(txt, e);
         }
     }
 
     @Override
     public void warn(final String txt) {
-        if (LogLevel.isLoggable(level, LogLevel.WARN)) {
+        if (level.isLoggable(LogLevel.WARN)) {
             printLog(txt, null);
         }
     }
