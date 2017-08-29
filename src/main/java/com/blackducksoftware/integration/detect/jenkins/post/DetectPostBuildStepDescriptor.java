@@ -170,7 +170,7 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
             e.printStackTrace(new PrintWriter(sw));
             System.err.println(sw.toString());
         }
-        boxModel.add("Built-In", "");
+        boxModel.add("Default", "");
         return boxModel;
     }
 
