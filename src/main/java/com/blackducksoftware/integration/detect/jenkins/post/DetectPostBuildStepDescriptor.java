@@ -25,12 +25,14 @@ package com.blackducksoftware.integration.detect.jenkins.post;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.io.Serializable;
 import java.io.StringReader;
+import java.io.StringWriter;
+import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.List;
 
-import javax.servlet.ServletException;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -55,6 +57,8 @@ import org.xml.sax.SAXException;
 
 import com.blackducksoftware.integration.detect.jenkins.HubServerInfoSingleton;
 import com.blackducksoftware.integration.detect.jenkins.Messages;
+import com.blackducksoftware.integration.detect.rest.github.GitHubFileModel;
+import com.blackducksoftware.integration.detect.rest.github.GitHubPagesContentRequestService;
 import com.blackducksoftware.integration.hub.builder.HubServerConfigBuilder;
 import com.blackducksoftware.integration.hub.exception.HubIntegrationException;
 import com.blackducksoftware.integration.hub.global.HubServerConfig;
@@ -93,6 +97,7 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
     private String hubCredentialsId;
     private int hubTimeout = 120;
     private boolean importSSLCerts;
+    private String detectDownloadUrl;
 
     public DetectPostBuildStepDescriptor() {
         super(DetectPostBuildStep.class);
@@ -101,6 +106,7 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
         HubServerInfoSingleton.getInstance().setHubCredentialsId(hubCredentialsId);
         HubServerInfoSingleton.getInstance().setHubTimeout(hubTimeout);
         HubServerInfoSingleton.getInstance().setImportSSLCerts(importSSLCerts);
+        HubServerInfoSingleton.getInstance().setDetectDownloadUrl(detectDownloadUrl);
     }
 
     public String getHubUrl() {
@@ -145,7 +151,40 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
         return Messages.DetectPostBuildStep_getDisplayName();
     }
 
-    public FormValidation doCheckHubTimeout(@QueryParameter("hubTimeout") final String hubTimeout) throws IOException, ServletException {
+    public ListBoxModel doFillDetectDownloadUrlItems() {
+        final ListBoxModel boxModel = new ListBoxModel();
+        try {
+            final GitHubPagesContentRequestService gitHubPagesContentRequestService = new GitHubPagesContentRequestService();
+            final List<GitHubFileModel> detectJarFileModels = gitHubPagesContentRequestService.getContents("blackducksoftware", "hub-detect", "hub-detect-.*.jar");
+            for (final GitHubFileModel gitHubFileModel : detectJarFileModels) {
+                final String displayName = gitHubFileModel.name.replace("hub-detect-", "").replace(".jar", "");
+                boxModel.add(displayName, gitHubFileModel.download_url.toURI().toString());
+            }
+        } catch (final IOException e) {
+            System.err.println("Could not reach Github");
+            final StringWriter sw = new StringWriter();
+            e.printStackTrace(new PrintWriter(sw));
+            System.err.println(sw.toString());
+        } catch (final URISyntaxException e) {
+            final StringWriter sw = new StringWriter();
+            e.printStackTrace(new PrintWriter(sw));
+            System.err.println(sw.toString());
+        }
+        boxModel.add("Built-In", "");
+        return boxModel;
+    }
+
+    public FormValidation doCheckDetectDownloadUrl(@QueryParameter("detectDownloadUrl") final String detectDownloadUrl) {
+        try {
+            final GitHubPagesContentRequestService gitHubPagesContentRequestService = new GitHubPagesContentRequestService();
+            gitHubPagesContentRequestService.getContents("blackducksoftware", "hub-detect", "hub-detect-.*.jar");
+        } catch (final IOException e) {
+            return FormValidation.error("Could not reach Github");
+        }
+        return FormValidation.ok();
+    }
+
+    public FormValidation doCheckHubTimeout(@QueryParameter("hubTimeout") final String hubTimeout) {
         if (StringUtils.isBlank(hubTimeout)) {
             return FormValidation.error(Messages.DetectPostBuildStep_getPleaseSetTimeout());
         }
@@ -165,7 +204,7 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
      * Performs on-the-fly validation of the form field 'serverUrl'.
      *
      */
-    public FormValidation doCheckHubUrl(@QueryParameter("hubUrl") final String hubUrl) throws IOException, ServletException {
+    public FormValidation doCheckHubUrl(@QueryParameter("hubUrl") final String hubUrl) {
         if (StringUtils.isBlank(hubUrl)) {
             return FormValidation.ok();
         }
@@ -321,11 +360,13 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
         hubCredentialsId = formData.getString("hubCredentialsId");
         hubTimeout = NumberUtils.toInt(formData.getString("hubTimeout"), 120);
         importSSLCerts = formData.getBoolean("importSSLCerts");
+        detectDownloadUrl = formData.getString("detectDownloadUrl");
         save();
         HubServerInfoSingleton.getInstance().setHubUrl(hubUrl);
         HubServerInfoSingleton.getInstance().setHubCredentialsId(hubCredentialsId);
         HubServerInfoSingleton.getInstance().setHubTimeout(hubTimeout);
         HubServerInfoSingleton.getInstance().setImportSSLCerts(importSSLCerts);
+        HubServerInfoSingleton.getInstance().setDetectDownloadUrl(detectDownloadUrl);
 
         return super.configure(req, formData);
     }
@@ -413,6 +454,16 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
             }
         }
 
+        final Node detectDownloadUrlNode = doc.getElementsByTagName("detectDownloadUrl").item(0);
+        String detectDownloadUrl = "";
+        // timeout
+        if (detectDownloadUrlNode != null && detectDownloadUrlNode.getChildNodes() != null && detectDownloadUrlNode.getChildNodes().item(0) != null) {
+            detectDownloadUrl = detectDownloadUrlNode.getChildNodes().item(0).getNodeValue();
+            if (detectDownloadUrl != null) {
+                detectDownloadUrl = detectDownloadUrl.trim();
+            }
+        }
+
         int serverTimeout = 120;
         final boolean importSSLCerts = Boolean.valueOf(importSSLCertsString);
         try {
@@ -430,6 +481,7 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
         HubServerInfoSingleton.getInstance().setHubCredentialsId(hubCredentialsId);
         HubServerInfoSingleton.getInstance().setHubTimeout(serverTimeout);
         HubServerInfoSingleton.getInstance().setImportSSLCerts(importSSLCerts);
+        HubServerInfoSingleton.getInstance().setDetectDownloadUrl(detectDownloadUrl);
         save();
     }
 

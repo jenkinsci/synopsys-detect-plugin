@@ -6,7 +6,10 @@
         <f:textbox field="hubUrl" value="${instance.getHubServerUrl()}"/>
     </f:entry>
     <f:entry title="${%HubCredentials}" field="hubCredentialsId" >
-    	<c:select/>
+        <c:select/>
+    </f:entry>
+    <f:entry title="${%HubDetectVersion}" field="detectDownloadUrl" >
+        <f:select/>
     </f:entry>
     
      <f:advanced>
