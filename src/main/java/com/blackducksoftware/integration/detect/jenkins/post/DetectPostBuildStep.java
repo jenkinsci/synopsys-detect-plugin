@@ -37,7 +37,6 @@ import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Recorder;
 
 public class DetectPostBuildStep extends Recorder {
-
     @DataBoundConstructor
     public DetectPostBuildStep() {
         // TODO Get User configuration

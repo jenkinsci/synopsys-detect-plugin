@@ -38,7 +38,6 @@ import hudson.model.Run;
 import hudson.model.TaskListener;
 
 public class DetectPipelineExecution extends AbstractSynchronousNonBlockingStepExecution<Void> {
-
     @Inject
     private transient DetectPipelineStep detectPipelineStep;
 

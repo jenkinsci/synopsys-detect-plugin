@@ -26,17 +26,21 @@ package com.blackducksoftware.integration.detect.jenkins.remote;
 import org.jenkinsci.remoting.Role;
 import org.jenkinsci.remoting.RoleChecker;
 
-import com.blackducksoftware.integration.hub.exception.HubIntegrationException;
+import com.blackducksoftware.integration.detect.jenkins.tools.DetectDownloadManager;
+import com.blackducksoftware.integration.exception.IntegrationException;
+import com.blackducksoftware.integration.log.IntLogger;
 
 import hudson.remoting.Callable;
 
-public class DetectRemoteRunner implements Callable<String, HubIntegrationException> {
+public class DetectRemoteRunner implements Callable<String, IntegrationException> {
+    private final IntLogger logger;
     private final String hubUrl;
     private final String hubUsername;
     private final String hubPassword;
     private final int hubTimeout;
     private final boolean importSSLCerts;
     private final String detectDownloadUrl;
+    private final String toolsDirectory;
 
     private String proxyHost;
     private int proxyPort;
@@ -44,18 +48,30 @@ public class DetectRemoteRunner implements Callable<String, HubIntegrationExcept
     private String proxyUsername;
     private String proxyPassword;
 
-    public DetectRemoteRunner(final String hubUrl, final String hubUsername, final String hubPassword, final int hubTimeout, final boolean importSSLCerts, final String detectDownloadUrl) {
+    public DetectRemoteRunner(final IntLogger logger, final String hubUrl, final String hubUsername, final String hubPassword, final int hubTimeout, final boolean importSSLCerts, final String detectDownloadUrl,
+            final String toolsDirectory) {
+        this.logger = logger;
         this.hubUrl = hubUrl;
         this.hubUsername = hubUsername;
         this.hubPassword = hubPassword;
         this.hubTimeout = hubTimeout;
         this.importSSLCerts = importSSLCerts;
         this.detectDownloadUrl = detectDownloadUrl;
+        this.toolsDirectory = toolsDirectory;
     }
 
     @Override
-    public String call() throws HubIntegrationException {
+    public String call() throws IntegrationException {
         // TODO Run Hub detect
+        try {
+            if (detectDownloadUrl != null) {
+                final DetectDownloadManager detectDownloadManager = new DetectDownloadManager(logger, toolsDirectory);
+                detectDownloadManager.handleDownload(detectDownloadUrl);
+            }
+
+        } catch (final Exception e) {
+            throw new IntegrationException(e);
+        }
         return null;
     }
 
@@ -64,40 +80,20 @@ public class DetectRemoteRunner implements Callable<String, HubIntegrationExcept
         checker.check(this, new Role(DetectRemoteRunner.class));
     }
 
-    public String getProxyHost() {
-        return proxyHost;
-    }
-
     public void setProxyHost(final String proxyHost) {
         this.proxyHost = proxyHost;
-    }
-
-    public int getProxyPort() {
-        return proxyPort;
     }
 
     public void setProxyPort(final int proxyPort) {
         this.proxyPort = proxyPort;
     }
 
-    public String getProxyNoHost() {
-        return proxyNoHost;
-    }
-
     public void setProxyNoHost(final String proxyNoHost) {
         this.proxyNoHost = proxyNoHost;
     }
 
-    public String getProxyUsername() {
-        return proxyUsername;
-    }
-
     public void setProxyUsername(final String proxyUsername) {
         this.proxyUsername = proxyUsername;
-    }
-
-    public String getProxyPassword() {
-        return proxyPassword;
     }
 
     public void setProxyPassword(final String proxyPassword) {

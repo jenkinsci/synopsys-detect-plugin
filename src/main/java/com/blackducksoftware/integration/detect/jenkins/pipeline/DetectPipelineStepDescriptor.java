@@ -31,7 +31,6 @@ import hudson.Extension;
 
 @Extension(optional = true)
 public class DetectPipelineStepDescriptor extends AbstractStepDescriptorImpl {
-
     public DetectPipelineStepDescriptor() {
         super(DetectPipelineExecution.class);
     }

@@ -39,7 +39,6 @@ import hudson.model.AbstractProject;
 import hudson.security.ACL;
 
 public class HubServerInfoSingleton {
-
     private final static HubServerInfoSingleton HUB_SERVER_INFO_SINGLETON;
 
     static // static constructor

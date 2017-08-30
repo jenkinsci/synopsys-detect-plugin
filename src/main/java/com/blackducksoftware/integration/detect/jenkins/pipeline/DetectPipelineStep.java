@@ -27,7 +27,6 @@ import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 public class DetectPipelineStep extends AbstractStepImpl {
-
     @DataBoundConstructor
     public DetectPipelineStep() {
         // TODO Get User configuration

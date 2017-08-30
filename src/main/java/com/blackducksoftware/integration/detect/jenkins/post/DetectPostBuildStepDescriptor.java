@@ -57,7 +57,7 @@ import org.xml.sax.SAXException;
 import com.blackducksoftware.integration.detect.jenkins.HubServerInfoSingleton;
 import com.blackducksoftware.integration.detect.jenkins.Messages;
 import com.blackducksoftware.integration.detect.rest.github.GitHubFileModel;
-import com.blackducksoftware.integration.detect.rest.github.GitHubPagesContentRequestService;
+import com.blackducksoftware.integration.detect.rest.github.GitHubRequestService;
 import com.blackducksoftware.integration.exception.IntegrationException;
 import com.blackducksoftware.integration.hub.builder.HubServerConfigBuilder;
 import com.blackducksoftware.integration.hub.exception.HubIntegrationException;
@@ -92,7 +92,6 @@ import net.sf.json.JSONObject;
 
 @Extension()
 public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher> implements Serializable {
-
     private String hubUrl;
     private String hubCredentialsId;
     private int hubTimeout = 120;
@@ -162,8 +161,8 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
     public ListBoxModel doFillDetectDownloadUrlItems() {
         final ListBoxModel boxModel = new ListBoxModel();
         try {
-            final GitHubPagesContentRequestService gitHubPagesContentRequestService = new GitHubPagesContentRequestService();
-            final List<GitHubFileModel> detectJarFileModels = gitHubPagesContentRequestService.getContents("blackducksoftware", "hub-detect", "hub-detect-.*.jar");
+            final GitHubRequestService gitHubRequestService = new GitHubRequestService();
+            final List<GitHubFileModel> detectJarFileModels = gitHubRequestService.getContents("blackducksoftware", "hub-detect", "hub-detect-.*.jar");
             for (final GitHubFileModel gitHubFileModel : detectJarFileModels) {
                 final String displayName = gitHubFileModel.name.replace("hub-detect-", "").replace(".jar", "");
                 boxModel.add(displayName, gitHubFileModel.download_url.toURI().toString());
@@ -184,8 +183,8 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
 
     public FormValidation doCheckDetectDownloadUrl(@QueryParameter("detectDownloadUrl") final String detectDownloadUrl) {
         try {
-            final GitHubPagesContentRequestService gitHubPagesContentRequestService = new GitHubPagesContentRequestService();
-            gitHubPagesContentRequestService.getContents("blackducksoftware", "hub-detect", "hub-detect-.*.jar");
+            final GitHubRequestService gitHubRequestService = new GitHubRequestService();
+            gitHubRequestService.getContents("blackducksoftware", "hub-detect", "hub-detect-.*.jar");
         } catch (final IntegrationException e) {
             return FormValidation.error("Could not reach Github");
         } catch (final IOException e) {

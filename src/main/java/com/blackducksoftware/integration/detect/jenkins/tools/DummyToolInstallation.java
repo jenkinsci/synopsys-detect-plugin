@@ -21,29 +21,37 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package com.blackducksoftware.integration.detect.jenkins;
+package com.blackducksoftware.integration.detect.jenkins.tools;
 
-import hudson.Plugin;
-import hudson.PluginWrapper;
-import jenkins.model.Jenkins;
+import hudson.tools.ToolDescriptor;
+import hudson.tools.ToolInstallation;
 
-public class PluginHelper {
-    public static final String UNKNOWN_VERSION = "<unknown>";
+public class DummyToolInstallation extends ToolInstallation {
+    private static final long serialVersionUID = -5953801725055668150L;
 
-    public static String getPluginVersion() {
-        String pluginVersion = UNKNOWN_VERSION;
-        final Jenkins jenkins = Jenkins.getInstance();
-        if (jenkins != null) {
-            // Jenkins still active
-            final Plugin p = jenkins.getPlugin("blackduck-detect");
-            if (p != null) {
-                // plugin found
-                final PluginWrapper pw = p.getWrapper();
-                if (pw != null) {
-                    pluginVersion = pw.getVersion();
-                }
-            }
+    public DummyToolInstallation() {
+        super("Dummy Tool Name", null, null);
+    }
+
+    @Override
+    public ToolDescriptor<?> getDescriptor() {
+
+        return new DummyToolInstallationDescriptor();
+    }
+
+    public static class DummyToolInstallationDescriptor extends ToolDescriptor<DummyToolInstallation> {
+
+        public DummyToolInstallationDescriptor() {
         }
-        return pluginVersion;
+
+        @Override
+        public String getDisplayName() {
+            return null;
+        }
+
+        @Override
+        public String getId() {
+            return "Dummy_Tool_Installation_Descriptor";
+        }
     }
 }
