@@ -41,28 +41,37 @@ public class DetectDownloadManager {
     }
 
     public File handleDownload(final String fileUrl) throws IntegrationException, IOException {
-        if (shouldInstallDetect()) {
+        // TODO handle caching
+        // TODO handle using the default
+        // TODO put the file in the tools directory
+        final File detectFile = getDetectFile(fileUrl);
+        if (shouldInstallDetect(detectFile)) {
             final GitHubRequestService gitHubRequestService = new GitHubRequestService();
-            // TODO handle caching
-            // TODO handle using the default
-            // TODO put the file in the tools directory
-            return gitHubRequestService.downloadFile(fileUrl, getDetectFile());
+            gitHubRequestService.downloadFile(fileUrl, detectFile);
         }
-        return null;
+        return detectFile;
     }
 
-    public File getDetectFile() {
-
-        return null;
+    private String getDetectFileName(final String fileUrl) {
+        return fileUrl.substring(fileUrl.lastIndexOf("/"));
     }
 
-    public File getInstallationDirectory() {
-
-        return null;
+    private File getDetectFile(final String fileUrl) throws IntegrationException {
+        final File installationDirectory = getInstallationDirectory();
+        final File detectFile = new File(installationDirectory, getDetectFileName(fileUrl));
+        return detectFile;
     }
 
-    public boolean shouldInstallDetect() {
+    public File getInstallationDirectory() throws IntegrationException {
+        File installationDirectory = new File(toolsDirectory);
+        installationDirectory = new File(installationDirectory, DETECT_INSTALL_DIRECTORY);
+        if (!installationDirectory.mkdirs()) {
+            throw new IntegrationException("Could not create the Detect installation directory: " + installationDirectory.getAbsolutePath());
+        }
+        return installationDirectory;
+    }
 
+    public boolean shouldInstallDetect(final File detectFile) {
         return true;
     }
 
