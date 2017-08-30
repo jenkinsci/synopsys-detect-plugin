@@ -31,6 +31,7 @@ import com.blackducksoftware.integration.detect.jenkins.exception.DetectJenkinsE
 import com.blackducksoftware.integration.detect.jenkins.remote.DetectRemoteRunner;
 import com.blackducksoftware.integration.detect.jenkins.tools.DummyToolInstallation;
 import com.blackducksoftware.integration.detect.jenkins.tools.DummyToolInstaller;
+import com.blackducksoftware.integration.util.CIEnvironmentVariables;
 
 import hudson.EnvVars;
 import hudson.FilePath;
@@ -62,13 +63,16 @@ public class DetectCommonStep {
 
     public void runCommonDetectStep() {
         final JenkinsDetectLogger logger = new JenkinsDetectLogger(listener);
+        final CIEnvironmentVariables variables = new CIEnvironmentVariables();
+        variables.putAll(envVars);
+        logger.setLogLevel(variables);
         try {
             final DummyToolInstaller dummyInstaller = new DummyToolInstaller();
             final String toolsDirectory = dummyInstaller.getToolDir(new DummyToolInstallation(), node).getRemote();
 
             final DetectRemoteRunner detectRemoteRunner = new DetectRemoteRunner(logger, HubServerInfoSingleton.getInstance().getHubUrl(), HubServerInfoSingleton.getInstance().getHubUsername(),
                     HubServerInfoSingleton.getInstance().getHubPassword(), HubServerInfoSingleton.getInstance().getHubTimeout(), HubServerInfoSingleton.getInstance().isImportSSLCerts(),
-                    HubServerInfoSingleton.getInstance().getDetectDownloadUrl(), toolsDirectory);
+                    HubServerInfoSingleton.getInstance().getDetectDownloadUrl(), toolsDirectory, variables);
             ProxyConfiguration proxyConfig = null;
             final Jenkins jenkins = Jenkins.getInstance();
             if (jenkins != null) {

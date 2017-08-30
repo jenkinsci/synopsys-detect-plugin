@@ -23,12 +23,15 @@
  */
 package com.blackducksoftware.integration.detect.jenkins.remote;
 
+import java.io.File;
+
 import org.jenkinsci.remoting.Role;
 import org.jenkinsci.remoting.RoleChecker;
 
 import com.blackducksoftware.integration.detect.jenkins.tools.DetectDownloadManager;
 import com.blackducksoftware.integration.exception.IntegrationException;
 import com.blackducksoftware.integration.log.IntLogger;
+import com.blackducksoftware.integration.util.CIEnvironmentVariables;
 
 import hudson.remoting.Callable;
 
@@ -42,14 +45,16 @@ public class DetectRemoteRunner implements Callable<String, IntegrationException
     private final String detectDownloadUrl;
     private final String toolsDirectory;
 
+    private final CIEnvironmentVariables cIEnvironmentVariables;
+
     private String proxyHost;
     private int proxyPort;
     private String proxyNoHost;
     private String proxyUsername;
     private String proxyPassword;
 
-    public DetectRemoteRunner(final IntLogger logger, final String hubUrl, final String hubUsername, final String hubPassword, final int hubTimeout, final boolean importSSLCerts, final String detectDownloadUrl,
-            final String toolsDirectory) {
+    public DetectRemoteRunner(final IntLogger logger, final String hubUrl, final String hubUsername, final String hubPassword, final int hubTimeout, final boolean importSSLCerts, final String detectDownloadUrl, final String toolsDirectory,
+            final CIEnvironmentVariables cIEnvironmentVariables) {
         this.logger = logger;
         this.hubUrl = hubUrl;
         this.hubUsername = hubUsername;
@@ -58,16 +63,16 @@ public class DetectRemoteRunner implements Callable<String, IntegrationException
         this.importSSLCerts = importSSLCerts;
         this.detectDownloadUrl = detectDownloadUrl;
         this.toolsDirectory = toolsDirectory;
+        this.cIEnvironmentVariables = cIEnvironmentVariables;
     }
 
     @Override
     public String call() throws IntegrationException {
-        // TODO Run Hub detect
         try {
-            if (detectDownloadUrl != null) {
-                final DetectDownloadManager detectDownloadManager = new DetectDownloadManager(logger, toolsDirectory);
-                detectDownloadManager.handleDownload(detectDownloadUrl);
-            }
+            final DetectDownloadManager detectDownloadManager = new DetectDownloadManager(logger, toolsDirectory);
+            final File hubDetectJar = detectDownloadManager.handleDownload(detectDownloadUrl);
+
+            // TODO Run Hub detect
 
         } catch (final Exception e) {
             throw new IntegrationException(e);

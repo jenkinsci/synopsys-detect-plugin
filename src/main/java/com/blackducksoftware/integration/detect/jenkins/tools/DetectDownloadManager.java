@@ -24,13 +24,19 @@
 package com.blackducksoftware.integration.detect.jenkins.tools;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import com.blackducksoftware.integration.detect.rest.github.GitHubRequestService;
 import com.blackducksoftware.integration.exception.IntegrationException;
 import com.blackducksoftware.integration.log.IntLogger;
 
 public class DetectDownloadManager {
+    public static final String DEFAULT_DETECT_JAR = "hub-detect-1.0.1.jar";
     public static final String DETECT_INSTALL_DIRECTORY = "Detect_Installation";
     private final IntLogger logger;
     private final String toolsDirectory;
@@ -41,18 +47,26 @@ public class DetectDownloadManager {
     }
 
     public File handleDownload(final String fileUrl) throws IntegrationException, IOException {
-        // TODO handle caching
-        // TODO handle using the default
-        // TODO put the file in the tools directory
         final File detectFile = getDetectFile(fileUrl);
-        if (shouldInstallDetect(detectFile)) {
+        if (shouldInstallDetect(detectFile, fileUrl)) {
+            logger.info("Downloading Hub Detect from : " + fileUrl + " to : " + detectFile.getAbsolutePath());
             final GitHubRequestService gitHubRequestService = new GitHubRequestService();
             gitHubRequestService.downloadFile(fileUrl, detectFile);
+        } else if (shouldInstallDefaultDetect(detectFile)) {
+            logger.info("Moving the default Hub Detect jar to : " + detectFile.getAbsolutePath());
+            final InputStream inputStream = getClass().getResourceAsStream("/" + DEFAULT_DETECT_JAR);
+            final FileOutputStream fileOutputStream = new FileOutputStream(detectFile);
+            IOUtils.copy(inputStream, fileOutputStream);
+        } else {
+            logger.debug("Hub Detect is already installed at : " + detectFile.getAbsolutePath());
         }
         return detectFile;
     }
 
     private String getDetectFileName(final String fileUrl) {
+        if (StringUtils.isBlank(fileUrl)) {
+            return DEFAULT_DETECT_JAR;
+        }
         return fileUrl.substring(fileUrl.lastIndexOf("/"));
     }
 
@@ -65,14 +79,20 @@ public class DetectDownloadManager {
     public File getInstallationDirectory() throws IntegrationException {
         File installationDirectory = new File(toolsDirectory);
         installationDirectory = new File(installationDirectory, DETECT_INSTALL_DIRECTORY);
-        if (!installationDirectory.mkdirs()) {
-            throw new IntegrationException("Could not create the Detect installation directory: " + installationDirectory.getAbsolutePath());
+        try {
+            installationDirectory.mkdirs();
+        } catch (final Exception e) {
+            throw new IntegrationException("Could not create the Detect installation directory: " + installationDirectory.getAbsolutePath(), e);
         }
         return installationDirectory;
     }
 
-    public boolean shouldInstallDetect(final File detectFile) {
-        return true;
+    public boolean shouldInstallDetect(final File detectFile, final String fileUrl) {
+        return !detectFile.exists() && StringUtils.isNotBlank(fileUrl);
+    }
+
+    public boolean shouldInstallDefaultDetect(final File detectFile) {
+        return !detectFile.exists();
     }
 
 }
