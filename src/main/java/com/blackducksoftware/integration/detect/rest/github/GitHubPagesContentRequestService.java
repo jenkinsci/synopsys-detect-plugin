@@ -24,23 +24,47 @@
 package com.blackducksoftware.integration.detect.rest.github;
 
 import java.io.IOException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.blackducksoftware.integration.exception.IntegrationException;
+import com.blackducksoftware.integration.hub.rest.RestConnection;
+import com.blackducksoftware.integration.hub.rest.UnauthenticatedRestConnection;
+import com.blackducksoftware.integration.log.LogLevel;
+import com.blackducksoftware.integration.log.PrintStreamIntLogger;
 import com.google.gson.Gson;
 
-import okhttp3.OkHttpClient;
+import hudson.ProxyConfiguration;
+import jenkins.model.Jenkins;
+import okhttp3.HttpUrl;
 import okhttp3.Request;
 import okhttp3.Response;
 
 public class GitHubPagesContentRequestService {
 
-    public List<GitHubFileModel> getContents(final String username, final String repository, final String regex) throws IOException {
-        final OkHttpClient client = new OkHttpClient();
-        final Gson gson = new Gson();
+    private final Gson gson = new Gson();
+
+    public List<GitHubFileModel> getContents(final String username, final String repository, final String regex) throws IOException, IntegrationException {
         final String contentsUrl = "https://api.github.com/repos/" + username + "/" + repository + "/contents/?ref=gh-pages";
-        final Request request = new Request.Builder().url(contentsUrl).build();
-        final Response response = client.newCall(request).execute();
+        final URL contentsURL = new URL(contentsUrl);
+        final RestConnection restConnection = new UnauthenticatedRestConnection(new PrintStreamIntLogger(System.out, LogLevel.DEBUG), contentsURL, 30);
+        ProxyConfiguration proxyConfig = null;
+        final Jenkins jenkins = Jenkins.getInstance();
+        if (jenkins != null) {
+            proxyConfig = jenkins.proxy;
+        }
+        if (proxyConfig != null) {
+            restConnection.proxyHost = proxyConfig.name;
+            restConnection.proxyPort = proxyConfig.port;
+            restConnection.proxyNoHosts = proxyConfig.noProxyHost;
+            restConnection.proxyUsername = proxyConfig.getUserName();
+            restConnection.proxyPassword = proxyConfig.getPassword();
+        }
+        final HttpUrl contentHttpUrl = restConnection.createHttpUrl();
+        final Request request = restConnection.createGetRequest(contentHttpUrl);
+        final Response response = restConnection.handleExecuteClientCall(request);
+
         final GitHubFileModel[] gitHubFileModels = gson.fromJson(response.body().string(), GitHubFileModel[].class);
         final List<GitHubFileModel> gitHubFileModelList = new ArrayList<>();
         for (final GitHubFileModel gitHubFileModel : gitHubFileModels) {

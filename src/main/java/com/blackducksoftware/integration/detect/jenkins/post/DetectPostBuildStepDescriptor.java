@@ -29,7 +29,6 @@ import java.io.PrintWriter;
 import java.io.Serializable;
 import java.io.StringReader;
 import java.io.StringWriter;
-import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.List;
 
@@ -59,6 +58,7 @@ import com.blackducksoftware.integration.detect.jenkins.HubServerInfoSingleton;
 import com.blackducksoftware.integration.detect.jenkins.Messages;
 import com.blackducksoftware.integration.detect.rest.github.GitHubFileModel;
 import com.blackducksoftware.integration.detect.rest.github.GitHubPagesContentRequestService;
+import com.blackducksoftware.integration.exception.IntegrationException;
 import com.blackducksoftware.integration.hub.builder.HubServerConfigBuilder;
 import com.blackducksoftware.integration.hub.exception.HubIntegrationException;
 import com.blackducksoftware.integration.hub.global.HubServerConfig;
@@ -113,32 +113,40 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
         return hubUrl;
     }
 
-    public String getHubCredentialsId() {
-        return hubCredentialsId;
-    }
-
-    public int getHubTimeout() {
-        return hubTimeout;
-    }
-
-    public boolean isImportSSLCerts() {
-        return importSSLCerts;
-    }
-
     public void setHubUrl(final String hubUrl) {
         this.hubUrl = hubUrl;
+    }
+
+    public String getHubCredentialsId() {
+        return hubCredentialsId;
     }
 
     public void setHubCredentialsId(final String hubCredentialsId) {
         this.hubCredentialsId = hubCredentialsId;
     }
 
+    public int getHubTimeout() {
+        return hubTimeout;
+    }
+
     public void setHubTimeout(final int hubTimeout) {
         this.hubTimeout = hubTimeout;
     }
 
+    public boolean isImportSSLCerts() {
+        return importSSLCerts;
+    }
+
     public void setImportSSLCerts(final boolean importSSLCerts) {
         this.importSSLCerts = importSSLCerts;
+    }
+
+    public String getDetectDownloadUrl() {
+        return detectDownloadUrl;
+    }
+
+    public void setDetectDownloadUrl(final String detectDownloadUrl) {
+        this.detectDownloadUrl = detectDownloadUrl;
     }
 
     @Override
@@ -160,12 +168,12 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
                 final String displayName = gitHubFileModel.name.replace("hub-detect-", "").replace(".jar", "");
                 boxModel.add(displayName, gitHubFileModel.download_url.toURI().toString());
             }
-        } catch (final IOException e) {
+        } catch (final IntegrationException e) {
             System.err.println("Could not reach Github");
             final StringWriter sw = new StringWriter();
             e.printStackTrace(new PrintWriter(sw));
             System.err.println(sw.toString());
-        } catch (final URISyntaxException e) {
+        } catch (final Exception e) {
             final StringWriter sw = new StringWriter();
             e.printStackTrace(new PrintWriter(sw));
             System.err.println(sw.toString());
@@ -178,8 +186,10 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
         try {
             final GitHubPagesContentRequestService gitHubPagesContentRequestService = new GitHubPagesContentRequestService();
             gitHubPagesContentRequestService.getContents("blackducksoftware", "hub-detect", "hub-detect-.*.jar");
-        } catch (final IOException e) {
+        } catch (final IntegrationException e) {
             return FormValidation.error("Could not reach Github");
+        } catch (final IOException e) {
+            return FormValidation.error(e.toString());
         }
         return FormValidation.ok();
     }

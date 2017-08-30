@@ -25,6 +25,7 @@ package com.blackducksoftware.integration.detect.jenkins.common;
 
 import java.util.Map;
 
+import com.blackducksoftware.integration.detect.jenkins.HubServerInfoSingleton;
 import com.blackducksoftware.integration.detect.jenkins.JenkinsDetectLogger;
 import com.blackducksoftware.integration.detect.jenkins.exception.DetectJenkinsException;
 import com.blackducksoftware.integration.detect.jenkins.remote.DetectRemoteRunner;
@@ -32,11 +33,13 @@ import com.blackducksoftware.integration.detect.jenkins.remote.DetectRemoteRunne
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Launcher;
+import hudson.ProxyConfiguration;
 import hudson.Util;
 import hudson.model.Node;
 import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.TaskListener;
+import jenkins.model.Jenkins;
 
 public class DetectCommonStep {
     private final Node node;
@@ -58,7 +61,20 @@ public class DetectCommonStep {
     public void runCommonDetectStep() {
         final JenkinsDetectLogger logger = new JenkinsDetectLogger(listener);
         try {
-            final DetectRemoteRunner detectRemoteRunner = new DetectRemoteRunner();
+            final DetectRemoteRunner detectRemoteRunner = new DetectRemoteRunner(HubServerInfoSingleton.getInstance().getHubUrl(), HubServerInfoSingleton.getInstance().getHubUsername(), HubServerInfoSingleton.getInstance().getHubPassword(),
+                    HubServerInfoSingleton.getInstance().getHubTimeout(), HubServerInfoSingleton.getInstance().isImportSSLCerts(), HubServerInfoSingleton.getInstance().getDetectDownloadUrl());
+            ProxyConfiguration proxyConfig = null;
+            final Jenkins jenkins = Jenkins.getInstance();
+            if (jenkins != null) {
+                proxyConfig = jenkins.proxy;
+            }
+            if (proxyConfig != null) {
+                detectRemoteRunner.setProxyHost(proxyConfig.name);
+                detectRemoteRunner.setProxyPort(proxyConfig.port);
+                detectRemoteRunner.setProxyNoHost(proxyConfig.noProxyHost);
+                detectRemoteRunner.setProxyUsername(proxyConfig.getUserName());
+                detectRemoteRunner.setProxyPassword(proxyConfig.getPassword());
+            }
             node.getChannel().call(detectRemoteRunner);
         } catch (final Exception e) {
             logger.error(e.getMessage(), e);
