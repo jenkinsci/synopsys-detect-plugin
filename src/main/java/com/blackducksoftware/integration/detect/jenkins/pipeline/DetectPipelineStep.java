@@ -101,7 +101,7 @@ public class DetectPipelineStep extends AbstractStepImpl {
 
         @Override
         protected Void run() throws Exception {
-            final DetectCommonStep detectCommonStep = new DetectCommonStep(computer.getNode(), launcher, listener, envVars, workspace, run);
+            final DetectCommonStep detectCommonStep = new DetectCommonStep(computer.getNode(), launcher, listener, envVars, workspace, run, null);
             detectCommonStep.runCommonDetectStep(detectPipelineStep.getDetectProperties());
             return null;
         }

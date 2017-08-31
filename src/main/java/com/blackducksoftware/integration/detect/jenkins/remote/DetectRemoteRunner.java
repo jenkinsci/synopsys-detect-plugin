@@ -24,19 +24,26 @@
 package com.blackducksoftware.integration.detect.jenkins.remote;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.SystemUtils;
 import org.jenkinsci.remoting.Role;
 import org.jenkinsci.remoting.RoleChecker;
 
+import com.blackducksoftware.integration.detect.jenkins.JenkinsDetectLogger;
 import com.blackducksoftware.integration.detect.jenkins.tools.DetectDownloadManager;
 import com.blackducksoftware.integration.exception.IntegrationException;
-import com.blackducksoftware.integration.log.IntLogger;
+import com.blackducksoftware.integration.hub.StreamRedirectThread;
 import com.blackducksoftware.integration.util.CIEnvironmentVariables;
 
 import hudson.remoting.Callable;
 
 public class DetectRemoteRunner implements Callable<String, IntegrationException> {
-    private final IntLogger logger;
+    private final JenkinsDetectLogger logger;
+    private final String javaHome;
+
     private final String hubUrl;
     private final String hubUsername;
     private final String hubPassword;
@@ -44,19 +51,19 @@ public class DetectRemoteRunner implements Callable<String, IntegrationException
     private final boolean importSSLCerts;
     private final String detectDownloadUrl;
     private final String toolsDirectory;
-    private final String[] detectProperties;
+    private final List<String> detectProperties;
 
     private final CIEnvironmentVariables cIEnvironmentVariables;
 
     private String proxyHost;
     private int proxyPort;
-    private String proxyNoHost;
     private String proxyUsername;
     private String proxyPassword;
 
-    public DetectRemoteRunner(final IntLogger logger, final String hubUrl, final String hubUsername, final String hubPassword, final int hubTimeout, final boolean importSSLCerts, final String detectDownloadUrl, final String toolsDirectory,
-            final String[] detectProperties, final CIEnvironmentVariables cIEnvironmentVariables) {
+    public DetectRemoteRunner(final JenkinsDetectLogger logger, final String javaHome, final String hubUrl, final String hubUsername, final String hubPassword, final int hubTimeout, final boolean importSSLCerts,
+            final String detectDownloadUrl, final String toolsDirectory, final List<String> detectProperties, final CIEnvironmentVariables cIEnvironmentVariables) {
         this.logger = logger;
+        this.javaHome = javaHome;
         this.hubUrl = hubUrl;
         this.hubUsername = hubUsername;
         this.hubPassword = hubPassword;
@@ -71,15 +78,61 @@ public class DetectRemoteRunner implements Callable<String, IntegrationException
     @Override
     public String call() throws IntegrationException {
         try {
+            logger.info("System java : " + System.getProperty("java.home"));
+            String javaExecutablePath = "java";
+            if (javaHome != null) {
+                if (SystemUtils.IS_OS_WINDOWS) {
+                    javaExecutablePath = javaHome + "bin" + File.separator + "java.exe";
+                } else {
+                    javaExecutablePath = javaHome + "bin" + File.separator + "java";
+                }
+            }
+            logger.info("Running with JAVA : " + javaExecutablePath);
+
             final DetectDownloadManager detectDownloadManager = new DetectDownloadManager(logger, toolsDirectory);
             final File hubDetectJar = detectDownloadManager.handleDownload(detectDownloadUrl);
 
-            // TODO Run Hub detect
+            final List<String> commands = new ArrayList<>();
+            commands.add(javaExecutablePath);
+            commands.add("-version");
+            final ProcessBuilder processBuilder = new ProcessBuilder(commands);
+            final Process process = processBuilder.start();
+
+            final StreamRedirectThread redirectStdOutThread = new StreamRedirectThread(process.getInputStream(), logger.getJenkinsListener().getLogger());
+            redirectStdOutThread.start();
+
+            final StreamRedirectThread redirectErrOutThread = new StreamRedirectThread(process.getErrorStream(), logger.getJenkinsListener().getLogger());
+            redirectErrOutThread.start();
+
+            process.waitFor();
+
+            // final ProcessBuilder processBuilder = new ProcessBuilder(detectProperties).redirectError(PIPE).redirectOutput(PIPE);
+            //
+            // setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_URL", hubUrl);
+            // setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_TIMEOUT", String.valueOf(hubTimeout));
+            // setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_USERNAME", hubUsername);
+            // setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_PASSWORD", hubPassword);
+            //
+            // setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_AUTO_IMPORT_CERT", String.valueOf(importSSLCerts));
+            // setProcessEnvironmentVariableString(processBuilder, "LOGGING_LEVEL_COM_BLACKDUCKSOFTWARE_INTEGRATION", logger.getLogLevel().toString());
+            //
+            // if (proxyHost != null) {
+            // setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_PROXY_HOST", proxyHost);
+            // setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_PROXY_PORT", String.valueOf(proxyPort));
+            // setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_PROXY_USERNAME", proxyUsername);
+            // setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_PROXY_PASSWORD", proxyPassword);
+            // }
 
         } catch (final Exception e) {
             throw new IntegrationException(e);
         }
         return null;
+    }
+
+    private void setProcessEnvironmentVariableString(final ProcessBuilder processBuilder, final String environmentVariableName, final String value) {
+        if (StringUtils.isNotBlank(value)) {
+            processBuilder.environment().put(environmentVariableName, value);
+        }
     }
 
     @Override
@@ -93,10 +146,6 @@ public class DetectRemoteRunner implements Callable<String, IntegrationException
 
     public void setProxyPort(final int proxyPort) {
         this.proxyPort = proxyPort;
-    }
-
-    public void setProxyNoHost(final String proxyNoHost) {
-        this.proxyNoHost = proxyNoHost;
     }
 
     public void setProxyUsername(final String proxyUsername) {

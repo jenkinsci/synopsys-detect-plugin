@@ -55,6 +55,7 @@ import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 import com.blackducksoftware.integration.detect.jenkins.HubServerInfoSingleton;
+import com.blackducksoftware.integration.detect.jenkins.JenkinsProxyHelper;
 import com.blackducksoftware.integration.detect.jenkins.Messages;
 import com.blackducksoftware.integration.detect.rest.github.GitHubFileModel;
 import com.blackducksoftware.integration.detect.rest.github.GitHubRequestService;
@@ -225,11 +226,12 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
         final HubServerConfigValidator validator = new HubServerConfigValidator();
         validator.setHubUrl(hubUrl);
         if (proxyConfig != null) {
-            validator.setProxyHost(proxyConfig.name);
-            validator.setProxyPort(proxyConfig.port);
-            validator.setProxyUsername(proxyConfig.getUserName());
-            validator.setProxyPassword(proxyConfig.getPassword());
-            validator.setIgnoredProxyHosts(proxyConfig.noProxyHost);
+            if (JenkinsProxyHelper.shouldUseProxy(hubUrl, proxyConfig.noProxyHost)) {
+                validator.setProxyHost(proxyConfig.name);
+                validator.setProxyPort(proxyConfig.port);
+                validator.setProxyUsername(proxyConfig.getUserName());
+                validator.setProxyPassword(proxyConfig.getPassword());
+            }
         }
         final ValidationResults results = new ValidationResults();
         validator.validateHubUrl(results);
@@ -309,14 +311,14 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
             if (jenkins != null) {
                 final ProxyConfiguration proxyConfig = jenkins.proxy;
                 if (proxyConfig != null) {
-                    if (StringUtils.isNotBlank(proxyConfig.name) && proxyConfig.port >= 0) {
-                        hubServerConfigBuilder.setProxyHost(proxyConfig.name);
-                        hubServerConfigBuilder.setProxyPort(proxyConfig.port);
-                        hubServerConfigBuilder.setIgnoredProxyHosts(proxyConfig.noProxyHost);
-
-                        if (StringUtils.isNotBlank(jenkins.proxy.getUserName()) && StringUtils.isNotBlank(jenkins.proxy.getPassword())) {
-                            hubServerConfigBuilder.setProxyUsername(jenkins.proxy.getUserName());
-                            hubServerConfigBuilder.setProxyPassword(jenkins.proxy.getPassword());
+                    if (JenkinsProxyHelper.shouldUseProxy(hubUrl, proxyConfig.noProxyHost)) {
+                        if (StringUtils.isNotBlank(proxyConfig.name) && proxyConfig.port >= 0) {
+                            hubServerConfigBuilder.setProxyHost(proxyConfig.name);
+                            hubServerConfigBuilder.setProxyPort(proxyConfig.port);
+                            if (StringUtils.isNotBlank(jenkins.proxy.getUserName()) && StringUtils.isNotBlank(jenkins.proxy.getPassword())) {
+                                hubServerConfigBuilder.setProxyUsername(jenkins.proxy.getUserName());
+                                hubServerConfigBuilder.setProxyPassword(jenkins.proxy.getPassword());
+                            }
                         }
                     }
                 }

@@ -33,6 +33,7 @@ import java.util.List;
 
 import org.apache.commons.io.IOUtils;
 
+import com.blackducksoftware.integration.detect.jenkins.JenkinsProxyHelper;
 import com.blackducksoftware.integration.exception.IntegrationException;
 import com.blackducksoftware.integration.hub.rest.RestConnection;
 import com.blackducksoftware.integration.hub.rest.UnauthenticatedRestConnection;
@@ -90,11 +91,12 @@ public class GitHubRequestService {
             proxyConfig = jenkins.proxy;
         }
         if (proxyConfig != null) {
-            restConnection.proxyHost = proxyConfig.name;
-            restConnection.proxyPort = proxyConfig.port;
-            restConnection.proxyNoHosts = proxyConfig.noProxyHost;
-            restConnection.proxyUsername = proxyConfig.getUserName();
-            restConnection.proxyPassword = proxyConfig.getPassword();
+            if (JenkinsProxyHelper.shouldUseProxy(restConnection.hubBaseUrl, proxyConfig.noProxyHost)) {
+                restConnection.proxyHost = proxyConfig.name;
+                restConnection.proxyPort = proxyConfig.port;
+                restConnection.proxyUsername = proxyConfig.getUserName();
+                restConnection.proxyPassword = proxyConfig.getPassword();
+            }
         }
     }
 

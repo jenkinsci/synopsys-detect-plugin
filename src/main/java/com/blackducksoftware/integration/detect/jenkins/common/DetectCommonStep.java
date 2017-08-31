@@ -31,6 +31,7 @@ import org.apache.tools.ant.types.Commandline;
 
 import com.blackducksoftware.integration.detect.jenkins.HubServerInfoSingleton;
 import com.blackducksoftware.integration.detect.jenkins.JenkinsDetectLogger;
+import com.blackducksoftware.integration.detect.jenkins.JenkinsProxyHelper;
 import com.blackducksoftware.integration.detect.jenkins.exception.DetectJenkinsException;
 import com.blackducksoftware.integration.detect.jenkins.remote.DetectRemoteRunner;
 import com.blackducksoftware.integration.detect.jenkins.tools.DummyToolInstallation;
@@ -55,14 +56,16 @@ public class DetectCommonStep {
     private final EnvVars envVars;
     private final FilePath workspace;
     private final Run run;
+    private final String javaHome;
 
-    public DetectCommonStep(final Node node, final Launcher launcher, final TaskListener listener, final EnvVars envVars, final FilePath workspace, final Run run) {
+    public DetectCommonStep(final Node node, final Launcher launcher, final TaskListener listener, final EnvVars envVars, final FilePath workspace, final Run run, final String javaHome) {
         this.node = node;
         this.launcher = launcher;
         this.listener = listener;
         this.envVars = envVars;
         this.workspace = workspace;
         this.run = run;
+        this.javaHome = javaHome;
     }
 
     public void runCommonDetectStep(final String detectProperties) {
@@ -73,21 +76,22 @@ public class DetectCommonStep {
         try {
             final DummyToolInstaller dummyInstaller = new DummyToolInstaller();
             final String toolsDirectory = dummyInstaller.getToolDir(new DummyToolInstallation(), node).getRemote();
-
-            final DetectRemoteRunner detectRemoteRunner = new DetectRemoteRunner(logger, HubServerInfoSingleton.getInstance().getHubUrl(), HubServerInfoSingleton.getInstance().getHubUsername(),
-                    HubServerInfoSingleton.getInstance().getHubPassword(), HubServerInfoSingleton.getInstance().getHubTimeout(), HubServerInfoSingleton.getInstance().isImportSSLCerts(),
-                    HubServerInfoSingleton.getInstance().getDetectDownloadUrl(), toolsDirectory, getCorrectedParameters(detectProperties), variables);
+            final String hubUrl = HubServerInfoSingleton.getInstance().getHubUrl();
+            final DetectRemoteRunner detectRemoteRunner = new DetectRemoteRunner(logger, javaHome, hubUrl, HubServerInfoSingleton.getInstance().getHubUsername(), HubServerInfoSingleton.getInstance().getHubPassword(),
+                    HubServerInfoSingleton.getInstance().getHubTimeout(), HubServerInfoSingleton.getInstance().isImportSSLCerts(), HubServerInfoSingleton.getInstance().getDetectDownloadUrl(), toolsDirectory,
+                    getCorrectedParameters(detectProperties), variables);
             ProxyConfiguration proxyConfig = null;
             final Jenkins jenkins = Jenkins.getInstance();
             if (jenkins != null) {
                 proxyConfig = jenkins.proxy;
             }
             if (proxyConfig != null) {
-                detectRemoteRunner.setProxyHost(proxyConfig.name);
-                detectRemoteRunner.setProxyPort(proxyConfig.port);
-                detectRemoteRunner.setProxyNoHost(proxyConfig.noProxyHost);
-                detectRemoteRunner.setProxyUsername(proxyConfig.getUserName());
-                detectRemoteRunner.setProxyPassword(proxyConfig.getPassword());
+                if (JenkinsProxyHelper.shouldUseProxy(hubUrl, proxyConfig.noProxyHost)) {
+                    detectRemoteRunner.setProxyHost(proxyConfig.name);
+                    detectRemoteRunner.setProxyPort(proxyConfig.port);
+                    detectRemoteRunner.setProxyUsername(proxyConfig.getUserName());
+                    detectRemoteRunner.setProxyPassword(proxyConfig.getPassword());
+                }
             }
             node.getChannel().call(detectRemoteRunner);
         } catch (final Exception e) {
@@ -96,13 +100,13 @@ public class DetectCommonStep {
         }
     }
 
-    public String[] getCorrectedParameters(final String commandLineParameters) throws DetectJenkinsException {
+    public List<String> getCorrectedParameters(final String commandLineParameters) throws DetectJenkinsException {
         final String[] separatedParameters = Commandline.translateCommandline(commandLineParameters);
         final List<String> correctedParameters = new ArrayList<>();
         for (final String parameter : separatedParameters) {
             correctedParameters.add(handleVariableReplacement(envVars, parameter));
         }
-        return (String[]) correctedParameters.toArray();
+        return correctedParameters;
     }
 
     public String handleVariableReplacement(final Map<String, String> variables, final String value) throws DetectJenkinsException {

@@ -33,6 +33,7 @@ import hudson.FilePath;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
+import hudson.model.JDK;
 import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Recorder;
 
@@ -60,9 +61,20 @@ public class DetectPostBuildStep extends Recorder {
 
     @Override
     public boolean perform(final AbstractBuild<?, ?> build, final Launcher launcher, final BuildListener listener) throws InterruptedException, IOException {
-        final DetectCommonStep detectCommonStep = new DetectCommonStep(build.getBuiltOn(), launcher, listener, build.getEnvironment(listener), getWorkingDirectory(build), build);
+        final String javaHome = getJavaExecutable(build, listener);
+        final DetectCommonStep detectCommonStep = new DetectCommonStep(build.getBuiltOn(), launcher, listener, build.getEnvironment(listener), getWorkingDirectory(build), build, javaHome);
         detectCommonStep.runCommonDetectStep(detectProperties);
         return true;
+    }
+
+    private String getJavaExecutable(final AbstractBuild<?, ?> build, final BuildListener listener) throws IOException, InterruptedException {
+        final JDK jdk = build.getProject().getJDK().forNode(build.getBuiltOn(), listener);
+        String javaHome = null;
+        if (jdk != null) {
+            javaHome = jdk.getHome();
+        }
+
+        return javaHome;
     }
 
     public FilePath getWorkingDirectory(final AbstractBuild<?, ?> build) throws InterruptedException {
