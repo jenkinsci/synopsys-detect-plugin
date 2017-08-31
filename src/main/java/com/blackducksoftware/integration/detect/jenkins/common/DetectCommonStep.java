@@ -23,7 +23,11 @@
  */
 package com.blackducksoftware.integration.detect.jenkins.common;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+
+import org.apache.tools.ant.types.Commandline;
 
 import com.blackducksoftware.integration.detect.jenkins.HubServerInfoSingleton;
 import com.blackducksoftware.integration.detect.jenkins.JenkinsDetectLogger;
@@ -61,7 +65,7 @@ public class DetectCommonStep {
         this.run = run;
     }
 
-    public void runCommonDetectStep() {
+    public void runCommonDetectStep(final String detectProperties) {
         final JenkinsDetectLogger logger = new JenkinsDetectLogger(listener);
         final CIEnvironmentVariables variables = new CIEnvironmentVariables();
         variables.putAll(envVars);
@@ -72,7 +76,7 @@ public class DetectCommonStep {
 
             final DetectRemoteRunner detectRemoteRunner = new DetectRemoteRunner(logger, HubServerInfoSingleton.getInstance().getHubUrl(), HubServerInfoSingleton.getInstance().getHubUsername(),
                     HubServerInfoSingleton.getInstance().getHubPassword(), HubServerInfoSingleton.getInstance().getHubTimeout(), HubServerInfoSingleton.getInstance().isImportSSLCerts(),
-                    HubServerInfoSingleton.getInstance().getDetectDownloadUrl(), toolsDirectory, variables);
+                    HubServerInfoSingleton.getInstance().getDetectDownloadUrl(), toolsDirectory, getCorrectedParameters(detectProperties), variables);
             ProxyConfiguration proxyConfig = null;
             final Jenkins jenkins = Jenkins.getInstance();
             if (jenkins != null) {
@@ -90,6 +94,15 @@ public class DetectCommonStep {
             logger.error(e.getMessage(), e);
             run.setResult(Result.UNSTABLE);
         }
+    }
+
+    public String[] getCorrectedParameters(final String commandLineParameters) throws DetectJenkinsException {
+        final String[] separatedParameters = Commandline.translateCommandline(commandLineParameters);
+        final List<String> correctedParameters = new ArrayList<>();
+        for (final String parameter : separatedParameters) {
+            correctedParameters.add(handleVariableReplacement(envVars, parameter));
+        }
+        return (String[]) correctedParameters.toArray();
     }
 
     public String handleVariableReplacement(final Map<String, String> variables, final String value) throws DetectJenkinsException {

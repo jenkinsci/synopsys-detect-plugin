@@ -44,6 +44,7 @@ public class DetectRemoteRunner implements Callable<String, IntegrationException
     private final boolean importSSLCerts;
     private final String detectDownloadUrl;
     private final String toolsDirectory;
+    private final String[] detectProperties;
 
     private final CIEnvironmentVariables cIEnvironmentVariables;
 
@@ -54,7 +55,7 @@ public class DetectRemoteRunner implements Callable<String, IntegrationException
     private String proxyPassword;
 
     public DetectRemoteRunner(final IntLogger logger, final String hubUrl, final String hubUsername, final String hubPassword, final int hubTimeout, final boolean importSSLCerts, final String detectDownloadUrl, final String toolsDirectory,
-            final CIEnvironmentVariables cIEnvironmentVariables) {
+            final String[] detectProperties, final CIEnvironmentVariables cIEnvironmentVariables) {
         this.logger = logger;
         this.hubUrl = hubUrl;
         this.hubUsername = hubUsername;
@@ -63,6 +64,7 @@ public class DetectRemoteRunner implements Callable<String, IntegrationException
         this.importSSLCerts = importSSLCerts;
         this.detectDownloadUrl = detectDownloadUrl;
         this.toolsDirectory = toolsDirectory;
+        this.detectProperties = detectProperties;
         this.cIEnvironmentVariables = cIEnvironmentVariables;
     }
 

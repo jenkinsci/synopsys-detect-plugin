@@ -37,9 +37,15 @@ import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Recorder;
 
 public class DetectPostBuildStep extends Recorder {
+    private final String detectProperties;
+
     @DataBoundConstructor
-    public DetectPostBuildStep() {
-        // TODO Get User configuration
+    public DetectPostBuildStep(final String detectProperties) {
+        this.detectProperties = detectProperties;
+    }
+
+    public String getDetectProperties() {
+        return detectProperties;
     }
 
     @Override
@@ -55,7 +61,7 @@ public class DetectPostBuildStep extends Recorder {
     @Override
     public boolean perform(final AbstractBuild<?, ?> build, final Launcher launcher, final BuildListener listener) throws InterruptedException, IOException {
         final DetectCommonStep detectCommonStep = new DetectCommonStep(build.getBuiltOn(), launcher, listener, build.getEnvironment(listener), getWorkingDirectory(build), build);
-        detectCommonStep.runCommonDetectStep();
+        detectCommonStep.runCommonDetectStep(detectProperties);
         return true;
     }
 

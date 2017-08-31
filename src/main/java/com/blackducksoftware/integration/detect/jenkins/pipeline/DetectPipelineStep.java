@@ -23,18 +23,89 @@
  */
 package com.blackducksoftware.integration.detect.jenkins.pipeline;
 
+import javax.inject.Inject;
+
+import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
+import org.jenkinsci.plugins.workflow.steps.AbstractSynchronousNonBlockingStepExecution;
+import org.jenkinsci.plugins.workflow.steps.StepContextParameter;
 import org.kohsuke.stapler.DataBoundConstructor;
 
+import com.blackducksoftware.integration.detect.jenkins.Messages;
+import com.blackducksoftware.integration.detect.jenkins.common.DetectCommonStep;
+
+import hudson.EnvVars;
+import hudson.Extension;
+import hudson.FilePath;
+import hudson.Launcher;
+import hudson.model.Computer;
+import hudson.model.Run;
+import hudson.model.TaskListener;
+
 public class DetectPipelineStep extends AbstractStepImpl {
+    private final String detectProperties;
+
     @DataBoundConstructor
-    public DetectPipelineStep() {
-        // TODO Get User configuration
+    public DetectPipelineStep(final String detectProperties) {
+        this.detectProperties = detectProperties;
+    }
+
+    public String getDetectProperties() {
+        return detectProperties;
     }
 
     @Override
     public DetectPipelineStepDescriptor getDescriptor() {
         return (DetectPipelineStepDescriptor) super.getDescriptor();
+    }
+
+    @Extension(optional = true)
+    public static final class DetectPipelineStepDescriptor extends AbstractStepDescriptorImpl {
+        public DetectPipelineStepDescriptor() {
+            super(DetectPipelineExecution.class);
+        }
+
+        @Override
+        public String getFunctionName() {
+            return "hub_detect";
+        }
+
+        @Override
+        public String getDisplayName() {
+            return Messages.DetectPipelineStep_getDisplayName();
+        }
+
+    }
+
+    public static final class DetectPipelineExecution extends AbstractSynchronousNonBlockingStepExecution<Void> {
+        @Inject
+        private transient DetectPipelineStep detectPipelineStep;
+
+        @StepContextParameter
+        private transient Computer computer;
+
+        @StepContextParameter
+        transient Launcher launcher;
+
+        @StepContextParameter
+        transient TaskListener listener;
+
+        @StepContextParameter
+        transient EnvVars envVars;
+
+        @StepContextParameter
+        private transient FilePath workspace;
+
+        @StepContextParameter
+        private transient Run run;
+
+        @Override
+        protected Void run() throws Exception {
+            final DetectCommonStep detectCommonStep = new DetectCommonStep(computer.getNode(), launcher, listener, envVars, workspace, run);
+            detectCommonStep.runCommonDetectStep(detectPipelineStep.getDetectProperties());
+            return null;
+        }
+
     }
 
 }
