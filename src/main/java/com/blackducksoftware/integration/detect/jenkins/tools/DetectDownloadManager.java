@@ -63,7 +63,7 @@ public class DetectDownloadManager {
         return detectFile;
     }
 
-    private String getDetectFileName(final String fileUrl) {
+    public String getDetectFileName(final String fileUrl) {
         if (StringUtils.isBlank(fileUrl)) {
             return DEFAULT_DETECT_JAR;
         }

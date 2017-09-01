@@ -78,13 +78,13 @@ public class DetectRemoteRunner implements Callable<String, IntegrationException
     @Override
     public String call() throws IntegrationException {
         try {
-            logger.info("System java : " + System.getProperty("java.home"));
             String javaExecutablePath = "java";
             if (javaHome != null) {
+                javaExecutablePath = javaHome + "bin" + File.separator;
                 if (SystemUtils.IS_OS_WINDOWS) {
-                    javaExecutablePath = javaHome + "bin" + File.separator + "java.exe";
+                    javaExecutablePath = javaExecutablePath + "java.exe";
                 } else {
-                    javaExecutablePath = javaHome + "bin" + File.separator + "java";
+                    javaExecutablePath = javaExecutablePath + "java";
                 }
             }
             logger.info("Running with JAVA : " + javaExecutablePath);
@@ -92,10 +92,43 @@ public class DetectRemoteRunner implements Callable<String, IntegrationException
             final DetectDownloadManager detectDownloadManager = new DetectDownloadManager(logger, toolsDirectory);
             final File hubDetectJar = detectDownloadManager.handleDownload(detectDownloadUrl);
 
+            logger.info("Running Detect Version : " + detectDownloadManager.getDetectFileName(detectDownloadUrl));
+
             final List<String> commands = new ArrayList<>();
             commands.add(javaExecutablePath);
-            commands.add("-version");
+            commands.add("-jar");
+            commands.add(hubDetectJar.getCanonicalPath());
+
+            boolean setLoggingLevel = false;
+            if (detectProperties != null && !detectProperties.isEmpty()) {
+                for (final String property : detectProperties) {
+                    if (property.toLowerCase().contains("logging.level.com.blackducksoftware.integration")) {
+                        setLoggingLevel = true;
+                    }
+                    commands.add(property);
+                }
+            }
+            if (!setLoggingLevel) {
+                commands.add("--logging.level.com.blackducksoftware.integration=" + logger.getLogLevel().toString());
+            }
+
             final ProcessBuilder processBuilder = new ProcessBuilder(commands);
+            processBuilder.directory(new File(cIEnvironmentVariables.getValue("WORKSPACE")));
+            processBuilder.environment().putAll(cIEnvironmentVariables.getVariables());
+            setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_URL", hubUrl);
+            setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_TIMEOUT", String.valueOf(hubTimeout));
+            setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_USERNAME", hubUsername);
+            setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_PASSWORD", hubPassword);
+
+            setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_AUTO_IMPORT_CERT", String.valueOf(importSSLCerts));
+
+            if (proxyHost != null) {
+                setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_PROXY_HOST", proxyHost);
+                setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_PROXY_PORT", String.valueOf(proxyPort));
+                setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_PROXY_USERNAME", proxyUsername);
+                setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_PROXY_PASSWORD", proxyPassword);
+            }
+
             final Process process = processBuilder.start();
 
             final StreamRedirectThread redirectStdOutThread = new StreamRedirectThread(process.getInputStream(), logger.getJenkinsListener().getLogger());
@@ -105,23 +138,6 @@ public class DetectRemoteRunner implements Callable<String, IntegrationException
             redirectErrOutThread.start();
 
             process.waitFor();
-
-            // final ProcessBuilder processBuilder = new ProcessBuilder(detectProperties).redirectError(PIPE).redirectOutput(PIPE);
-            //
-            // setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_URL", hubUrl);
-            // setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_TIMEOUT", String.valueOf(hubTimeout));
-            // setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_USERNAME", hubUsername);
-            // setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_PASSWORD", hubPassword);
-            //
-            // setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_AUTO_IMPORT_CERT", String.valueOf(importSSLCerts));
-            // setProcessEnvironmentVariableString(processBuilder, "LOGGING_LEVEL_COM_BLACKDUCKSOFTWARE_INTEGRATION", logger.getLogLevel().toString());
-            //
-            // if (proxyHost != null) {
-            // setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_PROXY_HOST", proxyHost);
-            // setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_PROXY_PORT", String.valueOf(proxyPort));
-            // setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_PROXY_USERNAME", proxyUsername);
-            // setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_PROXY_PASSWORD", proxyPassword);
-            // }
 
         } catch (final Exception e) {
             throw new IntegrationException(e);

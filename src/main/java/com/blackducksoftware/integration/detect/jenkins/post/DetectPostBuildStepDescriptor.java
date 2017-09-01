@@ -165,8 +165,10 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
             final GitHubRequestService gitHubRequestService = new GitHubRequestService();
             final List<GitHubFileModel> detectJarFileModels = gitHubRequestService.getContents("blackducksoftware", "hub-detect", "hub-detect-.*.jar");
             for (final GitHubFileModel gitHubFileModel : detectJarFileModels) {
-                final String displayName = gitHubFileModel.name.replace("hub-detect-", "").replace(".jar", "");
-                boxModel.add(displayName, gitHubFileModel.download_url.toURI().toString());
+                if (!gitHubFileModel.name.contains("SNAPSHOT")) {
+                    final String displayName = gitHubFileModel.name.replace("hub-detect-", "").replace(".jar", "");
+                    boxModel.add(displayName, gitHubFileModel.download_url.toURI().toString());
+                }
             }
         } catch (final IntegrationException e) {
             System.err.println("Could not reach Github");

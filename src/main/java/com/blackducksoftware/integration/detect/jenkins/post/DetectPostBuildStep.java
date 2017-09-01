@@ -68,7 +68,11 @@ public class DetectPostBuildStep extends Recorder {
     }
 
     private String getJavaExecutable(final AbstractBuild<?, ?> build, final BuildListener listener) throws IOException, InterruptedException {
-        final JDK jdk = build.getProject().getJDK().forNode(build.getBuiltOn(), listener);
+        JDK jdk = build.getProject().getJDK();
+        if (jdk == null) {
+            return null;
+        }
+        jdk = build.getProject().getJDK().forNode(build.getBuiltOn(), listener);
         String javaHome = null;
         if (jdk != null) {
             javaHome = jdk.getHome();
