@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.tools.ant.types.Commandline;
 
 import com.blackducksoftware.integration.detect.jenkins.HubServerInfoSingleton;
@@ -109,26 +110,36 @@ public class DetectCommonStep {
             try {
                 // Phone Home
                 final HubServerConfigBuilder hubServerConfigBuilder = new HubServerConfigBuilder();
-                hubServerConfigBuilder.setHubUrl(hubUrl);
-                hubServerConfigBuilder.setUsername(hubUsername);
-                hubServerConfigBuilder.setPassword(hubPassword);
-                hubServerConfigBuilder.setTimeout(hubTimeout);
-                hubServerConfigBuilder.setAutoImportHttpsCertificates(importSSLCerts);
-                final HubServerConfig hubServerConfig = hubServerConfigBuilder.build();
-                final RestConnection restConnection = hubServerConfig.createCredentialsRestConnection(logger);
-                final HubServicesFactory servicesFactory = new HubServicesFactory(restConnection);
-                final PhoneHomeDataService phoneHomeDataService = servicesFactory.createPhoneHomeDataService(logger);
+                if (StringUtils.isNotBlank(hubUrl)) {
+                    hubServerConfigBuilder.setHubUrl(hubUrl);
+                    hubServerConfigBuilder.setUsername(hubUsername);
+                    hubServerConfigBuilder.setPassword(hubPassword);
+                    hubServerConfigBuilder.setTimeout(hubTimeout);
+                    hubServerConfigBuilder.setAutoImportHttpsCertificates(importSSLCerts);
 
-                final String thirdPartyVersion = Jenkins.getVersion().toString();
-                final String pluginVersion = PluginHelper.getPluginVersion();
+                    if (JenkinsProxyHelper.shouldUseProxy(hubUrl, proxyConfig.noProxyHost)) {
+                        hubServerConfigBuilder.setProxyHost(proxyConfig.name);
+                        hubServerConfigBuilder.setProxyPort(proxyConfig.port);
+                        hubServerConfigBuilder.setProxyUsername(proxyConfig.getUserName());
+                        hubServerConfigBuilder.setProxyPassword(proxyConfig.getPassword());
+                    }
 
-                final PhoneHomeRequestBodyBuilder phoneHomeRequestBodyBuilder = phoneHomeDataService.createInitialPhoneHomeRequestBodyBuilder();
-                phoneHomeRequestBodyBuilder.setBlackDuckName(BlackDuckName.HUB);
-                phoneHomeRequestBodyBuilder.setThirdPartyName("Jenkins-Detect");
-                phoneHomeRequestBodyBuilder.setThirdPartyVersion(thirdPartyVersion);
-                phoneHomeRequestBodyBuilder.setPluginVersion(pluginVersion);
+                    final HubServerConfig hubServerConfig = hubServerConfigBuilder.build();
+                    final RestConnection restConnection = hubServerConfig.createCredentialsRestConnection(logger);
+                    final HubServicesFactory servicesFactory = new HubServicesFactory(restConnection);
+                    final PhoneHomeDataService phoneHomeDataService = servicesFactory.createPhoneHomeDataService(logger);
 
-                phoneHomeDataService.phoneHome(phoneHomeRequestBodyBuilder);
+                    final String thirdPartyVersion = Jenkins.getVersion().toString();
+                    final String pluginVersion = PluginHelper.getPluginVersion();
+
+                    final PhoneHomeRequestBodyBuilder phoneHomeRequestBodyBuilder = phoneHomeDataService.createInitialPhoneHomeRequestBodyBuilder();
+                    phoneHomeRequestBodyBuilder.setBlackDuckName(BlackDuckName.HUB);
+                    phoneHomeRequestBodyBuilder.setThirdPartyName("Jenkins-Detect");
+                    phoneHomeRequestBodyBuilder.setThirdPartyVersion(thirdPartyVersion);
+                    phoneHomeRequestBodyBuilder.setPluginVersion(pluginVersion);
+
+                    phoneHomeDataService.phoneHome(phoneHomeRequestBodyBuilder);
+                }
             } catch (final Exception e) {
                 logger.debug("Phone Home failed : " + e.getMessage(), e);
             }
