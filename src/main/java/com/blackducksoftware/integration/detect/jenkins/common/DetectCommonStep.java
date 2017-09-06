@@ -32,10 +32,18 @@ import org.apache.tools.ant.types.Commandline;
 import com.blackducksoftware.integration.detect.jenkins.HubServerInfoSingleton;
 import com.blackducksoftware.integration.detect.jenkins.JenkinsDetectLogger;
 import com.blackducksoftware.integration.detect.jenkins.JenkinsProxyHelper;
+import com.blackducksoftware.integration.detect.jenkins.PluginHelper;
 import com.blackducksoftware.integration.detect.jenkins.exception.DetectJenkinsException;
 import com.blackducksoftware.integration.detect.jenkins.remote.DetectRemoteRunner;
 import com.blackducksoftware.integration.detect.jenkins.tools.DummyToolInstallation;
 import com.blackducksoftware.integration.detect.jenkins.tools.DummyToolInstaller;
+import com.blackducksoftware.integration.hub.builder.HubServerConfigBuilder;
+import com.blackducksoftware.integration.hub.dataservice.phonehome.PhoneHomeDataService;
+import com.blackducksoftware.integration.hub.global.HubServerConfig;
+import com.blackducksoftware.integration.hub.rest.RestConnection;
+import com.blackducksoftware.integration.hub.service.HubServicesFactory;
+import com.blackducksoftware.integration.phonehome.PhoneHomeRequestBodyBuilder;
+import com.blackducksoftware.integration.phonehome.enums.BlackDuckName;
 import com.blackducksoftware.integration.util.CIEnvironmentVariables;
 
 import hudson.EnvVars;
@@ -77,8 +85,12 @@ public class DetectCommonStep {
             final DummyToolInstaller dummyInstaller = new DummyToolInstaller();
             final String toolsDirectory = dummyInstaller.getToolDir(new DummyToolInstallation(), node).getRemote();
             final String hubUrl = HubServerInfoSingleton.getInstance().getHubUrl();
-            final DetectRemoteRunner detectRemoteRunner = new DetectRemoteRunner(logger, javaHome, hubUrl, HubServerInfoSingleton.getInstance().getHubUsername(), HubServerInfoSingleton.getInstance().getHubPassword(),
-                    HubServerInfoSingleton.getInstance().getHubTimeout(), HubServerInfoSingleton.getInstance().isImportSSLCerts(), HubServerInfoSingleton.getInstance().getDetectDownloadUrl(), toolsDirectory,
+            final String hubUsername = HubServerInfoSingleton.getInstance().getHubUsername();
+            final String hubPassword = HubServerInfoSingleton.getInstance().getHubPassword();
+            final int hubTimeout = HubServerInfoSingleton.getInstance().getHubTimeout();
+            final boolean importSSLCerts = HubServerInfoSingleton.getInstance().isImportSSLCerts();
+
+            final DetectRemoteRunner detectRemoteRunner = new DetectRemoteRunner(logger, javaHome, hubUrl, hubUsername, hubPassword, hubTimeout, importSSLCerts, HubServerInfoSingleton.getInstance().getDetectDownloadUrl(), toolsDirectory,
                     getCorrectedParameters(detectProperties), variables);
             ProxyConfiguration proxyConfig = null;
             final Jenkins jenkins = Jenkins.getInstance();
@@ -93,6 +105,34 @@ public class DetectCommonStep {
                     detectRemoteRunner.setProxyPassword(proxyConfig.getPassword());
                 }
             }
+
+            try {
+                // Phone Home
+                final HubServerConfigBuilder hubServerConfigBuilder = new HubServerConfigBuilder();
+                hubServerConfigBuilder.setHubUrl(hubUrl);
+                hubServerConfigBuilder.setUsername(hubUsername);
+                hubServerConfigBuilder.setPassword(hubPassword);
+                hubServerConfigBuilder.setTimeout(hubTimeout);
+                hubServerConfigBuilder.setAutoImportHttpsCertificates(importSSLCerts);
+                final HubServerConfig hubServerConfig = hubServerConfigBuilder.build();
+                final RestConnection restConnection = hubServerConfig.createCredentialsRestConnection(logger);
+                final HubServicesFactory servicesFactory = new HubServicesFactory(restConnection);
+                final PhoneHomeDataService phoneHomeDataService = servicesFactory.createPhoneHomeDataService(logger);
+
+                final String thirdPartyVersion = Jenkins.getVersion().toString();
+                final String pluginVersion = PluginHelper.getPluginVersion();
+
+                final PhoneHomeRequestBodyBuilder phoneHomeRequestBodyBuilder = phoneHomeDataService.createInitialPhoneHomeRequestBodyBuilder();
+                phoneHomeRequestBodyBuilder.setBlackDuckName(BlackDuckName.HUB);
+                phoneHomeRequestBodyBuilder.setThirdPartyName("Jenkins-Detect");
+                phoneHomeRequestBodyBuilder.setThirdPartyVersion(thirdPartyVersion);
+                phoneHomeRequestBodyBuilder.setPluginVersion(pluginVersion);
+
+                phoneHomeDataService.phoneHome(phoneHomeRequestBodyBuilder);
+            } catch (final Exception e) {
+                logger.debug("Phone Home failed : " + e.getMessage(), e);
+            }
+
             node.getChannel().call(detectRemoteRunner);
         } catch (final Exception e) {
             logger.error(e.getMessage(), e);

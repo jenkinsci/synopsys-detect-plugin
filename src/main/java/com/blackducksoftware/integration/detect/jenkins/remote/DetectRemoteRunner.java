@@ -36,6 +36,7 @@ import com.blackducksoftware.integration.detect.jenkins.JenkinsDetectLogger;
 import com.blackducksoftware.integration.detect.jenkins.tools.DetectDownloadManager;
 import com.blackducksoftware.integration.exception.IntegrationException;
 import com.blackducksoftware.integration.hub.StreamRedirectThread;
+import com.blackducksoftware.integration.hub.exception.HubIntegrationException;
 import com.blackducksoftware.integration.util.CIEnvironmentVariables;
 
 import hudson.remoting.Callable;
@@ -137,8 +138,11 @@ public class DetectRemoteRunner implements Callable<String, IntegrationException
             final StreamRedirectThread redirectErrOutThread = new StreamRedirectThread(process.getErrorStream(), logger.getJenkinsListener().getLogger());
             redirectErrOutThread.start();
 
-            process.waitFor();
+            final int exitCode = process.waitFor();
 
+            if (exitCode != 0) {
+                throw new HubIntegrationException("Hub Detect failed with exit code : " + exitCode);
+            }
         } catch (final Exception e) {
             throw new IntegrationException(e);
         }
