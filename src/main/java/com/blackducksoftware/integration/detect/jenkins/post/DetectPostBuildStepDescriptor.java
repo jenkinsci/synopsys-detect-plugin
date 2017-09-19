@@ -96,7 +96,7 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
     private String hubUrl;
     private String hubCredentialsId;
     private int hubTimeout = 120;
-    private boolean importSSLCerts;
+    private boolean trustSSLCertificates;
     private String detectDownloadUrl;
 
     public DetectPostBuildStepDescriptor() {
@@ -105,7 +105,7 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
         HubServerInfoSingleton.getInstance().setHubUrl(hubUrl);
         HubServerInfoSingleton.getInstance().setHubCredentialsId(hubCredentialsId);
         HubServerInfoSingleton.getInstance().setHubTimeout(hubTimeout);
-        HubServerInfoSingleton.getInstance().setImportSSLCerts(importSSLCerts);
+        HubServerInfoSingleton.getInstance().setTrustSSLCertificates(trustSSLCertificates);
         HubServerInfoSingleton.getInstance().setDetectDownloadUrl(detectDownloadUrl);
     }
 
@@ -133,12 +133,12 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
         this.hubTimeout = hubTimeout;
     }
 
-    public boolean isImportSSLCerts() {
-        return importSSLCerts;
+    public boolean isTrustSSLCertificates() {
+        return trustSSLCertificates;
     }
 
-    public void setImportSSLCerts(final boolean importSSLCerts) {
-        this.importSSLCerts = importSSLCerts;
+    public void setTrustSSLCertificates(final boolean trustSSLCertificates) {
+        this.trustSSLCertificates = trustSSLCertificates;
     }
 
     public String getDetectDownloadUrl() {
@@ -227,6 +227,7 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
         }
         final HubServerConfigValidator validator = new HubServerConfigValidator();
         validator.setHubUrl(hubUrl);
+        validator.setAlwaysTrustServerCertificate(isTrustSSLCertificates());
         if (proxyConfig != null) {
             if (JenkinsProxyHelper.shouldUseProxy(hubUrl, proxyConfig.noProxyHost)) {
                 validator.setProxyHost(proxyConfig.name);
@@ -253,12 +254,10 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
                 changed = true;
                 Thread.currentThread().setContextClassLoader(DetectPostBuildStepDescriptor.class.getClassLoader());
             }
-            // Code copied from
-            // https://github.com/jenkinsci/git-plugin/blob/f6d42c4e7edb102d3330af5ca66a7f5809d1a48e/src/main/java/hudson/plugins/git/UserRemoteConfig.java
+            // Code copied from https://github.com/jenkinsci/git-plugin/blob/f6d42c4e7edb102d3330af5ca66a7f5809d1a48e/src/main/java/hudson/plugins/git/UserRemoteConfig.java
             final CredentialsMatcher credentialsMatcher = CredentialsMatchers.anyOf(CredentialsMatchers.instanceOf(StandardUsernamePasswordCredentials.class));
-            final AbstractProject<?, ?> project = null; // Dont want to limit
-            // the search to a particular project for the drop
-            // down menu
+            // Dont want to limit the search to a particular project for the drop down menu
+            final AbstractProject<?, ?> project = null;
             boxModel = new StandardListBoxModel().withEmptySelection().withMatching(credentialsMatcher, CredentialsProvider.lookupCredentials(StandardCredentials.class, project, ACL.SYSTEM, Collections.<DomainRequirement> emptyList()));
         } finally {
             if (changed) {
@@ -269,7 +268,7 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
     }
 
     public FormValidation doTestConnection(@QueryParameter("hubUrl") final String hubUrl, @QueryParameter("hubCredentialsId") final String hubCredentialsId, @QueryParameter("hubTimeout") final String hubTimeout,
-            @QueryParameter("importSSLCerts") final boolean importSSLCerts) {
+            @QueryParameter("trustSSLCertificates") final boolean trustSSLCertificates) {
         final ClassLoader originalClassLoader = Thread.currentThread().getContextClassLoader();
         boolean changed = false;
         try {
@@ -307,7 +306,7 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
             hubServerConfigBuilder.setUsername(credentialUserName);
             hubServerConfigBuilder.setPassword(credentialPassword);
             hubServerConfigBuilder.setTimeout(hubTimeout);
-            hubServerConfigBuilder.setAutoImportHttpsCertificates(importSSLCerts);
+            hubServerConfigBuilder.setAlwaysTrustServerCertificate(trustSSLCertificates);
 
             final Jenkins jenkins = Jenkins.getInstance();
             if (jenkins != null) {
@@ -372,13 +371,13 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
         hubUrl = formData.getString("hubUrl");
         hubCredentialsId = formData.getString("hubCredentialsId");
         hubTimeout = NumberUtils.toInt(formData.getString("hubTimeout"), 120);
-        importSSLCerts = formData.getBoolean("importSSLCerts");
+        trustSSLCertificates = formData.getBoolean("trustSSLCertificates");
         detectDownloadUrl = formData.getString("detectDownloadUrl");
         save();
         HubServerInfoSingleton.getInstance().setHubUrl(hubUrl);
         HubServerInfoSingleton.getInstance().setHubCredentialsId(hubCredentialsId);
         HubServerInfoSingleton.getInstance().setHubTimeout(hubTimeout);
-        HubServerInfoSingleton.getInstance().setImportSSLCerts(importSSLCerts);
+        HubServerInfoSingleton.getInstance().setTrustSSLCertificates(trustSSLCertificates);
         HubServerInfoSingleton.getInstance().setDetectDownloadUrl(detectDownloadUrl);
 
         return super.configure(req, formData);
@@ -457,13 +456,13 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
             }
         }
 
-        final Node importSSLCertsNode = doc.getElementsByTagName("importSSLCerts").item(0);
-        String importSSLCertsString = "";
+        final Node trustSSLCertificatesNode = doc.getElementsByTagName("trustSSLCertificates").item(0);
+        String trustSSLCertificatesString = "";
         // timeout
-        if (importSSLCertsNode != null && importSSLCertsNode.getChildNodes() != null && importSSLCertsNode.getChildNodes().item(0) != null) {
-            importSSLCertsString = importSSLCertsNode.getChildNodes().item(0).getNodeValue();
-            if (importSSLCertsString != null) {
-                importSSLCertsString = importSSLCertsString.trim();
+        if (trustSSLCertificatesNode != null && trustSSLCertificatesNode.getChildNodes() != null && trustSSLCertificatesNode.getChildNodes().item(0) != null) {
+            trustSSLCertificatesString = trustSSLCertificatesNode.getChildNodes().item(0).getNodeValue();
+            if (trustSSLCertificatesString != null) {
+                trustSSLCertificatesString = trustSSLCertificatesString.trim();
             }
         }
 
@@ -478,7 +477,7 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
         }
 
         int serverTimeout = 120;
-        final boolean importSSLCerts = Boolean.valueOf(importSSLCertsString);
+        final boolean trustSSLCertificates = Boolean.valueOf(trustSSLCertificatesString);
         try {
             serverTimeout = Integer.valueOf(hubTimeout);
         } catch (final NumberFormatException e) {
@@ -488,12 +487,12 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
         setHubUrl(hubUrl);
         setHubCredentialsId(hubCredentialsId);
         setHubTimeout(serverTimeout);
-        setImportSSLCerts(importSSLCerts);
+        setTrustSSLCertificates(trustSSLCertificates);
 
         HubServerInfoSingleton.getInstance().setHubUrl(hubUrl);
         HubServerInfoSingleton.getInstance().setHubCredentialsId(hubCredentialsId);
         HubServerInfoSingleton.getInstance().setHubTimeout(serverTimeout);
-        HubServerInfoSingleton.getInstance().setImportSSLCerts(importSSLCerts);
+        HubServerInfoSingleton.getInstance().setTrustSSLCertificates(trustSSLCertificates);
         HubServerInfoSingleton.getInstance().setDetectDownloadUrl(detectDownloadUrl);
         save();
     }

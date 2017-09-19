@@ -50,7 +50,7 @@ public class HubServerInfoSingleton {
     private String hubUrl;
     private String hubCredentialsId;
     private int hubTimeout;
-    private boolean importSSLCerts;
+    private boolean trustSSLCertificates;
     private String detectDownloadUrl;
 
     private HubServerInfoSingleton() {
@@ -84,12 +84,12 @@ public class HubServerInfoSingleton {
         this.hubTimeout = hubTimeout;
     }
 
-    public boolean isImportSSLCerts() {
-        return importSSLCerts;
+    public boolean isTrustSSLCertificates() {
+        return trustSSLCertificates;
     }
 
-    public void setImportSSLCerts(final boolean importSSLCerts) {
-        this.importSSLCerts = importSSLCerts;
+    public void setTrustSSLCertificates(final boolean trustSSLCertificates) {
+        this.trustSSLCertificates = trustSSLCertificates;
     }
 
     public String getDetectDownloadUrl() {

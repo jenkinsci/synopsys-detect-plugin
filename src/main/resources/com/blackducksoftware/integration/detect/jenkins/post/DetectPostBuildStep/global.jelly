@@ -16,13 +16,13 @@
       <f:entry title="${%HubConnectionTimeout}" field="hubTimeout" description="${%HubConnectionTimeoutDescription}" >
           <f:textbox clazz="required number" />
       </f:entry>
-      <f:entry title="${%ImportSSLCerts}" field="importSSLCerts" >
+      <f:entry title="${%TrustSSLCertificates}" field="trustSSLCertificates" >
           <f:checkbox default="false" />
       </f:entry>
     </f:advanced>
     
     <f:validateButton title="${%HubTestConnection}" progress="${%TestConnectionProgress}"
-         method="testConnection" with="hubUrl,hubCredentialsId,hubTimeout,importSSLCerts" />
+         method="testConnection" with="hubUrl,hubCredentialsId,hubTimeout,trustSSLCertificates" />
     
   </f:section>
 </j:jelly>

@@ -49,7 +49,7 @@ public class DetectRemoteRunner implements Callable<String, IntegrationException
     private final String hubUsername;
     private final String hubPassword;
     private final int hubTimeout;
-    private final boolean importSSLCerts;
+    private final boolean trustSSLCertificates;
     private final String detectDownloadUrl;
     private final String toolsDirectory;
     private final List<String> detectProperties;
@@ -61,7 +61,7 @@ public class DetectRemoteRunner implements Callable<String, IntegrationException
     private String proxyUsername;
     private String proxyPassword;
 
-    public DetectRemoteRunner(final JenkinsDetectLogger logger, final String javaHome, final String hubUrl, final String hubUsername, final String hubPassword, final int hubTimeout, final boolean importSSLCerts,
+    public DetectRemoteRunner(final JenkinsDetectLogger logger, final String javaHome, final String hubUrl, final String hubUsername, final String hubPassword, final int hubTimeout, final boolean trustSSLCertificates,
             final String detectDownloadUrl, final String toolsDirectory, final List<String> detectProperties, final CIEnvironmentVariables cIEnvironmentVariables) {
         this.logger = logger;
         this.javaHome = javaHome;
@@ -69,7 +69,7 @@ public class DetectRemoteRunner implements Callable<String, IntegrationException
         this.hubUsername = hubUsername;
         this.hubPassword = hubPassword;
         this.hubTimeout = hubTimeout;
-        this.importSSLCerts = importSSLCerts;
+        this.trustSSLCertificates = trustSSLCertificates;
         this.detectDownloadUrl = detectDownloadUrl;
         this.toolsDirectory = toolsDirectory;
         this.detectProperties = detectProperties;
@@ -121,7 +121,7 @@ public class DetectRemoteRunner implements Callable<String, IntegrationException
             setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_USERNAME", hubUsername);
             setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_PASSWORD", hubPassword);
 
-            setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_AUTO_IMPORT_CERT", String.valueOf(importSSLCerts));
+            setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_AUTO_IMPORT_CERT", String.valueOf(trustSSLCertificates));
 
             if (proxyHost != null) {
                 setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_PROXY_HOST", proxyHost);

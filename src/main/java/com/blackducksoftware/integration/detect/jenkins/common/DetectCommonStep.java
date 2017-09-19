@@ -89,10 +89,10 @@ public class DetectCommonStep {
             final String hubUsername = HubServerInfoSingleton.getInstance().getHubUsername();
             final String hubPassword = HubServerInfoSingleton.getInstance().getHubPassword();
             final int hubTimeout = HubServerInfoSingleton.getInstance().getHubTimeout();
-            final boolean importSSLCerts = HubServerInfoSingleton.getInstance().isImportSSLCerts();
+            final boolean trustSSLCertificates = HubServerInfoSingleton.getInstance().isTrustSSLCertificates();
 
-            final DetectRemoteRunner detectRemoteRunner = new DetectRemoteRunner(logger, javaHome, hubUrl, hubUsername, hubPassword, hubTimeout, importSSLCerts, HubServerInfoSingleton.getInstance().getDetectDownloadUrl(), toolsDirectory,
-                    getCorrectedParameters(detectProperties), variables);
+            final DetectRemoteRunner detectRemoteRunner = new DetectRemoteRunner(logger, javaHome, hubUrl, hubUsername, hubPassword, hubTimeout, trustSSLCertificates, HubServerInfoSingleton.getInstance().getDetectDownloadUrl(),
+                    toolsDirectory, getCorrectedParameters(detectProperties), variables);
             ProxyConfiguration proxyConfig = null;
             final Jenkins jenkins = Jenkins.getInstance();
             if (jenkins != null) {
@@ -115,7 +115,7 @@ public class DetectCommonStep {
                     hubServerConfigBuilder.setUsername(hubUsername);
                     hubServerConfigBuilder.setPassword(hubPassword);
                     hubServerConfigBuilder.setTimeout(hubTimeout);
-                    hubServerConfigBuilder.setAutoImportHttpsCertificates(importSSLCerts);
+                    hubServerConfigBuilder.setAlwaysTrustServerCertificate(trustSSLCertificates);
 
                     if (JenkinsProxyHelper.shouldUseProxy(hubUrl, proxyConfig.noProxyHost)) {
                         hubServerConfigBuilder.setProxyHost(proxyConfig.name);
@@ -127,7 +127,7 @@ public class DetectCommonStep {
                     final HubServerConfig hubServerConfig = hubServerConfigBuilder.build();
                     final RestConnection restConnection = hubServerConfig.createCredentialsRestConnection(logger);
                     final HubServicesFactory servicesFactory = new HubServicesFactory(restConnection);
-                    final PhoneHomeDataService phoneHomeDataService = servicesFactory.createPhoneHomeDataService(logger);
+                    final PhoneHomeDataService phoneHomeDataService = servicesFactory.createPhoneHomeDataService();
 
                     final String thirdPartyVersion = Jenkins.getVersion().toString();
                     final String pluginVersion = PluginHelper.getPluginVersion();
