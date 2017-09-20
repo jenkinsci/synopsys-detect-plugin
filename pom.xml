@@ -13,7 +13,7 @@
   <version>0.0.1-SNAPSHOT</version>
   <packaging>hpi</packaging>
 
-  <name>Black Duck Detect Plugin for Jenkins</name>
+  <name>Black Duck Detect Plugin</name>
   <description>Black Duck Detect Plugin for Jenkins</description>
   <url>TODO</url>
   <inceptionYear>2017</inceptionYear>

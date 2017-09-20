@@ -1,5 +1,5 @@
 /**
- * Black Duck Detect Plugin for Jenkins
+ * Black Duck Detect Plugin
  *
  * Copyright (C) 2017 Black Duck Software, Inc.
  * http://www.blackducksoftware.com/
