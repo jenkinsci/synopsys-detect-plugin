@@ -36,7 +36,7 @@ import com.blackducksoftware.integration.exception.IntegrationException;
 import com.blackducksoftware.integration.log.IntLogger;
 
 public class DetectDownloadManager {
-    public static final String DEFAULT_DETECT_JAR = "hub-detect-1.0.1.jar";
+    public static final String DEFAULT_DETECT_JAR = "hub-detect-1.1.1.jar";
     public static final String DETECT_INSTALL_DIRECTORY = "Detect_Installation";
     private final IntLogger logger;
     private final String toolsDirectory;
