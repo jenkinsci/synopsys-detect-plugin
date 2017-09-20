@@ -122,6 +122,7 @@ public class DetectRemoteRunner implements Callable<String, IntegrationException
             setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_PASSWORD", hubPassword);
 
             setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_AUTO_IMPORT_CERT", String.valueOf(trustSSLCertificates));
+            setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_TRUST_CERT", String.valueOf(trustSSLCertificates));
 
             if (proxyHost != null) {
                 setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_PROXY_HOST", proxyHost);
