@@ -15,7 +15,7 @@
 
   <name>Black Duck Detect Plugin</name>
   <description>Black Duck Detect Plugin for Jenkins</description>
-  <url>TODO</url>
+  <url>https://wiki.jenkins.io/display/JENKINS/Black+Duck+Detect+Plugin</url>
   <inceptionYear>2017</inceptionYear>
   <organization>
     <name>Black Duck Software, Inc.</name>
@@ -28,11 +28,19 @@
     </license>
   </licenses>
 
+  <developers>
+    <developer>
+      <id>akamen</id>
+      <name>Ari Kamen</name>
+      <email>akamen@blackducksoftware.com</email>
+    </developer>
+  </developers>
+
   <scm>
-    <connection>TODO</connection>
-    <developerConnection>TODO</developerConnection>
+    <connection>scm:git:https://github.com/jenkinsci/blackduck-detect-plugin.git</connection>
+    <developerConnection>scm:git:https://github.com/jenkinsci/blackduck-detect-plugin.git</developerConnection>
     <tag>TODO</tag>
-    <url>TODO</url>
+    <url>https://github.com/jenkinsci/blackduck-detect-plugin</url>
   </scm>
   <distributionManagement>
     <snapshotRepository>
