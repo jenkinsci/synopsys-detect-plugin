@@ -91,21 +91,30 @@ public class DetectCommonStep {
             final int hubTimeout = HubServerInfoSingleton.getInstance().getHubTimeout();
             final boolean trustSSLCertificates = HubServerInfoSingleton.getInstance().isTrustSSLCertificates();
 
-            final DetectRemoteRunner detectRemoteRunner = new DetectRemoteRunner(logger, javaHome, hubUrl, hubUsername, hubPassword, hubTimeout, trustSSLCertificates, HubServerInfoSingleton.getInstance().getDetectDownloadUrl(),
-                    toolsDirectory, getCorrectedParameters(detectProperties), variables);
+            String proxyHost = null;
+            Integer proxyPort = null;
+            String proxyUsername = null;
+            String proxyPassword = null;
+
             ProxyConfiguration proxyConfig = null;
             final Jenkins jenkins = Jenkins.getInstance();
             if (jenkins != null) {
                 proxyConfig = jenkins.proxy;
             }
-            if (proxyConfig != null) {
-                if (JenkinsProxyHelper.shouldUseProxy(hubUrl, proxyConfig.noProxyHost)) {
-                    detectRemoteRunner.setProxyHost(proxyConfig.name);
-                    detectRemoteRunner.setProxyPort(proxyConfig.port);
-                    detectRemoteRunner.setProxyUsername(proxyConfig.getUserName());
-                    detectRemoteRunner.setProxyPassword(proxyConfig.getPassword());
-                }
+            if (proxyConfig != null && JenkinsProxyHelper.shouldUseProxy(hubUrl, proxyConfig.noProxyHost)) {
+                proxyHost = proxyConfig.name;
+                proxyPort = proxyConfig.port;
+                proxyUsername = proxyConfig.getUserName();
+                proxyPassword = proxyConfig.getPassword();
             }
+
+            final DetectRemoteRunner detectRemoteRunner = new DetectRemoteRunner(logger, javaHome, hubUrl, hubUsername, hubPassword, hubTimeout, trustSSLCertificates, HubServerInfoSingleton.getInstance().getDetectDownloadUrl(),
+                    toolsDirectory, getCorrectedParameters(detectProperties), variables);
+
+            detectRemoteRunner.setProxyHost(proxyHost);
+            detectRemoteRunner.setProxyPort(proxyPort);
+            detectRemoteRunner.setProxyUsername(proxyUsername);
+            detectRemoteRunner.setProxyPassword(proxyPassword);
 
             try {
                 // Phone Home
@@ -116,13 +125,10 @@ public class DetectCommonStep {
                     hubServerConfigBuilder.setPassword(hubPassword);
                     hubServerConfigBuilder.setTimeout(hubTimeout);
                     hubServerConfigBuilder.setAlwaysTrustServerCertificate(trustSSLCertificates);
-
-                    if (JenkinsProxyHelper.shouldUseProxy(hubUrl, proxyConfig.noProxyHost)) {
-                        hubServerConfigBuilder.setProxyHost(proxyConfig.name);
-                        hubServerConfigBuilder.setProxyPort(proxyConfig.port);
-                        hubServerConfigBuilder.setProxyUsername(proxyConfig.getUserName());
-                        hubServerConfigBuilder.setProxyPassword(proxyConfig.getPassword());
-                    }
+                    hubServerConfigBuilder.setProxyHost(proxyHost);
+                    hubServerConfigBuilder.setProxyPort(proxyPort);
+                    hubServerConfigBuilder.setProxyUsername(proxyUsername);
+                    hubServerConfigBuilder.setProxyPassword(proxyPassword);
 
                     final HubServerConfig hubServerConfig = hubServerConfigBuilder.build();
                     final RestConnection restConnection = hubServerConfig.createCredentialsRestConnection(logger);
