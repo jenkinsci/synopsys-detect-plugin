@@ -54,11 +54,11 @@ import org.w3c.dom.Node;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
+import com.blackducksoftware.integration.detect.DetectVersionModel;
+import com.blackducksoftware.integration.detect.DetectVersionRequestService;
 import com.blackducksoftware.integration.detect.jenkins.HubServerInfoSingleton;
 import com.blackducksoftware.integration.detect.jenkins.JenkinsProxyHelper;
 import com.blackducksoftware.integration.detect.jenkins.Messages;
-import com.blackducksoftware.integration.detect.rest.github.GitHubFileModel;
-import com.blackducksoftware.integration.detect.rest.github.GitHubRequestService;
 import com.blackducksoftware.integration.exception.IntegrationException;
 import com.blackducksoftware.integration.hub.builder.HubServerConfigBuilder;
 import com.blackducksoftware.integration.hub.exception.HubIntegrationException;
@@ -162,16 +162,13 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
     public ListBoxModel doFillDetectDownloadUrlItems() {
         final ListBoxModel boxModel = new ListBoxModel();
         try {
-            final GitHubRequestService gitHubRequestService = new GitHubRequestService();
-            final List<GitHubFileModel> detectJarFileModels = gitHubRequestService.getContents("blackducksoftware", "hub-detect", "hub-detect-.*.jar");
-            for (final GitHubFileModel gitHubFileModel : detectJarFileModels) {
-                if (!gitHubFileModel.name.contains("SNAPSHOT")) {
-                    final String displayName = gitHubFileModel.name.replace("hub-detect-", "").replace(".jar", "");
-                    boxModel.add(displayName, gitHubFileModel.download_url.toURI().toString());
-                }
+            final DetectVersionRequestService detectVersionRequestService = new DetectVersionRequestService();
+            final List<DetectVersionModel> detectVersionModels = detectVersionRequestService.getDetectVersionModels();
+            for (final DetectVersionModel detectVersionModel : detectVersionModels) {
+                boxModel.add(detectVersionModel.getVersionName(), detectVersionModel.getVersionURL().toURI().toString());
             }
         } catch (final IntegrationException e) {
-            System.err.println("Could not reach Github");
+            System.err.println("Could not reach http://repo2.maven.org");
             final StringWriter sw = new StringWriter();
             e.printStackTrace(new PrintWriter(sw));
             System.err.println(sw.toString());
@@ -186,11 +183,13 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
 
     public FormValidation doCheckDetectDownloadUrl(@QueryParameter("detectDownloadUrl") final String detectDownloadUrl) {
         try {
-            final GitHubRequestService gitHubRequestService = new GitHubRequestService();
-            gitHubRequestService.getContents("blackducksoftware", "hub-detect", "hub-detect-.*.jar");
+            final DetectVersionRequestService detectVersionRequestService = new DetectVersionRequestService();
+            detectVersionRequestService.getDetectVersionModels();
         } catch (final IntegrationException e) {
             return FormValidation.error("Could not reach Github");
         } catch (final IOException e) {
+            return FormValidation.error(e.toString());
+        } catch (final Exception e) {
             return FormValidation.error(e.toString());
         }
         return FormValidation.ok();

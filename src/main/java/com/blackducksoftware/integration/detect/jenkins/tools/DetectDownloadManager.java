@@ -31,12 +31,12 @@ import java.io.InputStream;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 
-import com.blackducksoftware.integration.detect.rest.github.GitHubRequestService;
+import com.blackducksoftware.integration.detect.DetectVersionRequestService;
 import com.blackducksoftware.integration.exception.IntegrationException;
 import com.blackducksoftware.integration.log.IntLogger;
 
 public class DetectDownloadManager {
-    public static final String DEFAULT_DETECT_JAR = "hub-detect-1.1.1.jar";
+    public static final String DEFAULT_DETECT_JAR = "hub-detect-1.2.0.jar";
     public static final String DETECT_INSTALL_DIRECTORY = "Detect_Installation";
     private final IntLogger logger;
     private final String toolsDirectory;
@@ -50,8 +50,8 @@ public class DetectDownloadManager {
         final File detectFile = getDetectFile(fileUrl);
         if (shouldInstallDetect(detectFile, fileUrl)) {
             logger.info("Downloading Hub Detect from : " + fileUrl + " to : " + detectFile.getAbsolutePath());
-            final GitHubRequestService gitHubRequestService = new GitHubRequestService();
-            gitHubRequestService.downloadFile(fileUrl, detectFile);
+            final DetectVersionRequestService detectVersionRequestService = new DetectVersionRequestService();
+            detectVersionRequestService.downloadFile(fileUrl, detectFile);
         } else if (shouldInstallDefaultDetect(detectFile)) {
             logger.info("Moving the default Hub Detect jar to : " + detectFile.getAbsolutePath());
             final InputStream inputStream = getClass().getResourceAsStream("/" + DEFAULT_DETECT_JAR);
