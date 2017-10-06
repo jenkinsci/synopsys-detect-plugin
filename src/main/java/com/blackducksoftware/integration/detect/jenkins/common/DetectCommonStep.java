@@ -92,7 +92,7 @@ public class DetectCommonStep {
             final boolean trustSSLCertificates = HubServerInfoSingleton.getInstance().isTrustSSLCertificates();
 
             String proxyHost = null;
-            Integer proxyPort = null;
+            int proxyPort = 0;
             String proxyUsername = null;
             String proxyPassword = null;
 

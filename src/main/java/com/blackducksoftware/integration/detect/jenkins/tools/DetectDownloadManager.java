@@ -67,7 +67,7 @@ public class DetectDownloadManager {
         if (StringUtils.isBlank(fileUrl)) {
             return DEFAULT_DETECT_JAR;
         }
-        return fileUrl.substring(fileUrl.lastIndexOf("/"));
+        return fileUrl.substring(fileUrl.lastIndexOf("/") + 1);
     }
 
     private File getDetectFile(final String fileUrl) throws IntegrationException {

@@ -93,7 +93,7 @@ public class DetectRemoteRunner implements Callable<String, IntegrationException
             final DetectDownloadManager detectDownloadManager = new DetectDownloadManager(logger, toolsDirectory);
             final File hubDetectJar = detectDownloadManager.handleDownload(detectDownloadUrl);
 
-            logger.info("Running Detect Version : " + detectDownloadManager.getDetectFileName(detectDownloadUrl));
+            logger.info("Running Detect : " + detectDownloadManager.getDetectFileName(detectDownloadUrl));
 
             final List<String> commands = new ArrayList<>();
             commands.add(javaExecutablePath);
