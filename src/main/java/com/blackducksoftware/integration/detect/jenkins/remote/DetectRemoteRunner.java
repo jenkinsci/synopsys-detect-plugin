@@ -116,6 +116,7 @@ public class DetectRemoteRunner implements Callable<String, IntegrationException
             if (!setLoggingLevel) {
                 commands.add("--logging.level.com.blackducksoftware.integration=" + logger.getLogLevel().toString());
             }
+            logger.info("Running Detect command : " + StringUtils.join(commands, " "));
 
             final ProcessBuilder processBuilder = new ProcessBuilder(commands);
             processBuilder.directory(new File(cIEnvironmentVariables.getValue("WORKSPACE")));
