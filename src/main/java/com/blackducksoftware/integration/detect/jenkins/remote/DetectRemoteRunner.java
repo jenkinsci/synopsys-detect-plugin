@@ -39,6 +39,7 @@ import com.blackducksoftware.integration.hub.StreamRedirectThread;
 import com.blackducksoftware.integration.hub.exception.HubIntegrationException;
 import com.blackducksoftware.integration.util.CIEnvironmentVariables;
 
+import hudson.EnvVars;
 import hudson.remoting.Callable;
 
 public class DetectRemoteRunner implements Callable<String, IntegrationException> {
@@ -54,7 +55,7 @@ public class DetectRemoteRunner implements Callable<String, IntegrationException
     private final String toolsDirectory;
     private final List<String> detectProperties;
 
-    private final CIEnvironmentVariables cIEnvironmentVariables;
+    private final EnvVars envVars;
 
     private String proxyHost;
     private int proxyPort;
@@ -62,7 +63,7 @@ public class DetectRemoteRunner implements Callable<String, IntegrationException
     private String proxyPassword;
 
     public DetectRemoteRunner(final JenkinsDetectLogger logger, final String javaHome, final String hubUrl, final String hubUsername, final String hubPassword, final int hubTimeout, final boolean trustSSLCertificates,
-            final String detectDownloadUrl, final String toolsDirectory, final List<String> detectProperties, final CIEnvironmentVariables cIEnvironmentVariables) {
+            final String detectDownloadUrl, final String toolsDirectory, final List<String> detectProperties, final EnvVars envVars) {
         this.logger = logger;
         this.javaHome = javaHome;
         this.hubUrl = hubUrl;
@@ -73,12 +74,15 @@ public class DetectRemoteRunner implements Callable<String, IntegrationException
         this.detectDownloadUrl = detectDownloadUrl;
         this.toolsDirectory = toolsDirectory;
         this.detectProperties = detectProperties;
-        this.cIEnvironmentVariables = cIEnvironmentVariables;
+        this.envVars = envVars;
     }
 
     @Override
     public String call() throws IntegrationException {
         try {
+            final CIEnvironmentVariables cIEnvironmentVariables = new CIEnvironmentVariables();
+            cIEnvironmentVariables.putAll(envVars);
+
             String javaExecutablePath = "java";
             if (javaHome != null) {
                 javaExecutablePath = javaHome + "bin" + File.separator;

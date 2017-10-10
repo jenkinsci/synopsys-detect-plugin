@@ -109,7 +109,7 @@ public class DetectCommonStep {
             }
 
             final DetectRemoteRunner detectRemoteRunner = new DetectRemoteRunner(logger, javaHome, hubUrl, hubUsername, hubPassword, hubTimeout, trustSSLCertificates, HubServerInfoSingleton.getInstance().getDetectDownloadUrl(),
-                    toolsDirectory, getCorrectedParameters(detectProperties), variables);
+                    toolsDirectory, getCorrectedParameters(detectProperties), envVars);
 
             detectRemoteRunner.setProxyHost(proxyHost);
             detectRemoteRunner.setProxyPort(proxyPort);
