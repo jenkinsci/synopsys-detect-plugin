@@ -73,11 +73,11 @@ public class DetectVersionRequestService {
             final Document document = builder.parse(response.body().byteStream());
             final NodeList versionNodes = document.getElementsByTagName("version");
             for (int i = 0; i < versionNodes.getLength(); i++) {
-                final DetectVersionModel versionModel = getDetectVersionModelFromNode(versionNodes.item(i), null);
+                final DetectVersionModel versionModel = getDetectVersionModelFromNode(versionNodes.item(i));
                 detectVersions.add(versionModel);
             }
-            final Node versioningNode = document.getElementsByTagName("latest").item(0);
-            final DetectVersionModel latestVersionModel = getDetectVersionModelFromNode(versioningNode, "Latest Release");
+            final DetectVersionModel latestVersionModel = new DetectVersionModel(new URL("http://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=com.blackducksoftware.integration&a=hub-detect&v=LATEST"),
+                    "Latest Release");
             detectVersions.add(latestVersionModel);
         } finally {
             IOUtils.closeQuietly(response);
@@ -86,12 +86,9 @@ public class DetectVersionRequestService {
         return detectVersions;
     }
 
-    private DetectVersionModel getDetectVersionModelFromNode(final Node node, final String nameOverride) throws MalformedURLException {
+    private DetectVersionModel getDetectVersionModelFromNode(final Node node) throws MalformedURLException {
         final String versionName = node.getTextContent();
-        String versionDisplayName = versionName;
-        if (nameOverride != null) {
-            versionDisplayName = nameOverride;
-        }
+        final String versionDisplayName = versionName;
         final DetectVersionModel versionModel = new DetectVersionModel(getDetectVersionFileURL(versionName), versionDisplayName);
         return versionModel;
     }
