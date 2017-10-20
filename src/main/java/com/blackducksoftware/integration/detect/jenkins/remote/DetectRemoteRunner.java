@@ -85,12 +85,14 @@ public class DetectRemoteRunner implements Callable<String, IntegrationException
 
             String javaExecutablePath = "java";
             if (javaHome != null) {
-                javaExecutablePath = javaHome + "bin" + File.separator;
+                File java = new File(javaHome);
+                java = new File(java, "bin");
                 if (SystemUtils.IS_OS_WINDOWS) {
-                    javaExecutablePath = javaExecutablePath + "java.exe";
+                    java = new File(java, "java.exe");
                 } else {
-                    javaExecutablePath = javaExecutablePath + "java";
+                    java = new File(java, "java");
                 }
+                javaExecutablePath = java.getCanonicalPath();
             }
             logger.info("Running with JAVA : " + javaExecutablePath);
 
