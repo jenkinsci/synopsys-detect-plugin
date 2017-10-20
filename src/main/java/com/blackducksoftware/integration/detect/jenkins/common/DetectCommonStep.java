@@ -152,7 +152,8 @@ public class DetectCommonStep {
 
             node.getChannel().call(detectRemoteRunner);
         } catch (final Exception e) {
-            logger.error(e.getMessage(), e);
+            logger.error(e.getMessage());
+            logger.debug(e.getMessage(), e);
             run.setResult(Result.UNSTABLE);
         }
     }
