@@ -40,6 +40,7 @@ import com.blackducksoftware.integration.detect.jenkins.tools.DummyToolInstallat
 import com.blackducksoftware.integration.detect.jenkins.tools.DummyToolInstaller;
 import com.blackducksoftware.integration.hub.builder.HubServerConfigBuilder;
 import com.blackducksoftware.integration.hub.dataservice.phonehome.PhoneHomeDataService;
+import com.blackducksoftware.integration.hub.exception.HubIntegrationException;
 import com.blackducksoftware.integration.hub.global.HubServerConfig;
 import com.blackducksoftware.integration.hub.rest.RestConnection;
 import com.blackducksoftware.integration.hub.service.HubServicesFactory;
@@ -151,9 +152,12 @@ public class DetectCommonStep {
             }
 
             node.getChannel().call(detectRemoteRunner);
-        } catch (final Exception e) {
+        } catch (final HubIntegrationException e) {
             logger.error(e.getMessage());
             logger.debug(e.getMessage(), e);
+            run.setResult(Result.UNSTABLE);
+        } catch (final Exception e) {
+            logger.error(e.getMessage(), e);
             run.setResult(Result.UNSTABLE);
         }
     }
