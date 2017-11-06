@@ -233,6 +233,8 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
                 validator.setProxyPort(proxyConfig.port);
                 validator.setProxyUsername(proxyConfig.getUserName());
                 validator.setProxyPassword(proxyConfig.getPassword());
+                // Must call assertProxyValid to complete setup of proxyInfo on this object
+                validator.assertProxyValid();
             }
         }
         final ValidationResults results = new ValidationResults();

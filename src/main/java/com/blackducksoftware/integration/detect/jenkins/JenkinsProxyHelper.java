@@ -49,14 +49,14 @@ public class JenkinsProxyHelper {
     }
 
     public static boolean shouldUseProxy(final URL url, final String noProxyHosts) {
-        if (url != null) {
+        if (url == null) {
             return false;
         }
         if (StringUtils.isBlank(noProxyHosts)) {
             return true;
         }
         final List<Pattern> noProxyHostPatterns = getNoProxyHostPatterns(noProxyHosts);
-        return ProxyUtil.shouldIgnoreHost(url.getHost(), noProxyHostPatterns);
+        return !ProxyUtil.shouldIgnoreHost(url.getHost(), noProxyHostPatterns);
     }
 
     private static List<Pattern> getNoProxyHostPatterns(final String noProxyHosts) {
