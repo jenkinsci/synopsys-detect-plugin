@@ -168,7 +168,7 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
                 boxModel.add(detectVersionModel.getVersionName(), detectVersionModel.getVersionURL().toURI().toString());
             }
         } catch (final IntegrationException e) {
-            System.err.println("Could not reach http://repo2.maven.org");
+            System.err.println("Could not reach Black Duck public Artifactory");
             final StringWriter sw = new StringWriter();
             e.printStackTrace(new PrintWriter(sw));
             System.err.println(sw.toString());
