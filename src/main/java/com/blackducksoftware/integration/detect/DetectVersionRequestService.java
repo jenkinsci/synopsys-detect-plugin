@@ -38,6 +38,7 @@ import javax.xml.parsers.ParserConfigurationException;
 
 import org.apache.commons.io.IOUtils;
 import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
@@ -60,7 +61,7 @@ public class DetectVersionRequestService {
 
     public List<DetectVersionModel> getDetectVersionModels() throws IOException, IntegrationException, ParserConfigurationException, SAXException {
         final List<DetectVersionModel> detectVersions = new ArrayList<>();
-        final URL detectMavenMetadata = new URL("http://repo2.maven.org/maven2/com/blackducksoftware/integration/hub-detect/maven-metadata.xml");
+        final URL detectMavenMetadata = new URL("https://test-repo.blackducksoftware.com/artifactory/bds-integrations-release/com/blackducksoftware/integration/hub-detect/maven-metadata.xml");
         final RestConnection restConnection = new UnauthenticatedRestConnection(new PrintStreamIntLogger(System.out, LogLevel.DEBUG), detectMavenMetadata, 30);
         setProxyInformation(restConnection);
         final HttpUrl detectMavenMetadataHttpUrl = restConnection.createHttpUrl();
@@ -71,14 +72,18 @@ public class DetectVersionRequestService {
             final DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             final DocumentBuilder builder = factory.newDocumentBuilder();
             final Document document = builder.parse(response.body().byteStream());
-            final NodeList versionNodes = document.getElementsByTagName("version");
+            final Element versionsNode = (Element) document.getElementsByTagName("versions").item(0);
+            final NodeList versionNodes = versionsNode.getElementsByTagName("version");
             for (int i = 0; i < versionNodes.getLength(); i++) {
                 final DetectVersionModel versionModel = getDetectVersionModelFromNode(versionNodes.item(i));
                 detectVersions.add(versionModel);
             }
-            final DetectVersionModel latestVersionModel = new DetectVersionModel(new URL("http://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=com.blackducksoftware.integration&a=hub-detect&v=LATEST"),
-                    "Latest Release");
-            detectVersions.add(latestVersionModel);
+            final String latestVersion = getLatestReleasedDetectVersion();
+            final URL detectLatestVersionUrl = new URL("https://test-repo.blackducksoftware.com/artifactory/bds-integrations-release/com/blackducksoftware/integration/hub-detect/" + latestVersion + "/hub-detect-" + latestVersion + ".jar");
+            final DetectVersionModel latestVersionModel = new DetectVersionModel(detectLatestVersionUrl, "Latest Release");
+            if (detectLatestVersionUrl != null) {
+                detectVersions.add(latestVersionModel);
+            }
         } finally {
             IOUtils.closeQuietly(response);
         }
@@ -94,7 +99,7 @@ public class DetectVersionRequestService {
     }
 
     private URL getDetectVersionFileURL(final String versionName) throws MalformedURLException {
-        final String versionUrl = "http://repo2.maven.org/maven2/com/blackducksoftware/integration/hub-detect/" + versionName + "/hub-detect-" + versionName + ".jar";
+        final String versionUrl = "https://test-repo.blackducksoftware.com/artifactory/bds-integrations-release/com/blackducksoftware/integration/hub-detect/" + versionName + "/hub-detect-" + versionName + ".jar";
         final URL detectVersionFileURL = new URL(versionUrl);
         return detectVersionFileURL;
     }
@@ -118,6 +123,22 @@ public class DetectVersionRequestService {
             IOUtils.closeQuietly(fileOutputStream);
         }
         return file;
+    }
+
+    public String getLatestReleasedDetectVersion() throws IntegrationException, IOException {
+        final URL latestDetectVersionUrl = new URL("https://test-repo.blackducksoftware.com/artifactory/api/search/latestVersion?g=com.blackducksoftware.integration&a=hub-detect&repos=bds-integrations-release");
+        final RestConnection restConnection = new UnauthenticatedRestConnection(new PrintStreamIntLogger(System.out, LogLevel.DEBUG), latestDetectVersionUrl, 30);
+        final HttpUrl contentHttpUrl = restConnection.createHttpUrl();
+        final Request request = restConnection.createGetRequest(contentHttpUrl, "text/plain");
+        Response response = null;
+        try {
+            response = restConnection.handleExecuteClientCall(request);
+            final ResponseBody responseBody = response.body();
+            final String version = responseBody.string();
+            return version;
+        } finally {
+            IOUtils.closeQuietly(response);
+        }
     }
 
     private void setProxyInformation(final RestConnection restConnection) {

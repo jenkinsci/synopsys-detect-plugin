@@ -98,6 +98,7 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
     private int hubTimeout = 120;
     private boolean trustSSLCertificates;
     private String detectDownloadUrl;
+    private final String couldNotGetVersionsMessage = "Could not reach Black Duck public Artifactory";
 
     public DetectPostBuildStepDescriptor() {
         super(DetectPostBuildStep.class);
@@ -168,7 +169,7 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
                 boxModel.add(detectVersionModel.getVersionName(), detectVersionModel.getVersionURL().toURI().toString());
             }
         } catch (final IntegrationException e) {
-            System.err.println("Could not reach http://repo2.maven.org");
+            System.err.println(couldNotGetVersionsMessage);
             final StringWriter sw = new StringWriter();
             e.printStackTrace(new PrintWriter(sw));
             System.err.println(sw.toString());
@@ -186,7 +187,7 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
             final DetectVersionRequestService detectVersionRequestService = new DetectVersionRequestService();
             detectVersionRequestService.getDetectVersionModels();
         } catch (final IntegrationException e) {
-            return FormValidation.error("Could not reach Github");
+            return FormValidation.error(couldNotGetVersionsMessage);
         } catch (final IOException e) {
             return FormValidation.error(e.toString());
         } catch (final Exception e) {
