@@ -47,17 +47,31 @@ import com.blackducksoftware.integration.detect.jenkins.JenkinsProxyHelper;
 import com.blackducksoftware.integration.exception.IntegrationException;
 import com.blackducksoftware.integration.hub.rest.RestConnection;
 import com.blackducksoftware.integration.hub.rest.UnauthenticatedRestConnection;
+import com.blackducksoftware.integration.log.IntLogger;
 import com.blackducksoftware.integration.log.LogLevel;
 import com.blackducksoftware.integration.log.PrintStreamIntLogger;
 
-import hudson.ProxyConfiguration;
-import jenkins.model.Jenkins;
 import okhttp3.HttpUrl;
 import okhttp3.Request;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
 
 public class DetectVersionRequestService {
+    private final IntLogger logger;
+    private final String proxyHost;
+    private final int proxyPort;
+    private final String noProxyHost;
+    private final String proxyUsername;
+    private final String proxyPassword;
+
+    public DetectVersionRequestService(final IntLogger logger, final String proxyHost, final int proxyPort, final String noProxyHost, final String proxyUsername, final String proxyPassword) {
+        this.logger = logger;
+        this.proxyHost = proxyHost;
+        this.proxyPort = proxyPort;
+        this.noProxyHost = noProxyHost;
+        this.proxyUsername = proxyUsername;
+        this.proxyPassword = proxyPassword;
+    }
 
     public List<DetectVersionModel> getDetectVersionModels() throws IOException, IntegrationException, ParserConfigurationException, SAXException {
         final List<DetectVersionModel> detectVersions = new ArrayList<>();
@@ -128,6 +142,7 @@ public class DetectVersionRequestService {
     public String getLatestReleasedDetectVersion() throws IntegrationException, IOException {
         final URL latestDetectVersionUrl = new URL("https://test-repo.blackducksoftware.com/artifactory/api/search/latestVersion?g=com.blackducksoftware.integration&a=hub-detect&repos=bds-integrations-release");
         final RestConnection restConnection = new UnauthenticatedRestConnection(new PrintStreamIntLogger(System.out, LogLevel.DEBUG), latestDetectVersionUrl, 30);
+        setProxyInformation(restConnection);
         final HttpUrl contentHttpUrl = restConnection.createHttpUrl();
         final Request request = restConnection.createGetRequest(contentHttpUrl, "text/plain");
         Response response = null;
@@ -142,17 +157,16 @@ public class DetectVersionRequestService {
     }
 
     private void setProxyInformation(final RestConnection restConnection) {
-        ProxyConfiguration proxyConfig = null;
-        final Jenkins jenkins = Jenkins.getInstance();
-        if (jenkins != null) {
-            proxyConfig = jenkins.proxy;
-        }
-        if (proxyConfig != null) {
-            if (JenkinsProxyHelper.shouldUseProxy(restConnection.hubBaseUrl, proxyConfig.noProxyHost)) {
-                restConnection.proxyHost = proxyConfig.name;
-                restConnection.proxyPort = proxyConfig.port;
-                restConnection.proxyUsername = proxyConfig.getUserName();
-                restConnection.proxyPassword = proxyConfig.getPassword();
+        if (JenkinsProxyHelper.shouldUseProxy(restConnection.hubBaseUrl, noProxyHost)) {
+            if (proxyHost != null) {
+                restConnection.proxyHost = proxyHost;
+            }
+            restConnection.proxyPort = proxyPort;
+            if (proxyUsername != null) {
+                restConnection.proxyUsername = proxyUsername;
+            }
+            if (proxyPassword != null) {
+                restConnection.proxyPassword = proxyPassword;
             }
         }
     }

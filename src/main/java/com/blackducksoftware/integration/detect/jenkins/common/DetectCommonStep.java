@@ -84,6 +84,9 @@ public class DetectCommonStep {
         variables.putAll(envVars);
         logger.setLogLevel(variables);
         try {
+            final String pluginVersion = PluginHelper.getPluginVersion();
+            logger.info("Running Jenkins Detect version : " + pluginVersion);
+
             final DummyToolInstaller dummyInstaller = new DummyToolInstaller();
             final String toolsDirectory = dummyInstaller.getToolDir(new DummyToolInstallation(), node).getRemote();
             final String hubUrl = HubServerInfoSingleton.getInstance().getHubUrl();
@@ -94,6 +97,7 @@ public class DetectCommonStep {
 
             String proxyHost = null;
             int proxyPort = 0;
+            String noProxyHost = null;
             String proxyUsername = null;
             String proxyPassword = null;
 
@@ -102,11 +106,14 @@ public class DetectCommonStep {
             if (jenkins != null) {
                 proxyConfig = jenkins.proxy;
             }
-            if (proxyConfig != null && JenkinsProxyHelper.shouldUseProxy(hubUrl, proxyConfig.noProxyHost)) {
-                proxyHost = proxyConfig.name;
-                proxyPort = proxyConfig.port;
-                proxyUsername = proxyConfig.getUserName();
-                proxyPassword = proxyConfig.getPassword();
+            if (proxyConfig != null) {
+                noProxyHost = proxyConfig.noProxyHost;
+                if (JenkinsProxyHelper.shouldUseProxy(hubUrl, proxyConfig.noProxyHost)) {
+                    proxyHost = proxyConfig.name;
+                    proxyPort = proxyConfig.port;
+                    proxyUsername = proxyConfig.getUserName();
+                    proxyPassword = proxyConfig.getPassword();
+                }
             }
 
             final DetectRemoteRunner detectRemoteRunner = new DetectRemoteRunner(logger, javaHome, hubUrl, hubUsername, hubPassword, hubTimeout, trustSSLCertificates, HubServerInfoSingleton.getInstance().getDetectDownloadUrl(),
@@ -114,6 +121,7 @@ public class DetectCommonStep {
 
             detectRemoteRunner.setProxyHost(proxyHost);
             detectRemoteRunner.setProxyPort(proxyPort);
+            detectRemoteRunner.setNoProxyHost(noProxyHost);
             detectRemoteRunner.setProxyUsername(proxyUsername);
             detectRemoteRunner.setProxyPassword(proxyPassword);
 
@@ -137,7 +145,6 @@ public class DetectCommonStep {
                     final PhoneHomeDataService phoneHomeDataService = servicesFactory.createPhoneHomeDataService();
 
                     final String thirdPartyVersion = Jenkins.getVersion().toString();
-                    final String pluginVersion = PluginHelper.getPluginVersion();
 
                     final PhoneHomeRequestBodyBuilder phoneHomeRequestBodyBuilder = phoneHomeDataService.createInitialPhoneHomeRequestBodyBuilder();
                     phoneHomeRequestBodyBuilder.setBlackDuckName(BlackDuckName.HUB);

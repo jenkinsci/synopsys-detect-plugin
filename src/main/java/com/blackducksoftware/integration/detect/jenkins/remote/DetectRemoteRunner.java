@@ -59,6 +59,7 @@ public class DetectRemoteRunner implements Callable<String, IntegrationException
 
     private String proxyHost;
     private int proxyPort;
+    private String noProxyHost;
     private String proxyUsername;
     private String proxyPassword;
 
@@ -96,7 +97,7 @@ public class DetectRemoteRunner implements Callable<String, IntegrationException
             }
             logger.info("Running with JAVA : " + javaExecutablePath);
 
-            final DetectDownloadManager detectDownloadManager = new DetectDownloadManager(logger, toolsDirectory);
+            final DetectDownloadManager detectDownloadManager = new DetectDownloadManager(logger, toolsDirectory, proxyHost, proxyPort, noProxyHost, proxyUsername, proxyPassword);
             final File hubDetectJar = detectDownloadManager.handleDownload(detectDownloadUrl);
 
             logger.info("Running Detect : " + detectDownloadManager.getDetectFileName(detectDownloadUrl));
@@ -174,6 +175,10 @@ public class DetectRemoteRunner implements Callable<String, IntegrationException
 
     public void setProxyPort(final int proxyPort) {
         this.proxyPort = proxyPort;
+    }
+
+    public void setNoProxyHost(final String noProxyHost) {
+        this.noProxyHost = noProxyHost;
     }
 
     public void setProxyUsername(final String proxyUsername) {

@@ -41,16 +41,27 @@ public class DetectDownloadManager {
     private final IntLogger logger;
     private final String toolsDirectory;
 
-    public DetectDownloadManager(final IntLogger logger, final String toolsDirectory) {
+    private final String proxyHost;
+    private final int proxyPort;
+    private final String noProxyHost;
+    private final String proxyUsername;
+    private final String proxyPassword;
+
+    public DetectDownloadManager(final IntLogger logger, final String toolsDirectory, final String proxyHost, final int proxyPort, final String noProxyHost, final String proxyUsername, final String proxyPassword) {
         this.logger = logger;
         this.toolsDirectory = toolsDirectory;
+        this.proxyHost = proxyHost;
+        this.proxyPort = proxyPort;
+        this.noProxyHost = noProxyHost;
+        this.proxyUsername = proxyUsername;
+        this.proxyPassword = proxyPassword;
     }
 
     public File handleDownload(final String fileUrl) throws IntegrationException, IOException {
         final File detectFile = getDetectFile(fileUrl);
         if (shouldInstallDetect(detectFile, fileUrl)) {
             logger.info("Downloading Hub Detect from : " + fileUrl + " to : " + detectFile.getAbsolutePath());
-            final DetectVersionRequestService detectVersionRequestService = new DetectVersionRequestService();
+            final DetectVersionRequestService detectVersionRequestService = new DetectVersionRequestService(logger, proxyHost, proxyPort, noProxyHost, proxyUsername, proxyPassword);
             detectVersionRequestService.downloadFile(fileUrl, detectFile);
         } else if (shouldInstallDefaultDetect(detectFile)) {
             logger.info("Moving the default Hub Detect jar to : " + detectFile.getAbsolutePath());

@@ -163,7 +163,7 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
     public ListBoxModel doFillDetectDownloadUrlItems() {
         final ListBoxModel boxModel = new ListBoxModel();
         try {
-            final DetectVersionRequestService detectVersionRequestService = new DetectVersionRequestService();
+            final DetectVersionRequestService detectVersionRequestService = getDetectVersionRequestService(getProxyConfiguration());
             final List<DetectVersionModel> detectVersionModels = detectVersionRequestService.getDetectVersionModels();
             for (final DetectVersionModel detectVersionModel : detectVersionModels) {
                 boxModel.add(detectVersionModel.getVersionName(), detectVersionModel.getVersionURL().toURI().toString());
@@ -184,7 +184,7 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
 
     public FormValidation doCheckDetectDownloadUrl(@QueryParameter("detectDownloadUrl") final String detectDownloadUrl) {
         try {
-            final DetectVersionRequestService detectVersionRequestService = new DetectVersionRequestService();
+            final DetectVersionRequestService detectVersionRequestService = getDetectVersionRequestService(getProxyConfiguration());
             detectVersionRequestService.getDetectVersionModels();
         } catch (final IntegrationException e) {
             return FormValidation.error(couldNotGetVersionsMessage);
@@ -194,6 +194,32 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
             return FormValidation.error(e.toString());
         }
         return FormValidation.ok();
+    }
+
+    private DetectVersionRequestService getDetectVersionRequestService(final ProxyConfiguration proxyConfiguration) {
+        String proxyHost = null;
+        int proxyPort = 0;
+        String noProxyHost = null;
+        String proxyUsername = null;
+        String proxyPassword = null;
+
+        if (proxyConfiguration != null) {
+            proxyHost = proxyConfiguration.name;
+            proxyPort = proxyConfiguration.port;
+            noProxyHost = proxyConfiguration.noProxyHost;
+            proxyUsername = proxyConfiguration.getUserName();
+            proxyPassword = proxyConfiguration.getPassword();
+        }
+        return new DetectVersionRequestService(new PrintStreamIntLogger(System.out, LogLevel.DEBUG), proxyHost, proxyPort, noProxyHost, proxyUsername, proxyPassword);
+    }
+
+    private ProxyConfiguration getProxyConfiguration() {
+        ProxyConfiguration proxyConfig = null;
+        final Jenkins jenkins = Jenkins.getInstance();
+        if (jenkins != null) {
+            proxyConfig = jenkins.proxy;
+        }
+        return proxyConfig;
     }
 
     public FormValidation doCheckHubTimeout(@QueryParameter("hubTimeout") final String hubTimeout) {
