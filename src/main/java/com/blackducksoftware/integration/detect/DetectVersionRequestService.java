@@ -28,7 +28,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -56,6 +55,7 @@ import okhttp3.Response;
 import okhttp3.ResponseBody;
 
 public class DetectVersionRequestService {
+    public static final String LATEST_RELELASE = "LATEST_RELELASE";
     private final IntLogger logger;
 
     private final Boolean trustSSLCertificates;
@@ -102,12 +102,8 @@ public class DetectVersionRequestService {
                 final DetectVersionModel versionModel = getDetectVersionModelFromNode(versionNodes.item(i));
                 detectVersions.add(versionModel);
             }
-            final String latestVersion = getLatestReleasedDetectVersion();
-            final URL detectLatestVersionUrl = new URL("https://test-repo.blackducksoftware.com/artifactory/bds-integrations-release/com/blackducksoftware/integration/hub-detect/" + latestVersion + "/hub-detect-" + latestVersion + ".jar");
-            final DetectVersionModel latestVersionModel = new DetectVersionModel(detectLatestVersionUrl, "Latest Release");
-            if (detectLatestVersionUrl != null) {
-                detectVersions.add(latestVersionModel);
-            }
+            final DetectVersionModel latestVersionModel = new DetectVersionModel(LATEST_RELELASE, "Latest Release");
+            detectVersions.add(latestVersionModel);
         } finally {
             IOUtils.closeQuietly(response);
         }
@@ -122,9 +118,8 @@ public class DetectVersionRequestService {
         return versionModel;
     }
 
-    private URL getDetectVersionFileURL(final String versionName) throws MalformedURLException {
-        final String versionUrl = "https://test-repo.blackducksoftware.com/artifactory/bds-integrations-release/com/blackducksoftware/integration/hub-detect/" + versionName + "/hub-detect-" + versionName + ".jar";
-        final URL detectVersionFileURL = new URL(versionUrl);
+    public String getDetectVersionFileURL(final String versionName) throws MalformedURLException {
+        final String detectVersionFileURL = "https://test-repo.blackducksoftware.com/artifactory/bds-integrations-release/com/blackducksoftware/integration/hub-detect/" + versionName + "/hub-detect-" + versionName + ".jar";
         return detectVersionFileURL;
     }
 

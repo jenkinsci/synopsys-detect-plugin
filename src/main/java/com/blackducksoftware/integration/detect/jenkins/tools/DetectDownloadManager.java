@@ -64,11 +64,18 @@ public class DetectDownloadManager {
     }
 
     public File handleDownload(final String fileUrl) throws IntegrationException, IOException {
-        final File detectFile = getDetectFile(fileUrl);
-        if (shouldInstallDetect(detectFile, fileUrl)) {
-            logger.info("Downloading Hub Detect from : " + fileUrl + " to : " + detectFile.getAbsolutePath());
-            final DetectVersionRequestService detectVersionRequestService = new DetectVersionRequestService(logger, trustSSLCertificates, connectionTimeout, proxyHost, proxyPort, noProxyHost, proxyUsername, proxyPassword);
-            detectVersionRequestService.downloadFile(fileUrl, detectFile);
+        File detectFile = null;
+        String downloadUrl = fileUrl;
+        final DetectVersionRequestService detectVersionRequestService = new DetectVersionRequestService(logger, trustSSLCertificates, connectionTimeout, proxyHost, proxyPort, noProxyHost, proxyUsername, proxyPassword);
+        if (fileUrl != null && DetectVersionRequestService.LATEST_RELELASE.equals(fileUrl)) {
+            final String versionName = detectVersionRequestService.getLatestReleasedDetectVersion();
+            downloadUrl = detectVersionRequestService.getDetectVersionFileURL(versionName);
+        }
+        detectFile = getDetectFile(downloadUrl);
+
+        if (shouldInstallDetect(detectFile, downloadUrl)) {
+            logger.info("Downloading Hub Detect from : " + downloadUrl + " to : " + detectFile.getAbsolutePath());
+            detectVersionRequestService.downloadFile(downloadUrl, detectFile);
         } else if (shouldInstallDefaultDetect(detectFile)) {
             logger.info("Moving the default Hub Detect jar to : " + detectFile.getAbsolutePath());
             final InputStream inputStream = getClass().getResourceAsStream("/" + DEFAULT_DETECT_JAR);

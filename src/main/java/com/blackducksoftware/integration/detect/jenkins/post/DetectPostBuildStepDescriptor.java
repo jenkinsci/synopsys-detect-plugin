@@ -166,7 +166,7 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
             final DetectVersionRequestService detectVersionRequestService = getDetectVersionRequestService(getProxyConfiguration());
             final List<DetectVersionModel> detectVersionModels = detectVersionRequestService.getDetectVersionModels();
             for (final DetectVersionModel detectVersionModel : detectVersionModels) {
-                boxModel.add(detectVersionModel.getVersionName(), detectVersionModel.getVersionURL().toURI().toString());
+                boxModel.add(detectVersionModel.getVersionName(), detectVersionModel.getVersionURL());
             }
         } catch (final IntegrationException e) {
             System.err.println(couldNotGetVersionsMessage);

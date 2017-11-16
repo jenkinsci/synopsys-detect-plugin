@@ -23,18 +23,16 @@
  */
 package com.blackducksoftware.integration.detect;
 
-import java.net.URL;
-
 public class DetectVersionModel {
-    private final URL versionURL;
+    private final String versionURL;
     private final String versionName;
 
-    public DetectVersionModel(final URL versionURL, final String versionName) {
+    public DetectVersionModel(final String versionURL, final String versionName) {
         this.versionURL = versionURL;
         this.versionName = versionName;
     }
 
-    public URL getVersionURL() {
+    public String getVersionURL() {
         return versionURL;
     }
 
