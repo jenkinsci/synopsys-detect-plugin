@@ -26,6 +26,7 @@ package com.blackducksoftware.integration.detect.jenkins.common;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Future;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tools.ant.types.Commandline;
@@ -83,6 +84,8 @@ public class DetectCommonStep {
         final CIEnvironmentVariables variables = new CIEnvironmentVariables();
         variables.putAll(envVars);
         logger.setLogLevel(variables);
+        PhoneHomeDataService phoneHomeDataService = null;
+        Future<Boolean> phoneHomeTask = null;
         try {
             final String pluginVersion = PluginHelper.getPluginVersion();
             logger.info("Running Jenkins Detect version : " + pluginVersion);
@@ -142,7 +145,7 @@ public class DetectCommonStep {
                     final HubServerConfig hubServerConfig = hubServerConfigBuilder.build();
                     final RestConnection restConnection = hubServerConfig.createCredentialsRestConnection(logger);
                     final HubServicesFactory servicesFactory = new HubServicesFactory(restConnection);
-                    final PhoneHomeDataService phoneHomeDataService = servicesFactory.createPhoneHomeDataService();
+                    phoneHomeDataService = servicesFactory.createPhoneHomeDataService();
 
                     final String thirdPartyVersion = Jenkins.getVersion().toString();
 
@@ -152,7 +155,7 @@ public class DetectCommonStep {
                     phoneHomeRequestBodyBuilder.setThirdPartyVersion(thirdPartyVersion);
                     phoneHomeRequestBodyBuilder.setPluginVersion(pluginVersion);
 
-                    phoneHomeDataService.phoneHome(phoneHomeRequestBodyBuilder);
+                    phoneHomeTask = phoneHomeDataService.startPhoneHome(phoneHomeRequestBodyBuilder);
                 }
             } catch (final Exception e) {
                 logger.debug("Phone Home failed : " + e.getMessage(), e);
@@ -166,6 +169,9 @@ public class DetectCommonStep {
         } catch (final Exception e) {
             logger.error(e.getMessage(), e);
             run.setResult(Result.UNSTABLE);
+        }
+        if (phoneHomeDataService != null && phoneHomeTask != null) {
+            phoneHomeDataService.endPhoneHome(phoneHomeTask);
         }
     }
 
