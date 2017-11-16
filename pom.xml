@@ -10,7 +10,7 @@
 
   <groupId>com.blackducksoftware.integration</groupId>
   <artifactId>blackduck-detect</artifactId>
-  <version>1.0.2-SNAPSHOT</version>
+  <version>1.0.2-RC1</version>
   <packaging>hpi</packaging>
 
   <name>Black Duck Detect Plugin</name>
