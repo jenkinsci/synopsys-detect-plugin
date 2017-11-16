@@ -45,11 +45,10 @@ import org.xml.sax.SAXException;
 
 import com.blackducksoftware.integration.detect.jenkins.JenkinsProxyHelper;
 import com.blackducksoftware.integration.exception.IntegrationException;
+import com.blackducksoftware.integration.hub.rest.AbstractRestConnectionBuilder;
 import com.blackducksoftware.integration.hub.rest.RestConnection;
-import com.blackducksoftware.integration.hub.rest.UnauthenticatedRestConnection;
+import com.blackducksoftware.integration.hub.rest.UnauthenticatedRestConnectionBuilder;
 import com.blackducksoftware.integration.log.IntLogger;
-import com.blackducksoftware.integration.log.LogLevel;
-import com.blackducksoftware.integration.log.PrintStreamIntLogger;
 
 import okhttp3.HttpUrl;
 import okhttp3.Request;
@@ -58,14 +57,21 @@ import okhttp3.ResponseBody;
 
 public class DetectVersionRequestService {
     private final IntLogger logger;
+
+    private final Boolean trustSSLCertificates;
+    private final int connectionTimeout;
+
     private final String proxyHost;
     private final int proxyPort;
     private final String noProxyHost;
     private final String proxyUsername;
     private final String proxyPassword;
 
-    public DetectVersionRequestService(final IntLogger logger, final String proxyHost, final int proxyPort, final String noProxyHost, final String proxyUsername, final String proxyPassword) {
+    public DetectVersionRequestService(final IntLogger logger, final Boolean trustSSLCertificates, final int connectionTimeout, final String proxyHost, final int proxyPort, final String noProxyHost, final String proxyUsername,
+            final String proxyPassword) {
         this.logger = logger;
+        this.trustSSLCertificates = trustSSLCertificates;
+        this.connectionTimeout = connectionTimeout;
         this.proxyHost = proxyHost;
         this.proxyPort = proxyPort;
         this.noProxyHost = noProxyHost;
@@ -75,9 +81,13 @@ public class DetectVersionRequestService {
 
     public List<DetectVersionModel> getDetectVersionModels() throws IOException, IntegrationException, ParserConfigurationException, SAXException {
         final List<DetectVersionModel> detectVersions = new ArrayList<>();
-        final URL detectMavenMetadata = new URL("https://test-repo.blackducksoftware.com/artifactory/bds-integrations-release/com/blackducksoftware/integration/hub-detect/maven-metadata.xml");
-        final RestConnection restConnection = new UnauthenticatedRestConnection(new PrintStreamIntLogger(System.out, LogLevel.DEBUG), detectMavenMetadata, 30);
-        setProxyInformation(restConnection);
+        final UnauthenticatedRestConnectionBuilder restConnectionBuilder = new UnauthenticatedRestConnectionBuilder();
+        restConnectionBuilder.setAlwaysTrustServerCertificate(trustSSLCertificates);
+        restConnectionBuilder.setBaseUrl("https://test-repo.blackducksoftware.com/artifactory/bds-integrations-release/com/blackducksoftware/integration/hub-detect/maven-metadata.xml");
+        restConnectionBuilder.setLogger(logger);
+        setProxyInformation(restConnectionBuilder);
+        restConnectionBuilder.setTimeout(connectionTimeout);
+        final RestConnection restConnection = restConnectionBuilder.build();
         final HttpUrl detectMavenMetadataHttpUrl = restConnection.createHttpUrl();
         final Request request = restConnection.createGetRequest(detectMavenMetadataHttpUrl);
         Response response = null;
@@ -119,9 +129,14 @@ public class DetectVersionRequestService {
     }
 
     public File downloadFile(final String url, final File file) throws IntegrationException, IOException {
-        final URL contentsURL = new URL(url);
-        final RestConnection restConnection = new UnauthenticatedRestConnection(new PrintStreamIntLogger(System.out, LogLevel.DEBUG), contentsURL, 30);
-        setProxyInformation(restConnection);
+        final UnauthenticatedRestConnectionBuilder restConnectionBuilder = new UnauthenticatedRestConnectionBuilder();
+        restConnectionBuilder.setAlwaysTrustServerCertificate(trustSSLCertificates);
+        restConnectionBuilder.setBaseUrl(url);
+        restConnectionBuilder.setLogger(logger);
+        setProxyInformation(restConnectionBuilder);
+        restConnectionBuilder.setTimeout(connectionTimeout);
+
+        final RestConnection restConnection = restConnectionBuilder.build();
         final HttpUrl contentHttpUrl = restConnection.createHttpUrl();
         final Request request = restConnection.createGetRequest(contentHttpUrl);
         Response response = null;
@@ -140,9 +155,14 @@ public class DetectVersionRequestService {
     }
 
     public String getLatestReleasedDetectVersion() throws IntegrationException, IOException {
-        final URL latestDetectVersionUrl = new URL("https://test-repo.blackducksoftware.com/artifactory/api/search/latestVersion?g=com.blackducksoftware.integration&a=hub-detect&repos=bds-integrations-release");
-        final RestConnection restConnection = new UnauthenticatedRestConnection(new PrintStreamIntLogger(System.out, LogLevel.DEBUG), latestDetectVersionUrl, 30);
-        setProxyInformation(restConnection);
+        final UnauthenticatedRestConnectionBuilder restConnectionBuilder = new UnauthenticatedRestConnectionBuilder();
+        restConnectionBuilder.setAlwaysTrustServerCertificate(trustSSLCertificates);
+        restConnectionBuilder.setBaseUrl("https://test-repo.blackducksoftware.com/artifactory/api/search/latestVersion?g=com.blackducksoftware.integration&a=hub-detect&repos=bds-integrations-release");
+        restConnectionBuilder.setLogger(logger);
+        setProxyInformation(restConnectionBuilder);
+        restConnectionBuilder.setTimeout(connectionTimeout);
+
+        final RestConnection restConnection = restConnectionBuilder.build();
         final HttpUrl contentHttpUrl = restConnection.createHttpUrl();
         final Request request = restConnection.createGetRequest(contentHttpUrl, "text/plain");
         Response response = null;
@@ -156,18 +176,12 @@ public class DetectVersionRequestService {
         }
     }
 
-    private void setProxyInformation(final RestConnection restConnection) {
-        if (JenkinsProxyHelper.shouldUseProxy(restConnection.hubBaseUrl, noProxyHost)) {
-            if (proxyHost != null) {
-                restConnection.proxyHost = proxyHost;
-            }
-            restConnection.proxyPort = proxyPort;
-            if (proxyUsername != null) {
-                restConnection.proxyUsername = proxyUsername;
-            }
-            if (proxyPassword != null) {
-                restConnection.proxyPassword = proxyPassword;
-            }
+    private void setProxyInformation(final AbstractRestConnectionBuilder restConnectionBuilder) {
+        if (JenkinsProxyHelper.shouldUseProxy(restConnectionBuilder.getBaseConnectionUrl(), noProxyHost)) {
+            restConnectionBuilder.setProxyHost(proxyHost);
+            restConnectionBuilder.setProxyPort(proxyPort);
+            restConnectionBuilder.setProxyUsername(proxyUsername);
+            restConnectionBuilder.setProxyPassword(proxyPassword);
         }
     }
 }

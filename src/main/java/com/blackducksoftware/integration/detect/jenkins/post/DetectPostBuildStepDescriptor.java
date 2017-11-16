@@ -210,7 +210,7 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
             proxyUsername = proxyConfiguration.getUserName();
             proxyPassword = proxyConfiguration.getPassword();
         }
-        return new DetectVersionRequestService(new PrintStreamIntLogger(System.out, LogLevel.DEBUG), proxyHost, proxyPort, noProxyHost, proxyUsername, proxyPassword);
+        return new DetectVersionRequestService(new PrintStreamIntLogger(System.out, LogLevel.DEBUG), isTrustSSLCertificates(), getHubTimeout(), proxyHost, proxyPort, noProxyHost, proxyUsername, proxyPassword);
     }
 
     private ProxyConfiguration getProxyConfiguration() {
