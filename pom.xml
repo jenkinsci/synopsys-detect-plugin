@@ -136,6 +136,12 @@
       <optional>true</optional>
     </dependency>
     <dependency>
+      <groupId>org.jenkins-ci.plugins</groupId>
+      <artifactId>job-dsl</artifactId>
+      <version>1.67</version>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
       <groupId>org.jenkins-ci.main</groupId>
       <artifactId>remoting</artifactId>
       <version>2.47</version>
