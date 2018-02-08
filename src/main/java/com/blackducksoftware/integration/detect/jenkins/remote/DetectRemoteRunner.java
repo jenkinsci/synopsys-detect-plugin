@@ -33,6 +33,7 @@ import org.jenkinsci.remoting.Role;
 import org.jenkinsci.remoting.RoleChecker;
 
 import com.blackducksoftware.integration.detect.jenkins.JenkinsDetectLogger;
+import com.blackducksoftware.integration.detect.jenkins.PluginHelper;
 import com.blackducksoftware.integration.detect.jenkins.tools.DetectDownloadManager;
 import com.blackducksoftware.integration.exception.IntegrationException;
 import com.blackducksoftware.integration.hub.StreamRedirectThread;
@@ -41,6 +42,7 @@ import com.blackducksoftware.integration.util.CIEnvironmentVariables;
 
 import hudson.EnvVars;
 import hudson.remoting.Callable;
+import jenkins.model.Jenkins;
 
 public class DetectRemoteRunner implements Callable<String, IntegrationException> {
     private final JenkinsDetectLogger logger;
@@ -120,6 +122,10 @@ public class DetectRemoteRunner implements Callable<String, IntegrationException
                 commands.add("--logging.level.com.blackducksoftware.integration=" + logger.getLogLevel().toString());
             }
             logger.info("Running Detect command : " + StringUtils.join(commands, " "));
+
+            // Phone Home Properties that we do not want logged:
+            commands.add("--detect.phone.home.passthrough.jenkins.version=" + Jenkins.getVersion().toString());
+            commands.add("--detect.phone.home.passthrough.jenkins.plugin.version=" + PluginHelper.getPluginVersion());
 
             final ProcessBuilder processBuilder = new ProcessBuilder(commands);
             processBuilder.directory(new File(cIEnvironmentVariables.getValue("WORKSPACE")));

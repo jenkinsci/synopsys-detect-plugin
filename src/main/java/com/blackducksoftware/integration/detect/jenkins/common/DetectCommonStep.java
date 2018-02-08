@@ -26,9 +26,7 @@ package com.blackducksoftware.integration.detect.jenkins.common;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Future;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.tools.ant.types.Commandline;
 
 import com.blackducksoftware.integration.detect.jenkins.HubServerInfoSingleton;
@@ -39,14 +37,7 @@ import com.blackducksoftware.integration.detect.jenkins.exception.DetectJenkinsE
 import com.blackducksoftware.integration.detect.jenkins.remote.DetectRemoteRunner;
 import com.blackducksoftware.integration.detect.jenkins.tools.DummyToolInstallation;
 import com.blackducksoftware.integration.detect.jenkins.tools.DummyToolInstaller;
-import com.blackducksoftware.integration.hub.builder.HubServerConfigBuilder;
-import com.blackducksoftware.integration.hub.dataservice.phonehome.PhoneHomeDataService;
 import com.blackducksoftware.integration.hub.exception.HubIntegrationException;
-import com.blackducksoftware.integration.hub.global.HubServerConfig;
-import com.blackducksoftware.integration.hub.rest.RestConnection;
-import com.blackducksoftware.integration.hub.service.HubServicesFactory;
-import com.blackducksoftware.integration.phonehome.PhoneHomeRequestBodyBuilder;
-import com.blackducksoftware.integration.phonehome.enums.BlackDuckName;
 import com.blackducksoftware.integration.util.CIEnvironmentVariables;
 
 import hudson.EnvVars;
@@ -84,8 +75,6 @@ public class DetectCommonStep {
         final CIEnvironmentVariables variables = new CIEnvironmentVariables();
         variables.putAll(envVars);
         logger.setLogLevel(variables);
-        PhoneHomeDataService phoneHomeDataService = null;
-        Future<Boolean> phoneHomeTask = null;
         try {
             final String pluginVersion = PluginHelper.getPluginVersion();
             logger.info("Running Jenkins Detect version : " + pluginVersion);
@@ -128,39 +117,6 @@ public class DetectCommonStep {
             detectRemoteRunner.setProxyUsername(proxyUsername);
             detectRemoteRunner.setProxyPassword(proxyPassword);
 
-            try {
-                // Phone Home
-                final HubServerConfigBuilder hubServerConfigBuilder = new HubServerConfigBuilder();
-                if (StringUtils.isNotBlank(hubUrl)) {
-                    hubServerConfigBuilder.setHubUrl(hubUrl);
-                    hubServerConfigBuilder.setUsername(hubUsername);
-                    hubServerConfigBuilder.setPassword(hubPassword);
-                    hubServerConfigBuilder.setTimeout(hubTimeout);
-                    hubServerConfigBuilder.setAlwaysTrustServerCertificate(trustSSLCertificates);
-                    hubServerConfigBuilder.setProxyHost(proxyHost);
-                    hubServerConfigBuilder.setProxyPort(proxyPort);
-                    hubServerConfigBuilder.setProxyUsername(proxyUsername);
-                    hubServerConfigBuilder.setProxyPassword(proxyPassword);
-
-                    final HubServerConfig hubServerConfig = hubServerConfigBuilder.build();
-                    final RestConnection restConnection = hubServerConfig.createCredentialsRestConnection(logger);
-                    final HubServicesFactory servicesFactory = new HubServicesFactory(restConnection);
-                    phoneHomeDataService = servicesFactory.createPhoneHomeDataService();
-
-                    final String thirdPartyVersion = Jenkins.getVersion().toString();
-
-                    final PhoneHomeRequestBodyBuilder phoneHomeRequestBodyBuilder = phoneHomeDataService.createInitialPhoneHomeRequestBodyBuilder();
-                    phoneHomeRequestBodyBuilder.setBlackDuckName(BlackDuckName.HUB);
-                    phoneHomeRequestBodyBuilder.setThirdPartyName("Jenkins-Detect");
-                    phoneHomeRequestBodyBuilder.setThirdPartyVersion(thirdPartyVersion);
-                    phoneHomeRequestBodyBuilder.setPluginVersion(pluginVersion);
-
-                    phoneHomeTask = phoneHomeDataService.startPhoneHome(phoneHomeRequestBodyBuilder);
-                }
-            } catch (final Exception e) {
-                logger.debug("Phone Home failed : " + e.getMessage(), e);
-            }
-
             node.getChannel().call(detectRemoteRunner);
         } catch (final HubIntegrationException e) {
             logger.error(e.getMessage());
@@ -169,9 +125,6 @@ public class DetectCommonStep {
         } catch (final Exception e) {
             logger.error(e.getMessage(), e);
             run.setResult(Result.UNSTABLE);
-        }
-        if (phoneHomeDataService != null && phoneHomeTask != null) {
-            phoneHomeDataService.endPhoneHome(phoneHomeTask);
         }
     }
 
@@ -191,9 +144,8 @@ public class DetectCommonStep {
                 throw new DetectJenkinsException("Variable was not properly replaced. Value : " + value + ", Result : " + newValue + ". Make sure the variable has been properly defined.");
             }
             return newValue;
-        } else {
-            return null;
         }
+        return null;
     }
 
 }
