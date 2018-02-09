@@ -39,7 +39,6 @@
   <scm>
     <connection>scm:git:https://github.com/jenkinsci/blackduck-detect-plugin.git</connection>
     <developerConnection>scm:git:https://github.com/jenkinsci/blackduck-detect-plugin.git</developerConnection>
-    <tag>TODO</tag>
     <url>https://github.com/jenkinsci/blackduck-detect-plugin</url>
   </scm>
   <distributionManagement>
