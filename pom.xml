@@ -10,7 +10,7 @@
 
   <groupId>com.blackducksoftware.integration</groupId>
   <artifactId>blackduck-detect</artifactId>
-  <version>1.1.1-SNAPSHOT</version>
+  <version>1.1.0</version>
   <packaging>hpi</packaging>
 
   <name>Black Duck Detect Plugin</name>
@@ -39,7 +39,7 @@
   <scm>
     <connection>scm:git:https://github.com/jenkinsci/blackduck-detect-plugin.git</connection>
     <developerConnection>scm:git:https://github.com/jenkinsci/blackduck-detect-plugin.git</developerConnection>
-    <tag>HEAD</tag>
+    <tag>1.1.0</tag>
     <url>https://github.com/jenkinsci/blackduck-detect-plugin</url>
   </scm>
   <distributionManagement>
