@@ -1,5 +1,5 @@
 # Overview
-Black Duck Detect Plugin for Jenkins. This plugin allows you to run hub-detect in your Jenkins build.
+Black Duck Detect Plugin for Jenkins. This plugin allows you to run Detect in your Jenkins build.
 
 # Build
 Coming soon...
