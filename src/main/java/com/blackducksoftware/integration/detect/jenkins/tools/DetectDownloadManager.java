@@ -87,7 +87,7 @@ public class DetectDownloadManager {
 
     private File getDetectJarFile(final String fileUrl) throws IntegrationException {
         File installationDirectory = getInstallationDirectory();
-        if (!StringUtils.isBlank(fileUrl) && fileUrl.endsWith(DetectVersionRequestService.AIR_GAP_ZIP_SUFFIX)) {
+        if (StringUtils.isNotBlank(fileUrl) && fileUrl.endsWith(DetectVersionRequestService.AIR_GAP_ZIP_SUFFIX)) {
             installationDirectory = getAirGapDirectory();
             installationDirectory = new File(installationDirectory, getUnzippedDirectoryName(fileUrl));
         }

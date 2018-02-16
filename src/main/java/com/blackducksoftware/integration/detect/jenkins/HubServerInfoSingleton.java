@@ -51,7 +51,7 @@ public class HubServerInfoSingleton {
     private String hubCredentialsId;
     private int hubTimeout;
     private boolean trustSSLCertificates;
-    private String detectArtifactURL;
+    private String detectArtifactUrl;
     private String detectDownloadUrl;
 
     private HubServerInfoSingleton() {
@@ -93,12 +93,12 @@ public class HubServerInfoSingleton {
         this.trustSSLCertificates = trustSSLCertificates;
     }
 
-    public String getDetectArtifactURL() {
-        return detectArtifactURL;
+    public String getDetectArtifactUrl() {
+        return detectArtifactUrl;
     }
 
-    public void setDetectArtifactURL(final String detectArtifactURL) {
-        this.detectArtifactURL = detectArtifactURL;
+    public void setDetectArtifactUrl(final String detectArtifactUrl) {
+        this.detectArtifactUrl = detectArtifactUrl;
     }
 
     public String getDetectDownloadUrl() {

@@ -181,8 +181,8 @@ public class DetectVersionRequestService {
 
     private String getArtifactoryBaseUrl() {
         String baseUrl = "https://test-repo.blackducksoftware.com";
-        final String overrideUrl = HubServerInfoSingleton.getInstance().getDetectArtifactURL();
-        if (!StringUtils.isBlank(overrideUrl) && AIR_GAP_ZIP.equals(HubServerInfoSingleton.getInstance().getDetectDownloadUrl())) {
+        final String overrideUrl = HubServerInfoSingleton.getInstance().getDetectArtifactUrl();
+        if (StringUtils.isNotBlank(overrideUrl) && AIR_GAP_ZIP.equals(HubServerInfoSingleton.getInstance().getDetectDownloadUrl())) {
             baseUrl = overrideUrl.trim();
         }
         return baseUrl;

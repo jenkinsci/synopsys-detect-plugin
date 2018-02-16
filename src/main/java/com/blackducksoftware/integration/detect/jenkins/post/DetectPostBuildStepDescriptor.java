@@ -109,7 +109,7 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
         HubServerInfoSingleton.getInstance().setHubCredentialsId(hubCredentialsId);
         HubServerInfoSingleton.getInstance().setHubTimeout(hubTimeout);
         HubServerInfoSingleton.getInstance().setTrustSSLCertificates(trustSSLCertificates);
-        HubServerInfoSingleton.getInstance().setDetectArtifactURL(detectArtifactUrl);
+        HubServerInfoSingleton.getInstance().setDetectArtifactUrl(detectArtifactUrl);
         HubServerInfoSingleton.getInstance().setDetectDownloadUrl(detectDownloadUrl);
     }
 
@@ -418,7 +418,7 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
         HubServerInfoSingleton.getInstance().setHubCredentialsId(hubCredentialsId);
         HubServerInfoSingleton.getInstance().setHubTimeout(hubTimeout);
         HubServerInfoSingleton.getInstance().setTrustSSLCertificates(trustSSLCertificates);
-        HubServerInfoSingleton.getInstance().setDetectArtifactURL(detectArtifactUrl);
+        HubServerInfoSingleton.getInstance().setDetectArtifactUrl(detectArtifactUrl);
         HubServerInfoSingleton.getInstance().setDetectDownloadUrl(detectDownloadUrl);
 
         return super.configure(req, formData);
@@ -493,7 +493,7 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
         HubServerInfoSingleton.getInstance().setHubCredentialsId(hubCredentialsId);
         HubServerInfoSingleton.getInstance().setHubTimeout(serverTimeout);
         HubServerInfoSingleton.getInstance().setTrustSSLCertificates(trustSSLCertificates);
-        HubServerInfoSingleton.getInstance().setDetectArtifactURL(detectArtifactURL);
+        HubServerInfoSingleton.getInstance().setDetectArtifactUrl(detectArtifactURL);
         HubServerInfoSingleton.getInstance().setDetectDownloadUrl(detectDownloadUrl);
         save();
     }
