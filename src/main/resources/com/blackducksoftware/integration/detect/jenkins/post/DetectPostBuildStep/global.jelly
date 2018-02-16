@@ -13,6 +13,9 @@
     </f:entry>
     
      <f:advanced>
+     <f:entry title="${%DetectArtifactUrl}" field="detectArtifactUrl" >
+          <f:textbox value="${instance.getDetectArtifactUrl()}" />
+      </f:entry>
       <f:entry title="${%HubConnectionTimeout}" field="hubTimeout" description="${%HubConnectionTimeoutDescription}" >
           <f:textbox clazz="required number" />
       </f:entry>

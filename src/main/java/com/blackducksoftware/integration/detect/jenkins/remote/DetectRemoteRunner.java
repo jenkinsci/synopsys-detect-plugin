@@ -44,6 +44,7 @@ import hudson.EnvVars;
 import hudson.remoting.Callable;
 import jenkins.model.Jenkins;
 
+@SuppressWarnings("serial")
 public class DetectRemoteRunner implements Callable<String, IntegrationException> {
     private final JenkinsDetectLogger logger;
     private final String javaHome;
