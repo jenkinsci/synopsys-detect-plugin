@@ -95,6 +95,7 @@ public class DetectDownloadManager {
         return new File(installationDirectory, detectFileName);
     }
 
+    // TODO make this method private in 2.0.0 so that this class can be refactored
     public String getDetectFileName(final String fileUrl) {
         if (StringUtils.isNotBlank(fileUrl)) {
             String fileName = trimToFileName(fileUrl);
@@ -110,6 +111,7 @@ public class DetectDownloadManager {
         return fileUrl.substring(fileUrl.lastIndexOf("/") + 1).trim();
     }
 
+    // TODO make this method private in 2.0.0 so that this class can be refactored
     public File getInstallationDirectory() throws IntegrationException {
         File installationDirectory = new File(toolsDirectory);
         installationDirectory = new File(installationDirectory, DETECT_INSTALL_DIRECTORY);
@@ -133,15 +135,17 @@ public class DetectDownloadManager {
 
     private String getUnzippedDirectoryName(final String fileUrl) {
         if (StringUtils.isNotBlank(fileUrl)) {
-            return fileUrl.substring(fileUrl.lastIndexOf('/') + 1, fileUrl.lastIndexOf('.'));
+            return ArchiveUtils.getUnzippedDirectoryName(fileUrl); // fileUrl.substring(fileUrl.lastIndexOf('/') + 1, fileUrl.lastIndexOf('.'));
         }
-        return DEFAULT_DETECT_JAR.substring(0, DEFAULT_DETECT_JAR.lastIndexOf('.'));
+        return ArchiveUtils.getUnzippedDirectoryName(DEFAULT_DETECT_JAR); // DEFAULT_DETECT_JAR.substring(0, DEFAULT_DETECT_JAR.lastIndexOf('.'));
     }
 
+    // TODO make this method private in 2.0.0 so that this class can be refactored
     public boolean shouldInstallDetect(final File detectFile, final String fileUrl) {
         return !detectFile.exists() && StringUtils.isNotBlank(fileUrl);
     }
 
+    // TODO make this method private in 2.0.0 so that this class can be refactored
     public boolean shouldInstallDefaultDetect(final File detectFile) {
         return !detectFile.exists();
     }

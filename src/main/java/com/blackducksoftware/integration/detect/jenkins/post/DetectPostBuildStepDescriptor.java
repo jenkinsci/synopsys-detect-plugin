@@ -149,8 +149,8 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
         return detectArtifactUrl;
     }
 
-    public void setDetectArtifactUrl(final String detectArtifactURL) {
-        this.detectArtifactUrl = detectArtifactURL;
+    public void setDetectArtifactUrl(final String detectArtifactUrl) {
+        this.detectArtifactUrl = detectArtifactUrl;
     }
 
     public String getDetectDownloadUrl() {
@@ -411,7 +411,7 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
         hubCredentialsId = formData.getString("hubCredentialsId");
         hubTimeout = NumberUtils.toInt(formData.getString("hubTimeout"), 120);
         trustSSLCertificates = formData.getBoolean("trustSSLCertificates");
-        detectArtifactUrl = formData.getString("detectArtifactURL");
+        detectArtifactUrl = formData.getString("detectArtifactUrl");
         detectDownloadUrl = formData.getString("detectDownloadUrl");
         save();
         HubServerInfoSingleton.getInstance().setHubUrl(hubUrl);
@@ -473,7 +473,7 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
         final String hubCredentialsId = getNodeValue(doc, "hubCredentialsId", null);
         final String hubTimeout = getNodeValue(doc, "hubTimeout", "120");
         final String trustSSLCertificatesString = getNodeValue(doc, "trustSSLCertificates", "false");
-        final String detectArtifactURL = getNodeValue(doc, "detectArtifactURL", null);
+        final String detectArtifactUrl = getNodeValue(doc, "detectArtifactUrl", null);
         final String detectDownloadUrl = getNodeValue(doc, "detectDownloadUrl", null);
 
         int serverTimeout = 120;
@@ -493,7 +493,7 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
         HubServerInfoSingleton.getInstance().setHubCredentialsId(hubCredentialsId);
         HubServerInfoSingleton.getInstance().setHubTimeout(serverTimeout);
         HubServerInfoSingleton.getInstance().setTrustSSLCertificates(trustSSLCertificates);
-        HubServerInfoSingleton.getInstance().setDetectArtifactUrl(detectArtifactURL);
+        HubServerInfoSingleton.getInstance().setDetectArtifactUrl(detectArtifactUrl);
         HubServerInfoSingleton.getInstance().setDetectDownloadUrl(detectDownloadUrl);
         save();
     }

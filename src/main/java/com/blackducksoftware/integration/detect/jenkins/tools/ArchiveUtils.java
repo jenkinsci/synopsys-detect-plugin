@@ -31,9 +31,11 @@ import java.util.Enumeration;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
+import org.apache.commons.io.IOUtils;
+
 public class ArchiveUtils {
     public static void unzip(final File zipFile) throws IOException {
-        final File unzipDirectory = new File(zipFile.getParentFile(), getUnzippedDirectoryName(zipFile));
+        final File unzipDirectory = new File(zipFile.getParentFile(), getUnzippedDirectoryName(zipFile.getName()));
         unzip(unzipDirectory, zipFile);
     }
 
@@ -67,17 +69,16 @@ public class ArchiveUtils {
         }
     }
 
-    public static String getUnzippedDirectoryName(final File zipFile) {
-        final String zipFileName = zipFile.getName();
+    public static String getUnzippedDirectoryName(final String zipFileName) {
         return zipFileName.substring(zipFileName.lastIndexOf('/') + 1, zipFileName.lastIndexOf('.'));
     }
 
     private static void copyInputStreamToFile(final InputStream in, final File f) throws IOException {
         final FileOutputStream fos = new FileOutputStream(f);
         try {
-            org.apache.commons.io.IOUtils.copy(in, fos);
+            IOUtils.copy(in, fos);
         } finally {
-            org.apache.commons.io.IOUtils.closeQuietly(fos);
+            IOUtils.closeQuietly(fos);
         }
     }
 
