@@ -92,11 +92,13 @@ import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 
 @Extension()
+@SuppressWarnings("serial")
 public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher> implements Serializable {
     private String hubUrl;
     private String hubCredentialsId;
     private int hubTimeout = 120;
     private boolean trustSSLCertificates;
+    private String detectArtifactUrl;
     private String detectDownloadUrl;
     private final String couldNotGetVersionsMessage = "Could not reach Black Duck public Artifactory";
 
@@ -107,6 +109,7 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
         HubServerInfoSingleton.getInstance().setHubCredentialsId(hubCredentialsId);
         HubServerInfoSingleton.getInstance().setHubTimeout(hubTimeout);
         HubServerInfoSingleton.getInstance().setTrustSSLCertificates(trustSSLCertificates);
+        HubServerInfoSingleton.getInstance().setDetectArtifactUrl(detectArtifactUrl);
         HubServerInfoSingleton.getInstance().setDetectDownloadUrl(detectDownloadUrl);
     }
 
@@ -140,6 +143,14 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
 
     public void setTrustSSLCertificates(final boolean trustSSLCertificates) {
         this.trustSSLCertificates = trustSSLCertificates;
+    }
+
+    public String getDetectArtifactUrl() {
+        return detectArtifactUrl;
+    }
+
+    public void setDetectArtifactUrl(final String detectArtifactUrl) {
+        this.detectArtifactUrl = detectArtifactUrl;
     }
 
     public String getDetectDownloadUrl() {
@@ -179,6 +190,7 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
             System.err.println(sw.toString());
         }
         boxModel.add("Default", "");
+        boxModel.add("Latest Air Gap Zip", DetectVersionRequestService.AIR_GAP_ZIP.toString());
         return boxModel;
     }
 
@@ -400,12 +412,14 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
         hubCredentialsId = formData.getString("hubCredentialsId");
         hubTimeout = NumberUtils.toInt(formData.getString("hubTimeout"), 120);
         trustSSLCertificates = formData.getBoolean("trustSSLCertificates");
+        detectArtifactUrl = formData.getString("detectArtifactUrl");
         detectDownloadUrl = formData.getString("detectDownloadUrl");
         save();
         HubServerInfoSingleton.getInstance().setHubUrl(hubUrl);
         HubServerInfoSingleton.getInstance().setHubCredentialsId(hubCredentialsId);
         HubServerInfoSingleton.getInstance().setHubTimeout(hubTimeout);
         HubServerInfoSingleton.getInstance().setTrustSSLCertificates(trustSSLCertificates);
+        HubServerInfoSingleton.getInstance().setDetectArtifactUrl(detectArtifactUrl);
         HubServerInfoSingleton.getInstance().setDetectDownloadUrl(detectDownloadUrl);
 
         return super.configure(req, formData);
@@ -456,53 +470,12 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
         final InputSource is = new InputSource(new StringReader(byteOutput.toString("UTF-8")));
         final Document doc = builder.parse(is);
 
-        final Node serverUrlNode = doc.getElementsByTagName("hubUrl").item(0);
-        String hubUrl = "";
-        if (serverUrlNode != null && serverUrlNode.getChildNodes() != null && serverUrlNode.getChildNodes().item(0) != null) {
-            hubUrl = serverUrlNode.getChildNodes().item(0).getNodeValue();
-            if (hubUrl != null) {
-                hubUrl = hubUrl.trim();
-            }
-        }
-
-        final Node credentialsNode = doc.getElementsByTagName("hubCredentialsId").item(0);
-        String hubCredentialsId = "";
-        if (credentialsNode != null && credentialsNode.getChildNodes() != null && credentialsNode.getChildNodes().item(0) != null) {
-            hubCredentialsId = credentialsNode.getChildNodes().item(0).getNodeValue();
-            if (hubCredentialsId != null) {
-                hubCredentialsId = hubCredentialsId.trim();
-            }
-        }
-
-        final Node timeoutNode = doc.getElementsByTagName("hubTimeout").item(0);
-        String hubTimeout = "120"; // default
-        // timeout
-        if (timeoutNode != null && timeoutNode.getChildNodes() != null && timeoutNode.getChildNodes().item(0) != null) {
-            hubTimeout = timeoutNode.getChildNodes().item(0).getNodeValue();
-            if (hubTimeout != null) {
-                hubTimeout = hubTimeout.trim();
-            }
-        }
-
-        final Node trustSSLCertificatesNode = doc.getElementsByTagName("trustSSLCertificates").item(0);
-        String trustSSLCertificatesString = "";
-        // timeout
-        if (trustSSLCertificatesNode != null && trustSSLCertificatesNode.getChildNodes() != null && trustSSLCertificatesNode.getChildNodes().item(0) != null) {
-            trustSSLCertificatesString = trustSSLCertificatesNode.getChildNodes().item(0).getNodeValue();
-            if (trustSSLCertificatesString != null) {
-                trustSSLCertificatesString = trustSSLCertificatesString.trim();
-            }
-        }
-
-        final Node detectDownloadUrlNode = doc.getElementsByTagName("detectDownloadUrl").item(0);
-        String detectDownloadUrl = "";
-        // timeout
-        if (detectDownloadUrlNode != null && detectDownloadUrlNode.getChildNodes() != null && detectDownloadUrlNode.getChildNodes().item(0) != null) {
-            detectDownloadUrl = detectDownloadUrlNode.getChildNodes().item(0).getNodeValue();
-            if (detectDownloadUrl != null) {
-                detectDownloadUrl = detectDownloadUrl.trim();
-            }
-        }
+        final String hubUrl = getNodeValue(doc, "hubUrl", null);
+        final String hubCredentialsId = getNodeValue(doc, "hubCredentialsId", null);
+        final String hubTimeout = getNodeValue(doc, "hubTimeout", "120");
+        final String trustSSLCertificatesString = getNodeValue(doc, "trustSSLCertificates", "false");
+        final String detectArtifactUrl = getNodeValue(doc, "detectArtifactUrl", null);
+        final String detectDownloadUrl = getNodeValue(doc, "detectDownloadUrl", null);
 
         int serverTimeout = 120;
         final boolean trustSSLCertificates = Boolean.valueOf(trustSSLCertificatesString);
@@ -521,8 +494,21 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
         HubServerInfoSingleton.getInstance().setHubCredentialsId(hubCredentialsId);
         HubServerInfoSingleton.getInstance().setHubTimeout(serverTimeout);
         HubServerInfoSingleton.getInstance().setTrustSSLCertificates(trustSSLCertificates);
+        HubServerInfoSingleton.getInstance().setDetectArtifactUrl(detectArtifactUrl);
         HubServerInfoSingleton.getInstance().setDetectDownloadUrl(detectDownloadUrl);
         save();
+    }
+
+    private String getNodeValue(final Document doc, final String tagName, final String defaultValue) {
+        String nodeAsString = defaultValue != null ? defaultValue : "";
+        final Node actualNode = doc.getElementsByTagName(tagName).item(0);
+        if (actualNode != null && actualNode.getChildNodes() != null && actualNode.getChildNodes().item(0) != null) {
+            nodeAsString = actualNode.getChildNodes().item(0).getNodeValue();
+            if (nodeAsString != null) {
+                nodeAsString = nodeAsString.trim();
+            }
+        }
+        return nodeAsString;
     }
 
 }

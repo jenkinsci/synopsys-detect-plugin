@@ -36,12 +36,14 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
+import com.blackducksoftware.integration.detect.jenkins.HubServerInfoSingleton;
 import com.blackducksoftware.integration.detect.jenkins.JenkinsProxyHelper;
 import com.blackducksoftware.integration.exception.IntegrationException;
 import com.blackducksoftware.integration.hub.rest.AbstractRestConnectionBuilder;
@@ -55,7 +57,10 @@ import okhttp3.Response;
 import okhttp3.ResponseBody;
 
 public class DetectVersionRequestService {
+    public static final String AIR_GAP_ZIP = "AIR_GAP_ZIP";
+    public static final String AIR_GAP_ZIP_SUFFIX = "-air-gap.zip";
     public static final String LATEST_RELELASE = "LATEST_RELELASE";
+
     private final IntLogger logger;
 
     private final Boolean trustSSLCertificates;
@@ -83,7 +88,7 @@ public class DetectVersionRequestService {
         final List<DetectVersionModel> detectVersions = new ArrayList<>();
         final UnauthenticatedRestConnectionBuilder restConnectionBuilder = new UnauthenticatedRestConnectionBuilder();
         restConnectionBuilder.setAlwaysTrustServerCertificate(trustSSLCertificates);
-        restConnectionBuilder.setBaseUrl("https://test-repo.blackducksoftware.com/artifactory/bds-integrations-release/com/blackducksoftware/integration/hub-detect/maven-metadata.xml");
+        restConnectionBuilder.setBaseUrl(getArtifactoryBaseUrl() + "/artifactory/bds-integrations-release/com/blackducksoftware/integration/hub-detect/maven-metadata.xml");
         restConnectionBuilder.setLogger(logger);
         setProxyInformation(restConnectionBuilder);
         restConnectionBuilder.setTimeout(connectionTimeout);
@@ -119,7 +124,7 @@ public class DetectVersionRequestService {
     }
 
     public String getDetectVersionFileURL(final String versionName) throws MalformedURLException {
-        final String detectVersionFileURL = "https://test-repo.blackducksoftware.com/artifactory/bds-integrations-release/com/blackducksoftware/integration/hub-detect/" + versionName + "/hub-detect-" + versionName + ".jar";
+        final String detectVersionFileURL = getArtifactoryBaseUrl() + "/artifactory/bds-integrations-release/com/blackducksoftware/integration/hub-detect/" + versionName + "/hub-detect-" + versionName + getDetectFileExtension();
         return detectVersionFileURL;
     }
 
@@ -152,7 +157,7 @@ public class DetectVersionRequestService {
     public String getLatestReleasedDetectVersion() throws IntegrationException, IOException {
         final UnauthenticatedRestConnectionBuilder restConnectionBuilder = new UnauthenticatedRestConnectionBuilder();
         restConnectionBuilder.setAlwaysTrustServerCertificate(trustSSLCertificates);
-        restConnectionBuilder.setBaseUrl("https://test-repo.blackducksoftware.com/artifactory/api/search/latestVersion?g=com.blackducksoftware.integration&a=hub-detect&repos=bds-integrations-release");
+        restConnectionBuilder.setBaseUrl(getArtifactoryBaseUrl() + "/artifactory/api/search/latestVersion?g=com.blackducksoftware.integration&a=hub-detect&repos=bds-integrations-release");
         restConnectionBuilder.setLogger(logger);
         setProxyInformation(restConnectionBuilder);
         restConnectionBuilder.setTimeout(connectionTimeout);
@@ -169,6 +174,23 @@ public class DetectVersionRequestService {
         } finally {
             IOUtils.closeQuietly(response);
         }
+    }
+
+    private String getArtifactoryBaseUrl() {
+        String baseUrl = "https://test-repo.blackducksoftware.com";
+        final String overrideUrl = HubServerInfoSingleton.getInstance().getDetectArtifactUrl();
+        if (StringUtils.isNotBlank(overrideUrl) && AIR_GAP_ZIP.equals(HubServerInfoSingleton.getInstance().getDetectDownloadUrl())) {
+            baseUrl = overrideUrl.trim();
+            baseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 2) : baseUrl;
+        }
+        return baseUrl;
+    }
+
+    private String getDetectFileExtension() {
+        if (AIR_GAP_ZIP.equals(HubServerInfoSingleton.getInstance().getDetectDownloadUrl())) {
+            return AIR_GAP_ZIP_SUFFIX;
+        }
+        return ".jar";
     }
 
     private void setProxyInformation(final AbstractRestConnectionBuilder restConnectionBuilder) {
