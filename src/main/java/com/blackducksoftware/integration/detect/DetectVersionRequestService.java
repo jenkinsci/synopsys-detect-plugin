@@ -113,9 +113,6 @@ public class DetectVersionRequestService {
             IOUtils.closeQuietly(response);
         }
 
-        final DetectVersionModel customArtifactModel = new DetectVersionModel(AIR_GAP_ZIP, "Latest Air Gap Zip");
-        detectVersions.add(customArtifactModel);
-
         return detectVersions;
     }
 
@@ -184,6 +181,7 @@ public class DetectVersionRequestService {
         final String overrideUrl = HubServerInfoSingleton.getInstance().getDetectArtifactUrl();
         if (StringUtils.isNotBlank(overrideUrl) && AIR_GAP_ZIP.equals(HubServerInfoSingleton.getInstance().getDetectDownloadUrl())) {
             baseUrl = overrideUrl.trim();
+            baseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 2) : baseUrl;
         }
         return baseUrl;
     }

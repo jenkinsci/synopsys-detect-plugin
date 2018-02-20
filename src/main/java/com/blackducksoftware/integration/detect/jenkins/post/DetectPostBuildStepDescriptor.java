@@ -190,6 +190,7 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
             System.err.println(sw.toString());
         }
         boxModel.add("Default", "");
+        boxModel.add("Latest Air Gap Zip", DetectVersionRequestService.AIR_GAP_ZIP.toString());
         return boxModel;
     }
 
