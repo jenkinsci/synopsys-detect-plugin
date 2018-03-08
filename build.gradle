@@ -1,0 +1,49 @@
+buildscript {
+    repositories {
+        jcenter()
+        mavenCentral()
+        maven { url 'https://plugins.gradle.org/m2/' }
+    }
+    dependencies { classpath 'com.blackducksoftware.integration:common-gradle-plugin:0.0.+' }
+}
+
+plugins {
+  id 'org.jenkins-ci.jpi' version '0.25.0'
+}
+
+version = '1.2.1-SNAPSHOT'
+
+apply plugin: 'com.blackducksoftware.integration.solution'
+
+group = 'org.jenkins-ci.plugins'
+description = 'Black Duck Detect Plugin for Jenkins'
+
+task listrepos {
+    doLast {
+        println "Repositories:"
+        project.repositories.each { println "Name: " + it.name + "; url: " + it.url }
+   }
+}
+
+def jcenterRepo = project.repositories.findByName('BintrayJCenter')
+project.repositories.remove(jcenterRepo)
+def mavenRepo = project.repositories.findByName('maven')
+project.repositories.remove(mavenRepo)
+
+jenkinsPlugin {
+    coreVersion = '1.580.3'
+    displayName = 'Black Duck Detect Plugin'
+    url = 'https://wiki.jenkins.io/display/JENKINS/Black+Duck+Detect+Plugin'
+    gitHubUrl = 'https://github.com/jenkinsci/blackduck-detect-plugin'
+}
+
+dependencies {
+	compile 'com.blackducksoftware.integration:hub-common:19.0.0'
+
+    jenkinsPlugins 'org.jenkins-ci.plugins:credentials:1.9.4'
+
+    optionalJenkinsPlugins 'org.jenkins-ci.plugins:job-dsl:1.67'
+    optionalJenkinsPlugins 'org.jenkins-ci.plugins.workflow:workflow-job:2.9'
+    optionalJenkinsPlugins 'org.jenkins-ci.plugins.workflow:workflow-cps:2.23'
+    optionalJenkinsPlugins 'org.jenkins-ci.plugins.workflow:workflow-step-api:2.3'
+}
