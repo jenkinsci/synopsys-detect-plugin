@@ -80,7 +80,6 @@ import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
 import com.cloudbees.plugins.credentials.matchers.IdMatcher;
 
 import hudson.Extension;
-import hudson.ProxyConfiguration;
 import hudson.model.AbstractProject;
 import hudson.model.Descriptor;
 import hudson.security.ACL;
@@ -89,7 +88,6 @@ import hudson.tasks.Publisher;
 import hudson.util.FormValidation;
 import hudson.util.IOUtils;
 import hudson.util.ListBoxModel;
-import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 
 @Extension()
@@ -185,7 +183,7 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
     public ListBoxModel doFillDetectDownloadUrlItems() {
         final ListBoxModel boxModel = new ListBoxModel();
         try {
-            final DetectVersionRequestService detectVersionRequestService = getDetectVersionRequestService(getProxyConfiguration());
+            final DetectVersionRequestService detectVersionRequestService = getDetectVersionRequestService(JenkinsProxyHelper.getProxyInfo(null));
             final List<DetectVersionModel> detectVersionModels = detectVersionRequestService.getDetectVersionModels();
             for (final DetectVersionModel detectVersionModel : detectVersionModels) {
                 boxModel.add(detectVersionModel.getVersionName(), detectVersionModel.getVersionURL());
@@ -207,7 +205,7 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
 
     public FormValidation doCheckDetectDownloadUrl(@QueryParameter("detectDownloadUrl") final String detectDownloadUrl) {
         try {
-            final DetectVersionRequestService detectVersionRequestService = getDetectVersionRequestService(getProxyConfiguration());
+            final DetectVersionRequestService detectVersionRequestService = getDetectVersionRequestService(JenkinsProxyHelper.getProxyInfo(detectDownloadUrl));
             detectVersionRequestService.getDetectVersionModels();
         } catch (final IntegrationException e) {
             return FormValidation.error(couldNotGetVersionsMessage);
@@ -219,30 +217,8 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
         return FormValidation.ok();
     }
 
-    private DetectVersionRequestService getDetectVersionRequestService(final ProxyConfiguration proxyConfiguration) {
-        String proxyHost = null;
-        int proxyPort = 0;
-        String noProxyHost = null;
-        String proxyUsername = null;
-        String proxyPassword = null;
-
-        if (proxyConfiguration != null) {
-            proxyHost = proxyConfiguration.name;
-            proxyPort = proxyConfiguration.port;
-            noProxyHost = proxyConfiguration.noProxyHost;
-            proxyUsername = proxyConfiguration.getUserName();
-            proxyPassword = proxyConfiguration.getPassword();
-        }
-        return new DetectVersionRequestService(new PrintStreamIntLogger(System.out, LogLevel.DEBUG), isTrustSSLCertificates(), getHubTimeout(), proxyHost, proxyPort, noProxyHost, proxyUsername, proxyPassword);
-    }
-
-    private ProxyConfiguration getProxyConfiguration() {
-        ProxyConfiguration proxyConfig = null;
-        final Jenkins jenkins = Jenkins.getInstance();
-        if (jenkins != null) {
-            proxyConfig = jenkins.proxy;
-        }
-        return proxyConfig;
+    private DetectVersionRequestService getDetectVersionRequestService(final ProxyInfo proxyInfo) {
+        return new DetectVersionRequestService(new PrintStreamIntLogger(System.out, LogLevel.DEBUG), isTrustSSLCertificates(), getHubTimeout(), proxyInfo);
     }
 
     public FormValidation doCheckHubTimeout(@QueryParameter("hubTimeout") final String hubTimeout) {

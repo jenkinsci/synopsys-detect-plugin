@@ -91,13 +91,7 @@ public class DetectCommonStep {
                     toolsDirectory, getCorrectedParameters(detectProperties), envVars);
 
             final ProxyInfo proxyInfo = JenkinsProxyHelper.getProxyInfo(hubUrl);
-            if (null != proxyInfo && ProxyInfo.NO_PROXY_INFO != proxyInfo) {
-                detectRemoteRunner.setProxyHost(proxyInfo.getHost());
-                detectRemoteRunner.setProxyPort(proxyInfo.getPort());
-                detectRemoteRunner.setProxyUsername(proxyInfo.getUsername());
-                detectRemoteRunner.setProxyPassword(proxyInfo.getDecryptedPassword());
-                detectRemoteRunner.setProxyNtlmDomain(proxyInfo.getNtlmDomain());
-            }
+            detectRemoteRunner.setProxyInfo(proxyInfo);
 
             node.getChannel().call(detectRemoteRunner);
         } catch (final HubIntegrationException e) {

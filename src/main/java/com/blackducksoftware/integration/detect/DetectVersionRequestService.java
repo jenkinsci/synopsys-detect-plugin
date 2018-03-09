@@ -44,7 +44,9 @@ import org.xml.sax.SAXException;
 
 import com.blackducksoftware.integration.detect.jenkins.HubServerInfoSingleton;
 import com.blackducksoftware.integration.detect.jenkins.JenkinsProxyHelper;
+import com.blackducksoftware.integration.exception.EncryptionException;
 import com.blackducksoftware.integration.exception.IntegrationException;
+import com.blackducksoftware.integration.hub.proxy.ProxyInfo;
 import com.blackducksoftware.integration.hub.request.Request;
 import com.blackducksoftware.integration.hub.request.Response;
 import com.blackducksoftware.integration.hub.rest.AbstractRestConnectionBuilder;
@@ -62,22 +64,13 @@ public class DetectVersionRequestService {
     private final Boolean trustSSLCertificates;
     private final int connectionTimeout;
 
-    private final String proxyHost;
-    private final int proxyPort;
-    private final String noProxyHost;
-    private final String proxyUsername;
-    private final String proxyPassword;
+    private final ProxyInfo proxyInfo;
 
-    public DetectVersionRequestService(final IntLogger logger, final Boolean trustSSLCertificates, final int connectionTimeout, final String proxyHost, final int proxyPort, final String noProxyHost, final String proxyUsername,
-            final String proxyPassword) {
+    public DetectVersionRequestService(final IntLogger logger, final Boolean trustSSLCertificates, final int connectionTimeout, final ProxyInfo proxyInfo) {
         this.logger = logger;
         this.trustSSLCertificates = trustSSLCertificates;
         this.connectionTimeout = connectionTimeout;
-        this.proxyHost = proxyHost;
-        this.proxyPort = proxyPort;
-        this.noProxyHost = noProxyHost;
-        this.proxyUsername = proxyUsername;
-        this.proxyPassword = proxyPassword;
+        this.proxyInfo = proxyInfo;
     }
 
     public List<DetectVersionModel> getDetectVersionModels() throws IOException, IntegrationException, ParserConfigurationException, SAXException {
@@ -186,11 +179,15 @@ public class DetectVersionRequestService {
     }
 
     private void setProxyInformation(final AbstractRestConnectionBuilder restConnectionBuilder) {
-        if (JenkinsProxyHelper.shouldUseProxy(restConnectionBuilder.getBaseConnectionUrl(), noProxyHost)) {
-            restConnectionBuilder.setProxyHost(proxyHost);
-            restConnectionBuilder.setProxyPort(proxyPort);
-            restConnectionBuilder.setProxyUsername(proxyUsername);
-            restConnectionBuilder.setProxyPassword(proxyPassword);
+        if (null != proxyInfo && ProxyInfo.NO_PROXY_INFO != proxyInfo && JenkinsProxyHelper.shouldUseProxy(restConnectionBuilder.getBaseConnectionUrl())) {
+            restConnectionBuilder.setProxyHost(proxyInfo.getHost());
+            restConnectionBuilder.setProxyPort(proxyInfo.getPort());
+            restConnectionBuilder.setProxyUsername(proxyInfo.getUsername());
+            try {
+                restConnectionBuilder.setProxyPassword(proxyInfo.getDecryptedPassword());
+            } catch (IllegalArgumentException | EncryptionException e) {
+                logger.error(e.getMessage(), e);
+            }
         }
     }
 }

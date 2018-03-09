@@ -41,33 +41,41 @@ import jenkins.model.Jenkins;
 public class JenkinsProxyHelper {
     public static ProxyInfo getProxyInfo(final String url) {
         ProxyInfo proxyInfo = ProxyInfo.NO_PROXY_INFO;
-        try {
-            final URL hubURL = new URL(url);
-
-            final Jenkins jenkins = Jenkins.getInstance();
-            if (jenkins != null) {
-                final ProxyConfiguration proxyConfig = jenkins.proxy;
-                if (proxyConfig != null) {
-                    if (JenkinsProxyHelper.shouldUseProxy(hubURL, proxyConfig.noProxyHost)) {
-                        final ProxyInfoBuilder proxyInfoBuilder = new ProxyInfoBuilder();
-                        if (StringUtils.isNotBlank(proxyConfig.name) && proxyConfig.port >= 0) {
-                            proxyInfoBuilder.setHost(proxyConfig.name);
-                            proxyInfoBuilder.setPort(proxyConfig.port);
-                            applyJenkinsProxyCredentials(proxyConfig, proxyInfoBuilder);
+        final ProxyInfoBuilder proxyInfoBuilder = new ProxyInfoBuilder();
+        final Jenkins jenkins = Jenkins.getInstance();
+        if (jenkins != null) {
+            final ProxyConfiguration proxyConfig = jenkins.proxy;
+            if (proxyConfig != null) {
+                if (StringUtils.isNotBlank(url)) {
+                    try {
+                        final URL hubURL = new URL(url);
+                        if (JenkinsProxyHelper.shouldUseProxy(hubURL)) {
+                            applyJenkinsProxy(proxyConfig, proxyInfoBuilder);
+                            proxyInfo = proxyInfoBuilder.build();
                         }
-                        proxyInfo = proxyInfoBuilder.build();
+                    } catch (final MalformedURLException e) {
+                        // ignore
                     }
+                } else {
+                    applyJenkinsProxy(proxyConfig, proxyInfoBuilder);
+                    proxyInfo = proxyInfoBuilder.build();
                 }
             }
-        } catch (final MalformedURLException e) {
-            // ignore
         }
         return proxyInfo;
     }
 
-    public static boolean shouldUseProxy(final URL url, final String noProxyHosts) {
+    public static boolean shouldUseProxy(final URL url) {
         if (url == null) {
             return false;
+        }
+        String noProxyHosts = null;
+        final Jenkins jenkins = Jenkins.getInstance();
+        if (jenkins != null) {
+            final ProxyConfiguration proxyConfig = jenkins.proxy;
+            if (proxyConfig != null) {
+                noProxyHosts = proxyConfig.noProxyHost;
+            }
         }
         if (StringUtils.isBlank(noProxyHosts)) {
             return true;
@@ -85,6 +93,14 @@ public class JenkinsProxyHelper {
             noProxyHostPatterns.add(Pattern.compile(currentNoProxyHost.replace(".", "\\.").replace("*", ".*")));
         }
         return noProxyHostPatterns;
+    }
+
+    private static void applyJenkinsProxy(final ProxyConfiguration proxyConfig, final ProxyInfoBuilder proxyInfoBuilder) {
+        if (StringUtils.isNotBlank(proxyConfig.name) && proxyConfig.port >= 0) {
+            proxyInfoBuilder.setHost(proxyConfig.name);
+            proxyInfoBuilder.setPort(proxyConfig.port);
+            applyJenkinsProxyCredentials(proxyConfig, proxyInfoBuilder);
+        }
     }
 
     private static void applyJenkinsProxyCredentials(final ProxyConfiguration proxyConfig, final ProxyInfoBuilder proxyInfoBuilder) {

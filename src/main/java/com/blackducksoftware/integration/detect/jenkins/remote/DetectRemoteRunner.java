@@ -37,6 +37,7 @@ import com.blackducksoftware.integration.detect.jenkins.PluginHelper;
 import com.blackducksoftware.integration.detect.jenkins.tools.DetectDownloadManager;
 import com.blackducksoftware.integration.exception.IntegrationException;
 import com.blackducksoftware.integration.hub.exception.HubIntegrationException;
+import com.blackducksoftware.integration.hub.proxy.ProxyInfo;
 import com.blackducksoftware.integration.hub.service.model.StreamRedirectThread;
 import com.blackducksoftware.integration.util.CIEnvironmentVariables;
 
@@ -61,12 +62,7 @@ public class DetectRemoteRunner implements Callable<String, IntegrationException
 
     private final EnvVars envVars;
 
-    private String proxyHost;
-    private int proxyPort;
-    private String noProxyHost;
-    private String proxyUsername;
-    private String proxyPassword;
-    private String proxyNtlmDomain;
+    private ProxyInfo proxyInfo;
 
     public DetectRemoteRunner(final JenkinsDetectLogger logger, final String javaHome, final String hubUrl, final String hubUsername, final String hubPassword, final String hubApiToken, final int hubTimeout,
             final boolean trustSSLCertificates,
@@ -104,7 +100,7 @@ public class DetectRemoteRunner implements Callable<String, IntegrationException
             }
             logger.info("Running with JAVA : " + javaExecutablePath);
             logger.info("Detect configured : " + detectDownloadUrl);
-            final DetectDownloadManager detectDownloadManager = new DetectDownloadManager(logger, toolsDirectory, trustSSLCertificates, hubTimeout, proxyHost, proxyPort, noProxyHost, proxyUsername, proxyPassword);
+            final DetectDownloadManager detectDownloadManager = new DetectDownloadManager(logger, toolsDirectory, trustSSLCertificates, hubTimeout, proxyInfo);
             final File hubDetectJar = detectDownloadManager.handleDownload(detectDownloadUrl);
 
             logger.info("Running Detect : " + hubDetectJar.getName());
@@ -144,12 +140,12 @@ public class DetectRemoteRunner implements Callable<String, IntegrationException
             setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_AUTO_IMPORT_CERT", String.valueOf(trustSSLCertificates));
             setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_TRUST_CERT", String.valueOf(trustSSLCertificates));
 
-            if (proxyHost != null) {
-                setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_PROXY_HOST", proxyHost);
-                setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_PROXY_PORT", String.valueOf(proxyPort));
-                setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_PROXY_USERNAME", proxyUsername);
-                setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_PROXY_PASSWORD", proxyPassword);
-                setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_PROXY_NTLM_DOMAIN", proxyNtlmDomain);
+            if (null != proxyInfo && ProxyInfo.NO_PROXY_INFO != proxyInfo && null != proxyInfo.getHost()) {
+                setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_PROXY_HOST", proxyInfo.getHost());
+                setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_PROXY_PORT", String.valueOf(proxyInfo.getPort()));
+                setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_PROXY_USERNAME", proxyInfo.getUsername());
+                setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_PROXY_PASSWORD", proxyInfo.getDecryptedPassword());
+                setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_PROXY_NTLM_DOMAIN", proxyInfo.getNtlmDomain());
             }
 
             final Process process = processBuilder.start();
@@ -182,28 +178,8 @@ public class DetectRemoteRunner implements Callable<String, IntegrationException
         checker.check(this, new Role(DetectRemoteRunner.class));
     }
 
-    public void setProxyHost(final String proxyHost) {
-        this.proxyHost = proxyHost;
-    }
-
-    public void setProxyPort(final int proxyPort) {
-        this.proxyPort = proxyPort;
-    }
-
-    public void setNoProxyHost(final String noProxyHost) {
-        this.noProxyHost = noProxyHost;
-    }
-
-    public void setProxyUsername(final String proxyUsername) {
-        this.proxyUsername = proxyUsername;
-    }
-
-    public void setProxyPassword(final String proxyPassword) {
-        this.proxyPassword = proxyPassword;
-    }
-
-    public void setProxyNtlmDomain(final String proxyNtlmDomain) {
-        this.proxyNtlmDomain = proxyNtlmDomain;
+    public void setProxyInfo(final ProxyInfo proxyInfo) {
+        this.proxyInfo = proxyInfo;
     }
 
 }
