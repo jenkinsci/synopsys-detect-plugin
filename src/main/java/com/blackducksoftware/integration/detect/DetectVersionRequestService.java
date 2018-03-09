@@ -26,7 +26,6 @@ package com.blackducksoftware.integration.detect;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -46,15 +45,12 @@ import org.xml.sax.SAXException;
 import com.blackducksoftware.integration.detect.jenkins.HubServerInfoSingleton;
 import com.blackducksoftware.integration.detect.jenkins.JenkinsProxyHelper;
 import com.blackducksoftware.integration.exception.IntegrationException;
+import com.blackducksoftware.integration.hub.request.Request;
+import com.blackducksoftware.integration.hub.request.Response;
 import com.blackducksoftware.integration.hub.rest.AbstractRestConnectionBuilder;
 import com.blackducksoftware.integration.hub.rest.RestConnection;
 import com.blackducksoftware.integration.hub.rest.UnauthenticatedRestConnectionBuilder;
 import com.blackducksoftware.integration.log.IntLogger;
-
-import okhttp3.HttpUrl;
-import okhttp3.Request;
-import okhttp3.Response;
-import okhttp3.ResponseBody;
 
 public class DetectVersionRequestService {
     public static final String AIR_GAP_ZIP = "AIR_GAP_ZIP";
@@ -86,21 +82,16 @@ public class DetectVersionRequestService {
 
     public List<DetectVersionModel> getDetectVersionModels() throws IOException, IntegrationException, ParserConfigurationException, SAXException {
         final List<DetectVersionModel> detectVersions = new ArrayList<>();
-        final UnauthenticatedRestConnectionBuilder restConnectionBuilder = new UnauthenticatedRestConnectionBuilder();
-        restConnectionBuilder.setAlwaysTrustServerCertificate(trustSSLCertificates);
-        restConnectionBuilder.setBaseUrl(getArtifactoryBaseUrl() + "/artifactory/bds-integrations-release/com/blackducksoftware/integration/hub-detect/maven-metadata.xml");
-        restConnectionBuilder.setLogger(logger);
-        setProxyInformation(restConnectionBuilder);
-        restConnectionBuilder.setTimeout(connectionTimeout);
-        final RestConnection restConnection = restConnectionBuilder.build();
-        final HttpUrl detectMavenMetadataHttpUrl = restConnection.createHttpUrl();
-        final Request request = restConnection.createGetRequest(detectMavenMetadataHttpUrl);
+        final String detectMavenMetadataUrl = getArtifactoryBaseUrl() + "/artifactory/bds-integrations-release/com/blackducksoftware/integration/hub-detect/maven-metadata.xml";
+        final RestConnection restConnection = createUnauthenticatedRestConnection(detectMavenMetadataUrl);
+
+        final Request request = new Request.Builder().uri(detectMavenMetadataUrl).build();
         Response response = null;
         try {
-            response = restConnection.handleExecuteClientCall(request);
+            response = restConnection.executeRequest(request);
             final DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             final DocumentBuilder builder = factory.newDocumentBuilder();
-            final Document document = builder.parse(response.body().byteStream());
+            final Document document = builder.parse(response.getContent());
             final Element versionsNode = (Element) document.getElementsByTagName("versions").item(0);
             final NodeList versionNodes = versionsNode.getElementsByTagName("version");
             for (int i = 0; i < versionNodes.getLength(); i++) {
@@ -110,7 +101,9 @@ public class DetectVersionRequestService {
             final DetectVersionModel latestVersionModel = new DetectVersionModel(LATEST_RELELASE, "Latest Release");
             detectVersions.add(latestVersionModel);
         } finally {
-            IOUtils.closeQuietly(response);
+            if (response != null) {
+                response.close();
+            }
         }
 
         return detectVersions;
@@ -129,50 +122,39 @@ public class DetectVersionRequestService {
     }
 
     public File downloadFile(final String url, final File file) throws IntegrationException, IOException {
-        final UnauthenticatedRestConnectionBuilder restConnectionBuilder = new UnauthenticatedRestConnectionBuilder();
-        restConnectionBuilder.setAlwaysTrustServerCertificate(trustSSLCertificates);
-        restConnectionBuilder.setBaseUrl(url);
-        restConnectionBuilder.setLogger(logger);
-        setProxyInformation(restConnectionBuilder);
-        restConnectionBuilder.setTimeout(connectionTimeout);
+        final RestConnection restConnection = createUnauthenticatedRestConnection(url);
 
-        final RestConnection restConnection = restConnectionBuilder.build();
-        final HttpUrl contentHttpUrl = restConnection.createHttpUrl();
-        final Request request = restConnection.createGetRequest(contentHttpUrl);
+        final Request request = new Request.Builder().uri(url).build();
         Response response = null;
         FileOutputStream fileOutputStream = null;
         try {
-            response = restConnection.handleExecuteClientCall(request);
-            final ResponseBody responseBody = response.body();
-            final InputStream inputStream = responseBody.byteStream();
+            response = restConnection.executeRequest(request);
             fileOutputStream = new FileOutputStream(file);
-            IOUtils.copy(inputStream, fileOutputStream);
+            IOUtils.copy(response.getContent(), fileOutputStream);
         } finally {
-            IOUtils.closeQuietly(response);
-            IOUtils.closeQuietly(fileOutputStream);
+            if (response != null) {
+                response.close();
+            }
+            if (fileOutputStream != null) {
+                fileOutputStream.close();
+            }
         }
         return file;
     }
 
     public String getLatestReleasedDetectVersion() throws IntegrationException, IOException {
-        final UnauthenticatedRestConnectionBuilder restConnectionBuilder = new UnauthenticatedRestConnectionBuilder();
-        restConnectionBuilder.setAlwaysTrustServerCertificate(trustSSLCertificates);
-        restConnectionBuilder.setBaseUrl(getArtifactoryBaseUrl() + "/artifactory/api/search/latestVersion?g=com.blackducksoftware.integration&a=hub-detect&repos=bds-integrations-release");
-        restConnectionBuilder.setLogger(logger);
-        setProxyInformation(restConnectionBuilder);
-        restConnectionBuilder.setTimeout(connectionTimeout);
+        final String detectLatestVersionUrl = getArtifactoryBaseUrl() + "/artifactory/bds-integrations-release/com/blackducksoftware/integration/hub-detect/maven-metadata.xml";
+        final RestConnection restConnection = createUnauthenticatedRestConnection(detectLatestVersionUrl);
 
-        final RestConnection restConnection = restConnectionBuilder.build();
-        final HttpUrl contentHttpUrl = restConnection.createHttpUrl();
-        final Request request = restConnection.createGetRequest(contentHttpUrl, "text/plain");
+        final Request request = new Request.Builder().uri(detectLatestVersionUrl).mimeType("text/plain").build();
         Response response = null;
         try {
-            response = restConnection.handleExecuteClientCall(request);
-            final ResponseBody responseBody = response.body();
-            final String version = responseBody.string();
-            return version;
+            response = restConnection.executeRequest(request);
+            return response.getContentString();
         } finally {
-            IOUtils.closeQuietly(response);
+            if (response != null) {
+                response.close();
+            }
         }
     }
 
@@ -191,6 +173,16 @@ public class DetectVersionRequestService {
             return AIR_GAP_ZIP_SUFFIX;
         }
         return ".jar";
+    }
+
+    private RestConnection createUnauthenticatedRestConnection(final String url) {
+        final UnauthenticatedRestConnectionBuilder restConnectionBuilder = new UnauthenticatedRestConnectionBuilder();
+        restConnectionBuilder.setAlwaysTrustServerCertificate(trustSSLCertificates);
+        restConnectionBuilder.setBaseUrl(url);
+        restConnectionBuilder.setLogger(logger);
+        setProxyInformation(restConnectionBuilder);
+        restConnectionBuilder.setTimeout(connectionTimeout);
+        return restConnectionBuilder.build();
     }
 
     private void setProxyInformation(final AbstractRestConnectionBuilder restConnectionBuilder) {
