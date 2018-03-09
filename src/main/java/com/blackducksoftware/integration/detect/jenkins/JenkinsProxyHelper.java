@@ -30,22 +30,39 @@ import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
 
+import com.blackducksoftware.integration.hub.proxy.ProxyInfo;
+import com.blackducksoftware.integration.hub.proxy.ProxyInfoBuilder;
 import com.blackducksoftware.integration.util.proxy.ProxyUtil;
 import com.google.common.collect.Lists;
 
-public class JenkinsProxyHelper {
+import hudson.ProxyConfiguration;
+import jenkins.model.Jenkins;
 
-    public static boolean shouldUseProxy(final String urlString, final String noProxyHosts) {
-        if (StringUtils.isBlank(urlString)) {
-            return false;
-        }
+public class JenkinsProxyHelper {
+    public static ProxyInfo getProxyInfo(final String url) {
+        ProxyInfo proxyInfo = ProxyInfo.NO_PROXY_INFO;
         try {
-            final URL url = new URL(urlString);
-            return shouldUseProxy(url, noProxyHosts);
+            final URL hubURL = new URL(url);
+
+            final Jenkins jenkins = Jenkins.getInstance();
+            if (jenkins != null) {
+                final ProxyConfiguration proxyConfig = jenkins.proxy;
+                if (proxyConfig != null) {
+                    if (JenkinsProxyHelper.shouldUseProxy(hubURL, proxyConfig.noProxyHost)) {
+                        final ProxyInfoBuilder proxyInfoBuilder = new ProxyInfoBuilder();
+                        if (StringUtils.isNotBlank(proxyConfig.name) && proxyConfig.port >= 0) {
+                            proxyInfoBuilder.setHost(proxyConfig.name);
+                            proxyInfoBuilder.setPort(proxyConfig.port);
+                            applyJenkinsProxyCredentials(proxyConfig, proxyInfoBuilder);
+                        }
+                        proxyInfo = proxyInfoBuilder.build();
+                    }
+                }
+            }
         } catch (final MalformedURLException e) {
-            // Ignore these errors
+            // ignore
         }
-        return false;
+        return proxyInfo;
     }
 
     public static boolean shouldUseProxy(final URL url, final String noProxyHosts) {
@@ -68,6 +85,21 @@ public class JenkinsProxyHelper {
             noProxyHostPatterns.add(Pattern.compile(currentNoProxyHost.replace(".", "\\.").replace("*", ".*")));
         }
         return noProxyHostPatterns;
+    }
+
+    private static void applyJenkinsProxyCredentials(final ProxyConfiguration proxyConfig, final ProxyInfoBuilder proxyInfoBuilder) {
+        if (StringUtils.isNotBlank(proxyConfig.getUserName()) && StringUtils.isNotBlank(proxyConfig.getPassword())) {
+            if (proxyConfig.getUserName().indexOf('\\') >= 0) {
+                final String domain = proxyConfig.getUserName().substring(0, proxyConfig.getUserName().indexOf('\\'));
+                final String user = proxyConfig.getUserName().substring(proxyConfig.getUserName().indexOf('\\') + 1);
+                proxyInfoBuilder.setNtlmDomain(domain);
+                proxyInfoBuilder.setUsername(user);
+                proxyInfoBuilder.setPassword(proxyConfig.getPassword());
+            } else {
+                proxyInfoBuilder.setUsername(proxyConfig.getUserName());
+                proxyInfoBuilder.setPassword(proxyConfig.getPassword());
+            }
+        }
     }
 
 }

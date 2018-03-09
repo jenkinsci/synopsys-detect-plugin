@@ -38,18 +38,17 @@ import com.blackducksoftware.integration.detect.jenkins.remote.DetectRemoteRunne
 import com.blackducksoftware.integration.detect.jenkins.tools.DummyToolInstallation;
 import com.blackducksoftware.integration.detect.jenkins.tools.DummyToolInstaller;
 import com.blackducksoftware.integration.hub.exception.HubIntegrationException;
+import com.blackducksoftware.integration.hub.proxy.ProxyInfo;
 import com.blackducksoftware.integration.util.CIEnvironmentVariables;
 
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Launcher;
-import hudson.ProxyConfiguration;
 import hudson.Util;
 import hudson.model.Node;
 import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.TaskListener;
-import jenkins.model.Jenkins;
 
 public class DetectCommonStep {
     private final Node node;
@@ -84,38 +83,21 @@ public class DetectCommonStep {
             final String hubUrl = HubServerInfoSingleton.getInstance().getHubUrl();
             final String hubUsername = HubServerInfoSingleton.getInstance().getHubUsername();
             final String hubPassword = HubServerInfoSingleton.getInstance().getHubPassword();
+            final String hubApiToken = HubServerInfoSingleton.getInstance().getHubApiToken();
             final int hubTimeout = HubServerInfoSingleton.getInstance().getHubTimeout();
             final boolean trustSSLCertificates = HubServerInfoSingleton.getInstance().isTrustSSLCertificates();
 
-            String proxyHost = null;
-            int proxyPort = 0;
-            String noProxyHost = null;
-            String proxyUsername = null;
-            String proxyPassword = null;
-
-            ProxyConfiguration proxyConfig = null;
-            final Jenkins jenkins = Jenkins.getInstance();
-            if (jenkins != null) {
-                proxyConfig = jenkins.proxy;
-            }
-            if (proxyConfig != null) {
-                noProxyHost = proxyConfig.noProxyHost;
-                if (JenkinsProxyHelper.shouldUseProxy(hubUrl, proxyConfig.noProxyHost)) {
-                    proxyHost = proxyConfig.name;
-                    proxyPort = proxyConfig.port;
-                    proxyUsername = proxyConfig.getUserName();
-                    proxyPassword = proxyConfig.getPassword();
-                }
-            }
-
-            final DetectRemoteRunner detectRemoteRunner = new DetectRemoteRunner(logger, javaHome, hubUrl, hubUsername, hubPassword, hubTimeout, trustSSLCertificates, HubServerInfoSingleton.getInstance().getDetectDownloadUrl(),
+            final DetectRemoteRunner detectRemoteRunner = new DetectRemoteRunner(logger, javaHome, hubUrl, hubUsername, hubPassword, hubApiToken, hubTimeout, trustSSLCertificates, HubServerInfoSingleton.getInstance().getDetectDownloadUrl(),
                     toolsDirectory, getCorrectedParameters(detectProperties), envVars);
 
-            detectRemoteRunner.setProxyHost(proxyHost);
-            detectRemoteRunner.setProxyPort(proxyPort);
-            detectRemoteRunner.setNoProxyHost(noProxyHost);
-            detectRemoteRunner.setProxyUsername(proxyUsername);
-            detectRemoteRunner.setProxyPassword(proxyPassword);
+            final ProxyInfo proxyInfo = JenkinsProxyHelper.getProxyInfo(hubUrl);
+            if (null != proxyInfo && ProxyInfo.NO_PROXY_INFO != proxyInfo) {
+                detectRemoteRunner.setProxyHost(proxyInfo.getHost());
+                detectRemoteRunner.setProxyPort(proxyInfo.getPort());
+                detectRemoteRunner.setProxyUsername(proxyInfo.getUsername());
+                detectRemoteRunner.setProxyPassword(proxyInfo.getDecryptedPassword());
+                detectRemoteRunner.setProxyNtlmDomain(proxyInfo.getNtlmDomain());
+            }
 
             node.getChannel().call(detectRemoteRunner);
         } catch (final HubIntegrationException e) {

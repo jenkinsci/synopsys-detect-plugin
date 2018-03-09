@@ -49,6 +49,7 @@ public class HubServerInfoSingleton {
 
     private String hubUrl;
     private String hubCredentialsId;
+    private String hubApiToken;
     private int hubTimeout;
     private boolean trustSSLCertificates;
     private String detectArtifactUrl;
@@ -75,6 +76,14 @@ public class HubServerInfoSingleton {
 
     public void setHubCredentialsId(final String hubCredentialsId) {
         this.hubCredentialsId = hubCredentialsId;
+    }
+
+    public String getHubApiToken() {
+        return hubApiToken;
+    }
+
+    public void setHubApiToken(final String hubApiToken) {
+        this.hubApiToken = hubApiToken;
     }
 
     public int getHubTimeout() {

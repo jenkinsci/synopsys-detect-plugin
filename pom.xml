@@ -53,7 +53,7 @@
 	<java.level>8</java.level>
     <findbugs.failOnError>false</findbugs.failOnError>
     <hpi-plugin.version>2.2</hpi-plugin.version>
-    <hub.common.version>28.0.1</hub.common.version>
+    <hub.common.version>28.0.3</hub.common.version>
     <jenkins.version>2.60.1</jenkins.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>

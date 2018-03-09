@@ -8,6 +8,10 @@
     <f:entry title="${%HubCredentials}" field="hubCredentialsId" >
         <c:select/>
     </f:entry>
+    <f:entry title="${%HubApiToken}" field="hubApiToken"
+      description="${%HubApiTokenDescription}">
+        <f:textbox field="hubApiToken" value="${instance.getHubApiToken()}"/>
+    </f:entry>
     <f:entry title="${%HubDetectVersion}" field="detectDownloadUrl" >
         <f:select/>
     </f:entry>
