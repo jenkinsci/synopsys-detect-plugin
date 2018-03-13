@@ -29,7 +29,7 @@
     </f:advanced>
     
     <f:validateButton title="${%HubTestConnection}" progress="${%TestConnectionProgress}"
-         method="testConnection" with="hubUrl,hubCredentialsId,hubTimeout,trustSSLCertificates" />
+         method="testConnection" with="hubUrl,hubCredentialsId,hubApiToken,hubTimeout,trustSSLCertificates" />
     
   </f:section>
 </j:jelly>

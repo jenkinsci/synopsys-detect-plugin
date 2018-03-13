@@ -241,14 +241,14 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
      * Performs on-the-fly validation of the form field 'serverUrl'.
      *
      */
-    public FormValidation doCheckHubUrl(@QueryParameter("hubUrl") final String hubUrl) {
+    public FormValidation doCheckHubUrl(@QueryParameter("hubUrl") final String hubUrl, @QueryParameter("trustSSLCertificates") final boolean trustSSLCertificates) {
         if (StringUtils.isBlank(hubUrl)) {
             return FormValidation.ok();
         }
 
         final HubServerConfigValidator validator = new HubServerConfigValidator();
         validator.setHubUrl(hubUrl);
-        validator.setAlwaysTrustServerCertificate(isTrustSSLCertificates());
+        validator.setAlwaysTrustServerCertificate(trustSSLCertificates);
         final ProxyInfo proxyInfo = JenkinsProxyHelper.getProxyInfo(hubUrl);
         if (null != proxyInfo && ProxyInfo.NO_PROXY_INFO != proxyInfo) {
             validator.setProxyHost(proxyInfo.getHost());
@@ -349,7 +349,7 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
 
             final HubServerConfig hubServerConfig = hubServerConfigBuilder.build();
 
-            final RestConnection connection = hubServerConfig.createCredentialsRestConnection(new PrintStreamIntLogger(System.out, LogLevel.DEBUG));
+            final RestConnection connection = hubServerConfig.createRestConnection(new PrintStreamIntLogger(System.out, LogLevel.DEBUG));
             connection.connect();
             return FormValidation.ok(Messages.DetectPostBuildStep_getCredentialsValidFor_0_(hubUrl));
 

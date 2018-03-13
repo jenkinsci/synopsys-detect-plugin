@@ -50,10 +50,10 @@
   </distributionManagement>
 
   <properties>
-	<java.level>8</java.level>
     <findbugs.failOnError>false</findbugs.failOnError>
     <hpi-plugin.version>2.2</hpi-plugin.version>
     <hub.common.version>28.0.4</hub.common.version>
+    <java.level>8</java.level>
     <jenkins.version>2.60.1</jenkins.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -269,26 +269,6 @@
           <version>2.19.1</version>
         </plugin>
         <plugin>
-          <groupId>org.jacoco</groupId>
-          <artifactId>jacoco-maven-plugin</artifactId>
-          <version>0.7.6.201602180812</version>
-          <executions>
-            <execution>
-              <id>default-prepare-agent</id>
-              <goals>
-                <goal>prepare-agent</goal>
-              </goals>
-            </execution>
-            <execution>
-              <id>default-report</id>
-              <phase>prepare-package</phase>
-              <goals>
-                <goal>report</goal>
-              </goals>
-            </execution>
-          </executions>
-        </plugin>
-        <plugin>
           <groupId>org.eluder.coveralls</groupId>
           <artifactId>coveralls-maven-plugin</artifactId>
           <version>4.1.0</version>
@@ -433,10 +413,6 @@ under the License.</inlineHeader>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
-      </plugin>
-      <plugin>
-        <groupId>org.jacoco</groupId>
-        <artifactId>jacoco-maven-plugin</artifactId>
       </plugin>
       <plugin>
         <groupId>org.eluder.coveralls</groupId>
