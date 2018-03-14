@@ -173,13 +173,13 @@ public class DetectVersionRequestService {
         restConnectionBuilder.setAlwaysTrustServerCertificate(trustSSLCertificates);
         restConnectionBuilder.setBaseUrl(url);
         restConnectionBuilder.setLogger(logger);
-        setProxyInformation(restConnectionBuilder);
+        setProxyInformation(restConnectionBuilder, url);
         restConnectionBuilder.setTimeout(connectionTimeout);
         return restConnectionBuilder.build();
     }
 
-    private void setProxyInformation(final AbstractRestConnectionBuilder restConnectionBuilder) {
-        if (null != proxyInfo && ProxyInfo.NO_PROXY_INFO != proxyInfo && JenkinsProxyHelper.shouldUseProxy(restConnectionBuilder.getBaseConnectionUrl())) {
+    private void setProxyInformation(final AbstractRestConnectionBuilder restConnectionBuilder, final String url) {
+        if (JenkinsProxyHelper.shouldUseProxy(proxyInfo, url)) {
             restConnectionBuilder.setProxyHost(proxyInfo.getHost());
             restConnectionBuilder.setProxyPort(proxyInfo.getPort());
             restConnectionBuilder.setProxyUsername(proxyInfo.getUsername());

@@ -90,9 +90,10 @@ public class DetectCommonStep {
             final DetectRemoteRunner detectRemoteRunner = new DetectRemoteRunner(logger, javaHome, hubUrl, hubUsername, hubPassword, hubApiToken, hubTimeout, trustSSLCertificates, HubServerInfoSingleton.getInstance().getDetectDownloadUrl(),
                     toolsDirectory, getCorrectedParameters(detectProperties), envVars);
 
-            final ProxyInfo proxyInfo = JenkinsProxyHelper.getProxyInfo(hubUrl);
-            detectRemoteRunner.setProxyInfo(proxyInfo);
-
+            final ProxyInfo proxyInfo = JenkinsProxyHelper.getProxyInfo();
+            if (JenkinsProxyHelper.shouldUseProxy(proxyInfo, hubUrl)) {
+                detectRemoteRunner.setProxyInfo(proxyInfo);
+            }
             node.getChannel().call(detectRemoteRunner);
         } catch (final HubIntegrationException e) {
             logger.error(e.getMessage());
