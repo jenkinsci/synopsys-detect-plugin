@@ -45,6 +45,8 @@ import javax.xml.transform.stream.StreamSource;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
+import org.jenkinsci.plugins.plaincredentials.StringCredentials;
+import org.jenkinsci.plugins.plaincredentials.impl.StringCredentialsImpl;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
@@ -72,10 +74,10 @@ import com.blackducksoftware.integration.validator.ValidationResults;
 import com.cloudbees.plugins.credentials.CredentialsMatcher;
 import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
-import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.cloudbees.plugins.credentials.domains.DomainRequirement;
+import com.cloudbees.plugins.credentials.impl.BaseStandardCredentials;
 import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
 import com.cloudbees.plugins.credentials.matchers.IdMatcher;
 
@@ -95,7 +97,6 @@ import net.sf.json.JSONObject;
 public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher> implements Serializable {
     private String hubUrl;
     private String hubCredentialsId;
-    private String hubApiToken;
     private int hubTimeout = 120;
     private boolean trustSSLCertificates;
     private String detectArtifactUrl;
@@ -108,7 +109,6 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
         HubServerInfoSingleton.getInstance().setHubUrl(hubUrl);
         HubServerInfoSingleton.getInstance().setHubCredentialsId(hubCredentialsId);
         HubServerInfoSingleton.getInstance().setHubTimeout(hubTimeout);
-        HubServerInfoSingleton.getInstance().setHubApiToken(hubApiToken);
         HubServerInfoSingleton.getInstance().setTrustSSLCertificates(trustSSLCertificates);
         HubServerInfoSingleton.getInstance().setDetectArtifactUrl(detectArtifactUrl);
         HubServerInfoSingleton.getInstance().setDetectDownloadUrl(detectDownloadUrl);
@@ -128,14 +128,6 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
 
     public void setHubCredentialsId(final String hubCredentialsId) {
         this.hubCredentialsId = hubCredentialsId;
-    }
-
-    public String getHubApiToken() {
-        return hubApiToken;
-    }
-
-    public void setHubApiToken(final String hubApiToken) {
-        this.hubApiToken = hubApiToken;
     }
 
     public int getHubTimeout() {
@@ -280,11 +272,10 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
                 changed = true;
                 Thread.currentThread().setContextClassLoader(DetectPostBuildStepDescriptor.class.getClassLoader());
             }
-            // Code copied from https://github.com/jenkinsci/git-plugin/blob/f6d42c4e7edb102d3330af5ca66a7f5809d1a48e/src/main/java/hudson/plugins/git/UserRemoteConfig.java
-            final CredentialsMatcher credentialsMatcher = CredentialsMatchers.anyOf(CredentialsMatchers.instanceOf(StandardUsernamePasswordCredentials.class));
+            final CredentialsMatcher credentialsMatcher = CredentialsMatchers.anyOf(CredentialsMatchers.instanceOf(StandardUsernamePasswordCredentials.class), CredentialsMatchers.instanceOf(StringCredentials.class));
             // Dont want to limit the search to a particular project for the drop down menu
             final AbstractProject<?, ?> project = null;
-            boxModel = new StandardListBoxModel().withEmptySelection().withMatching(credentialsMatcher, CredentialsProvider.lookupCredentials(StandardCredentials.class, project, ACL.SYSTEM, Collections.<DomainRequirement> emptyList()));
+            boxModel = new StandardListBoxModel().withEmptySelection().withMatching(credentialsMatcher, CredentialsProvider.lookupCredentials(BaseStandardCredentials.class, project, ACL.SYSTEM, Collections.<DomainRequirement> emptyList()));
         } finally {
             if (changed) {
                 Thread.currentThread().setContextClassLoader(originalClassLoader);
@@ -293,8 +284,7 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
         return boxModel;
     }
 
-    public FormValidation doTestConnection(@QueryParameter("hubUrl") final String hubUrl, @QueryParameter("hubCredentialsId") final String hubCredentialsId, @QueryParameter("hubApiToken") final String hubApiToken,
-            @QueryParameter("hubTimeout") final String hubTimeout,
+    public FormValidation doTestConnection(@QueryParameter("hubUrl") final String hubUrl, @QueryParameter("hubCredentialsId") final String hubCredentialsId, @QueryParameter("hubTimeout") final String hubTimeout,
             @QueryParameter("trustSSLCertificates") final boolean trustSSLCertificates) {
         final ClassLoader originalClassLoader = Thread.currentThread().getContextClassLoader();
         boolean changed = false;
@@ -306,27 +296,35 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
             if (StringUtils.isBlank(hubUrl)) {
                 return FormValidation.error(Messages.DetectPostBuildStep_getPleaseSetServerUrl());
             }
-            if (StringUtils.isBlank(hubCredentialsId) && StringUtils.isBlank(hubApiToken)) {
+            if (StringUtils.isBlank(hubCredentialsId)) {
                 return FormValidation.error(Messages.DetectPostBuildStep_getPleaseSetHubCredentials());
             }
 
             String credentialUserName = null;
             String credentialPassword = null;
+            String hubApiToken = null;
             if (StringUtils.isNotBlank(hubCredentialsId)) {
-                UsernamePasswordCredentialsImpl credential = null;
-                final AbstractProject<?, ?> project = null;
-                final List<StandardUsernamePasswordCredentials> credentials = CredentialsProvider.lookupCredentials(StandardUsernamePasswordCredentials.class, project, ACL.SYSTEM, Collections.<DomainRequirement> emptyList());
-                final IdMatcher matcher = new IdMatcher(hubCredentialsId);
-                for (final StandardCredentials c : credentials) {
-                    if (matcher.matches(c) && c instanceof UsernamePasswordCredentialsImpl) {
-                        credential = (UsernamePasswordCredentialsImpl) c;
+                BaseStandardCredentials credential = null;
+                if (StringUtils.isNotBlank(hubCredentialsId)) {
+                    final AbstractProject<?, ?> project = null;
+                    final List<BaseStandardCredentials> credentials = CredentialsProvider.lookupCredentials(BaseStandardCredentials.class, project, ACL.SYSTEM, Collections.<DomainRequirement> emptyList());
+                    final IdMatcher matcher = new IdMatcher(hubCredentialsId);
+                    for (final BaseStandardCredentials c : credentials) {
+                        if (matcher.matches(c)) {
+                            credential = c;
+                        }
                     }
                 }
                 if (credential == null) {
                     return FormValidation.error(Messages.DetectPostBuildStep_getPleaseSetHubCredentials());
+                } else if (credential instanceof UsernamePasswordCredentialsImpl) {
+                    final UsernamePasswordCredentialsImpl creds = (UsernamePasswordCredentialsImpl) credential;
+                    credentialUserName = creds.getUsername();
+                    credentialPassword = creds.getPassword().getPlainText();
+                } else if (credential instanceof StringCredentialsImpl) {
+                    final StringCredentialsImpl creds = (StringCredentialsImpl) credential;
+                    hubApiToken = creds.getSecret().getPlainText();
                 }
-                credentialUserName = credential.getUsername();
-                credentialPassword = credential.getPassword().getPlainText();
             }
 
             final HubServerConfigBuilder hubServerConfigBuilder = new HubServerConfigBuilder();
@@ -393,7 +391,6 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
 
         hubUrl = formData.getString("hubUrl");
         hubCredentialsId = formData.getString("hubCredentialsId");
-        hubApiToken = formData.getString("hubApiToken");
         hubTimeout = NumberUtils.toInt(formData.getString("hubTimeout"), 120);
         trustSSLCertificates = formData.getBoolean("trustSSLCertificates");
         detectArtifactUrl = formData.getString("detectArtifactUrl");
@@ -401,7 +398,6 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
         save();
         HubServerInfoSingleton.getInstance().setHubUrl(hubUrl);
         HubServerInfoSingleton.getInstance().setHubCredentialsId(hubCredentialsId);
-        HubServerInfoSingleton.getInstance().setHubApiToken(hubApiToken);
         HubServerInfoSingleton.getInstance().setHubTimeout(hubTimeout);
         HubServerInfoSingleton.getInstance().setTrustSSLCertificates(trustSSLCertificates);
         HubServerInfoSingleton.getInstance().setDetectArtifactUrl(detectArtifactUrl);
@@ -457,7 +453,6 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
 
         final String hubUrl = getNodeValue(doc, "hubUrl", null);
         final String hubCredentialsId = getNodeValue(doc, "hubCredentialsId", null);
-        final String hubApiToken = getNodeValue(doc, "hubApiToken", null);
         final String hubTimeout = getNodeValue(doc, "hubTimeout", "120");
         final String trustSSLCertificatesString = getNodeValue(doc, "trustSSLCertificates", "false");
         final String detectArtifactUrl = getNodeValue(doc, "detectArtifactUrl", null);
@@ -473,13 +468,11 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
         }
         setHubUrl(hubUrl);
         setHubCredentialsId(hubCredentialsId);
-        setHubApiToken(hubApiToken);
         setHubTimeout(serverTimeout);
         setTrustSSLCertificates(trustSSLCertificates);
 
         HubServerInfoSingleton.getInstance().setHubUrl(hubUrl);
         HubServerInfoSingleton.getInstance().setHubCredentialsId(hubCredentialsId);
-        HubServerInfoSingleton.getInstance().setHubApiToken(hubApiToken);
         HubServerInfoSingleton.getInstance().setHubTimeout(serverTimeout);
         HubServerInfoSingleton.getInstance().setTrustSSLCertificates(trustSSLCertificates);
         HubServerInfoSingleton.getInstance().setDetectArtifactUrl(detectArtifactUrl);

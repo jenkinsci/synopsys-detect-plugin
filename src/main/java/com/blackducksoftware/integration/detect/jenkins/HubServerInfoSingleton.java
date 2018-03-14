@@ -27,11 +27,11 @@ import java.util.Collections;
 import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
+import org.jenkinsci.plugins.plaincredentials.impl.StringCredentialsImpl;
 
 import com.cloudbees.plugins.credentials.CredentialsProvider;
-import com.cloudbees.plugins.credentials.common.StandardCredentials;
-import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.cloudbees.plugins.credentials.domains.DomainRequirement;
+import com.cloudbees.plugins.credentials.impl.BaseStandardCredentials;
 import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
 import com.cloudbees.plugins.credentials.matchers.IdMatcher;
 
@@ -49,7 +49,6 @@ public class HubServerInfoSingleton {
 
     private String hubUrl;
     private String hubCredentialsId;
-    private String hubApiToken;
     private int hubTimeout;
     private boolean trustSSLCertificates;
     private String detectArtifactUrl;
@@ -76,14 +75,6 @@ public class HubServerInfoSingleton {
 
     public void setHubCredentialsId(final String hubCredentialsId) {
         this.hubCredentialsId = hubCredentialsId;
-    }
-
-    public String getHubApiToken() {
-        return hubApiToken;
-    }
-
-    public void setHubApiToken(final String hubApiToken) {
-        this.hubApiToken = hubApiToken;
     }
 
     public int getHubTimeout() {
@@ -119,32 +110,41 @@ public class HubServerInfoSingleton {
     }
 
     public String getHubUsername() {
-        final UsernamePasswordCredentialsImpl creds = getCredential();
-        if (creds == null) {
-            return null;
-        } else {
-            return creds.getUsername();
+        final BaseStandardCredentials creds = getCredential();
+        if (creds != null && creds instanceof UsernamePasswordCredentialsImpl) {
+            final UsernamePasswordCredentialsImpl credentials = (UsernamePasswordCredentialsImpl) creds;
+            return credentials.getUsername();
         }
+        return null;
     }
 
     public String getHubPassword() {
-        final UsernamePasswordCredentialsImpl creds = getCredential();
-        if (creds == null) {
-            return null;
-        } else {
-            return creds.getPassword().getPlainText();
+        final BaseStandardCredentials creds = getCredential();
+        if (creds != null && creds instanceof UsernamePasswordCredentialsImpl) {
+            final UsernamePasswordCredentialsImpl credentials = (UsernamePasswordCredentialsImpl) creds;
+            return credentials.getPassword().getPlainText();
         }
+        return null;
     }
 
-    public UsernamePasswordCredentialsImpl getCredential() {
-        UsernamePasswordCredentialsImpl credential = null;
+    public String getHubApiToken() {
+        final BaseStandardCredentials creds = getCredential();
+        if (creds != null && creds instanceof StringCredentialsImpl) {
+            final StringCredentialsImpl credentials = (StringCredentialsImpl) creds;
+            return credentials.getSecret().getPlainText();
+        }
+        return null;
+    }
+
+    public BaseStandardCredentials getCredential() {
+        BaseStandardCredentials credential = null;
         if (StringUtils.isNotBlank(hubCredentialsId)) {
             final AbstractProject<?, ?> project = null;
-            final List<StandardUsernamePasswordCredentials> credentials = CredentialsProvider.lookupCredentials(StandardUsernamePasswordCredentials.class, project, ACL.SYSTEM, Collections.<DomainRequirement> emptyList());
+            final List<BaseStandardCredentials> credentials = CredentialsProvider.lookupCredentials(BaseStandardCredentials.class, project, ACL.SYSTEM, Collections.<DomainRequirement> emptyList());
             final IdMatcher matcher = new IdMatcher(hubCredentialsId);
-            for (final StandardCredentials c : credentials) {
-                if (matcher.matches(c) && c instanceof UsernamePasswordCredentialsImpl) {
-                    credential = (UsernamePasswordCredentialsImpl) c;
+            for (final BaseStandardCredentials c : credentials) {
+                if (matcher.matches(c)) {
+                    credential = c;
                 }
             }
         }

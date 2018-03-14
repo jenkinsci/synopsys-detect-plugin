@@ -8,10 +8,6 @@
     <f:entry title="${%HubCredentials}" field="hubCredentialsId" >
         <c:select/>
     </f:entry>
-    <f:entry title="${%HubApiToken}" field="hubApiToken"
-      description="${%HubApiTokenDescription}">
-        <f:textbox field="hubApiToken" value="${instance.getHubApiToken()}"/>
-    </f:entry>
     <f:entry title="${%HubDetectVersion}" field="detectDownloadUrl" >
         <f:select/>
     </f:entry>
@@ -29,7 +25,7 @@
     </f:advanced>
     
     <f:validateButton title="${%HubTestConnection}" progress="${%TestConnectionProgress}"
-         method="testConnection" with="hubUrl,hubCredentialsId,hubApiToken,hubTimeout,trustSSLCertificates" />
+         method="testConnection" with="hubUrl,hubCredentialsId,hubTimeout,trustSSLCertificates" />
     
   </f:section>
 </j:jelly>
