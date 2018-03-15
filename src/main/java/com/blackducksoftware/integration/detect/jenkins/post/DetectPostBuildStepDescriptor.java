@@ -45,6 +45,8 @@ import javax.xml.transform.stream.StreamSource;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
+import org.jenkinsci.plugins.plaincredentials.StringCredentials;
+import org.jenkinsci.plugins.plaincredentials.impl.StringCredentialsImpl;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
@@ -60,26 +62,26 @@ import com.blackducksoftware.integration.detect.jenkins.HubServerInfoSingleton;
 import com.blackducksoftware.integration.detect.jenkins.JenkinsProxyHelper;
 import com.blackducksoftware.integration.detect.jenkins.Messages;
 import com.blackducksoftware.integration.exception.IntegrationException;
-import com.blackducksoftware.integration.hub.builder.HubServerConfigBuilder;
+import com.blackducksoftware.integration.hub.configuration.HubServerConfig;
+import com.blackducksoftware.integration.hub.configuration.HubServerConfigBuilder;
+import com.blackducksoftware.integration.hub.configuration.HubServerConfigValidator;
 import com.blackducksoftware.integration.hub.exception.HubIntegrationException;
-import com.blackducksoftware.integration.hub.global.HubServerConfig;
+import com.blackducksoftware.integration.hub.proxy.ProxyInfo;
 import com.blackducksoftware.integration.hub.rest.RestConnection;
-import com.blackducksoftware.integration.hub.validator.HubServerConfigValidator;
 import com.blackducksoftware.integration.log.LogLevel;
 import com.blackducksoftware.integration.log.PrintStreamIntLogger;
 import com.blackducksoftware.integration.validator.ValidationResults;
 import com.cloudbees.plugins.credentials.CredentialsMatcher;
 import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
-import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.cloudbees.plugins.credentials.domains.DomainRequirement;
+import com.cloudbees.plugins.credentials.impl.BaseStandardCredentials;
 import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
 import com.cloudbees.plugins.credentials.matchers.IdMatcher;
 
 import hudson.Extension;
-import hudson.ProxyConfiguration;
 import hudson.model.AbstractProject;
 import hudson.model.Descriptor;
 import hudson.security.ACL;
@@ -88,7 +90,6 @@ import hudson.tasks.Publisher;
 import hudson.util.FormValidation;
 import hudson.util.IOUtils;
 import hudson.util.ListBoxModel;
-import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 
 @Extension()
@@ -174,7 +175,7 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
     public ListBoxModel doFillDetectDownloadUrlItems() {
         final ListBoxModel boxModel = new ListBoxModel();
         try {
-            final DetectVersionRequestService detectVersionRequestService = getDetectVersionRequestService(getProxyConfiguration());
+            final DetectVersionRequestService detectVersionRequestService = getDetectVersionRequestService(JenkinsProxyHelper.getProxyInfo());
             final List<DetectVersionModel> detectVersionModels = detectVersionRequestService.getDetectVersionModels();
             for (final DetectVersionModel detectVersionModel : detectVersionModels) {
                 boxModel.add(detectVersionModel.getVersionName(), detectVersionModel.getVersionURL());
@@ -196,7 +197,7 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
 
     public FormValidation doCheckDetectDownloadUrl(@QueryParameter("detectDownloadUrl") final String detectDownloadUrl) {
         try {
-            final DetectVersionRequestService detectVersionRequestService = getDetectVersionRequestService(getProxyConfiguration());
+            final DetectVersionRequestService detectVersionRequestService = getDetectVersionRequestService(JenkinsProxyHelper.getProxyInfo());
             detectVersionRequestService.getDetectVersionModels();
         } catch (final IntegrationException e) {
             return FormValidation.error(couldNotGetVersionsMessage);
@@ -208,30 +209,8 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
         return FormValidation.ok();
     }
 
-    private DetectVersionRequestService getDetectVersionRequestService(final ProxyConfiguration proxyConfiguration) {
-        String proxyHost = null;
-        int proxyPort = 0;
-        String noProxyHost = null;
-        String proxyUsername = null;
-        String proxyPassword = null;
-
-        if (proxyConfiguration != null) {
-            proxyHost = proxyConfiguration.name;
-            proxyPort = proxyConfiguration.port;
-            noProxyHost = proxyConfiguration.noProxyHost;
-            proxyUsername = proxyConfiguration.getUserName();
-            proxyPassword = proxyConfiguration.getPassword();
-        }
-        return new DetectVersionRequestService(new PrintStreamIntLogger(System.out, LogLevel.DEBUG), isTrustSSLCertificates(), getHubTimeout(), proxyHost, proxyPort, noProxyHost, proxyUsername, proxyPassword);
-    }
-
-    private ProxyConfiguration getProxyConfiguration() {
-        ProxyConfiguration proxyConfig = null;
-        final Jenkins jenkins = Jenkins.getInstance();
-        if (jenkins != null) {
-            proxyConfig = jenkins.proxy;
-        }
-        return proxyConfig;
+    private DetectVersionRequestService getDetectVersionRequestService(final ProxyInfo proxyInfo) {
+        return new DetectVersionRequestService(new PrintStreamIntLogger(System.out, LogLevel.DEBUG), isTrustSSLCertificates(), getHubTimeout(), proxyInfo);
     }
 
     public FormValidation doCheckHubTimeout(@QueryParameter("hubTimeout") final String hubTimeout) {
@@ -254,27 +233,26 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
      * Performs on-the-fly validation of the form field 'serverUrl'.
      *
      */
-    public FormValidation doCheckHubUrl(@QueryParameter("hubUrl") final String hubUrl) {
+    public FormValidation doCheckHubUrl(@QueryParameter("hubUrl") final String hubUrl, @QueryParameter("trustSSLCertificates") final boolean trustSSLCertificates) {
         if (StringUtils.isBlank(hubUrl)) {
             return FormValidation.ok();
         }
-        ProxyConfiguration proxyConfig = null;
-        final Jenkins jenkins = Jenkins.getInstance();
-        if (jenkins != null) {
-            proxyConfig = jenkins.proxy;
-        }
+
         final HubServerConfigValidator validator = new HubServerConfigValidator();
         validator.setHubUrl(hubUrl);
-        validator.setAlwaysTrustServerCertificate(isTrustSSLCertificates());
-        if (proxyConfig != null) {
-            if (JenkinsProxyHelper.shouldUseProxy(hubUrl, proxyConfig.noProxyHost)) {
-                validator.setProxyHost(proxyConfig.name);
-                validator.setProxyPort(proxyConfig.port);
-                validator.setProxyUsername(proxyConfig.getUserName());
-                validator.setProxyPassword(proxyConfig.getPassword());
-                // Must call assertProxyValid to complete setup of proxyInfo on this object
-                validator.assertProxyValid();
-            }
+        validator.setAlwaysTrustServerCertificate(trustSSLCertificates);
+        final ProxyInfo proxyInfo = JenkinsProxyHelper.getProxyInfo();
+        if (JenkinsProxyHelper.shouldUseProxy(proxyInfo, hubUrl)) {
+            validator.setProxyHost(proxyInfo.getHost());
+            validator.setProxyPort(proxyInfo.getPort());
+            validator.setProxyUsername(proxyInfo.getUsername());
+            validator.setProxyPassword(proxyInfo.getEncryptedPassword());
+            validator.setProxyPasswordLength(proxyInfo.getActualPasswordLength());
+            validator.setProxyNtlmDomain(proxyInfo.getNtlmDomain());
+            validator.setProxyNtlmWorkstation(proxyInfo.getNtlmWorkstation());
+
+            // Must call assertProxyValid to complete setup of proxyInfo on this object
+            validator.assertProxyValid();
         }
         final ValidationResults results = new ValidationResults();
         validator.validateHubUrl(results);
@@ -294,11 +272,10 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
                 changed = true;
                 Thread.currentThread().setContextClassLoader(DetectPostBuildStepDescriptor.class.getClassLoader());
             }
-            // Code copied from https://github.com/jenkinsci/git-plugin/blob/f6d42c4e7edb102d3330af5ca66a7f5809d1a48e/src/main/java/hudson/plugins/git/UserRemoteConfig.java
-            final CredentialsMatcher credentialsMatcher = CredentialsMatchers.anyOf(CredentialsMatchers.instanceOf(StandardUsernamePasswordCredentials.class));
+            final CredentialsMatcher credentialsMatcher = CredentialsMatchers.anyOf(CredentialsMatchers.instanceOf(StandardUsernamePasswordCredentials.class), CredentialsMatchers.instanceOf(StringCredentials.class));
             // Dont want to limit the search to a particular project for the drop down menu
             final AbstractProject<?, ?> project = null;
-            boxModel = new StandardListBoxModel().withEmptySelection().withMatching(credentialsMatcher, CredentialsProvider.lookupCredentials(StandardCredentials.class, project, ACL.SYSTEM, Collections.<DomainRequirement> emptyList()));
+            boxModel = new StandardListBoxModel().withEmptySelection().withMatching(credentialsMatcher, CredentialsProvider.lookupCredentials(BaseStandardCredentials.class, project, ACL.SYSTEM, Collections.<DomainRequirement> emptyList()));
         } finally {
             if (changed) {
                 Thread.currentThread().setContextClassLoader(originalClassLoader);
@@ -325,48 +302,52 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
 
             String credentialUserName = null;
             String credentialPassword = null;
-
-            UsernamePasswordCredentialsImpl credential = null;
-            final AbstractProject<?, ?> project = null;
-            final List<StandardUsernamePasswordCredentials> credentials = CredentialsProvider.lookupCredentials(StandardUsernamePasswordCredentials.class, project, ACL.SYSTEM, Collections.<DomainRequirement> emptyList());
-            final IdMatcher matcher = new IdMatcher(hubCredentialsId);
-            for (final StandardCredentials c : credentials) {
-                if (matcher.matches(c) && c instanceof UsernamePasswordCredentialsImpl) {
-                    credential = (UsernamePasswordCredentialsImpl) c;
+            String hubApiToken = null;
+            if (StringUtils.isNotBlank(hubCredentialsId)) {
+                BaseStandardCredentials credential = null;
+                if (StringUtils.isNotBlank(hubCredentialsId)) {
+                    final AbstractProject<?, ?> project = null;
+                    final List<BaseStandardCredentials> credentials = CredentialsProvider.lookupCredentials(BaseStandardCredentials.class, project, ACL.SYSTEM, Collections.<DomainRequirement> emptyList());
+                    final IdMatcher matcher = new IdMatcher(hubCredentialsId);
+                    for (final BaseStandardCredentials c : credentials) {
+                        if (matcher.matches(c)) {
+                            credential = c;
+                        }
+                    }
+                }
+                if (credential == null) {
+                    return FormValidation.error(Messages.DetectPostBuildStep_getPleaseSetHubCredentials());
+                } else if (credential instanceof UsernamePasswordCredentialsImpl) {
+                    final UsernamePasswordCredentialsImpl creds = (UsernamePasswordCredentialsImpl) credential;
+                    credentialUserName = creds.getUsername();
+                    credentialPassword = creds.getPassword().getPlainText();
+                } else if (credential instanceof StringCredentialsImpl) {
+                    final StringCredentialsImpl creds = (StringCredentialsImpl) credential;
+                    hubApiToken = creds.getSecret().getPlainText();
                 }
             }
-            if (credential == null) {
-                return FormValidation.error(Messages.DetectPostBuildStep_getPleaseSetHubCredentials());
-            }
-            credentialUserName = credential.getUsername();
-            credentialPassword = credential.getPassword().getPlainText();
 
             final HubServerConfigBuilder hubServerConfigBuilder = new HubServerConfigBuilder();
             hubServerConfigBuilder.setHubUrl(hubUrl);
             hubServerConfigBuilder.setUsername(credentialUserName);
             hubServerConfigBuilder.setPassword(credentialPassword);
+            hubServerConfigBuilder.setApiToken(hubApiToken);
             hubServerConfigBuilder.setTimeout(hubTimeout);
             hubServerConfigBuilder.setAlwaysTrustServerCertificate(trustSSLCertificates);
-
-            final Jenkins jenkins = Jenkins.getInstance();
-            if (jenkins != null) {
-                final ProxyConfiguration proxyConfig = jenkins.proxy;
-                if (proxyConfig != null) {
-                    if (JenkinsProxyHelper.shouldUseProxy(hubUrl, proxyConfig.noProxyHost)) {
-                        if (StringUtils.isNotBlank(proxyConfig.name) && proxyConfig.port >= 0) {
-                            hubServerConfigBuilder.setProxyHost(proxyConfig.name);
-                            hubServerConfigBuilder.setProxyPort(proxyConfig.port);
-                            if (StringUtils.isNotBlank(jenkins.proxy.getUserName()) && StringUtils.isNotBlank(jenkins.proxy.getPassword())) {
-                                hubServerConfigBuilder.setProxyUsername(jenkins.proxy.getUserName());
-                                hubServerConfigBuilder.setProxyPassword(jenkins.proxy.getPassword());
-                            }
-                        }
-                    }
-                }
+            final ProxyInfo proxyInfo = JenkinsProxyHelper.getProxyInfo();
+            if (JenkinsProxyHelper.shouldUseProxy(proxyInfo, hubUrl)) {
+                hubServerConfigBuilder.setProxyHost(proxyInfo.getHost());
+                hubServerConfigBuilder.setProxyPort(proxyInfo.getPort());
+                hubServerConfigBuilder.setProxyUsername(proxyInfo.getUsername());
+                hubServerConfigBuilder.setProxyPassword(proxyInfo.getEncryptedPassword());
+                hubServerConfigBuilder.setProxyPasswordLength(proxyInfo.getActualPasswordLength());
+                hubServerConfigBuilder.setProxyNtlmDomain(proxyInfo.getNtlmDomain());
+                hubServerConfigBuilder.setProxyNtlmWorkstation(proxyInfo.getNtlmWorkstation());
             }
+
             final HubServerConfig hubServerConfig = hubServerConfigBuilder.build();
 
-            final RestConnection connection = hubServerConfig.createCredentialsRestConnection(new PrintStreamIntLogger(System.out, LogLevel.DEBUG));
+            final RestConnection connection = hubServerConfig.createRestConnection(new PrintStreamIntLogger(System.out, LogLevel.DEBUG));
             connection.connect();
             return FormValidation.ok(Messages.DetectPostBuildStep_getCredentialsValidFor_0_(hubUrl));
 
