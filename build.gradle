@@ -11,7 +11,7 @@ plugins {
   id 'org.jenkins-ci.jpi' version '0.25.0'
 }
 
-version = '1.2.1-SNAPSHOT'
+version = '1.3.0-SNAPSHOT'
 
 apply plugin: 'com.blackducksoftware.integration.solution'
 
@@ -31,19 +31,21 @@ def mavenRepo = project.repositories.findByName('maven')
 project.repositories.remove(mavenRepo)
 
 jenkinsPlugin {
-    coreVersion = '1.580.3'
+    coreVersion = '2.60.1'
     displayName = 'Black Duck Detect Plugin'
     url = 'https://wiki.jenkins.io/display/JENKINS/Black+Duck+Detect+Plugin'
     gitHubUrl = 'https://github.com/jenkinsci/blackduck-detect-plugin'
 }
 
 dependencies {
-	compile 'com.blackducksoftware.integration:hub-common:19.0.0'
+	compile 'com.blackducksoftware.integration:hub-common:28.0.4'
+    compile 'org.jvnet.localizer:localizer:1.24'
 
     jenkinsPlugins 'org.jenkins-ci.plugins:credentials:1.9.4'
-
+    jenkinsPlugins 'org.jenkins-ci.plugins:plain-credentials:1.0'
+    
     optionalJenkinsPlugins 'org.jenkins-ci.plugins:job-dsl:1.67'
     optionalJenkinsPlugins 'org.jenkins-ci.plugins.workflow:workflow-job:2.9'
     optionalJenkinsPlugins 'org.jenkins-ci.plugins.workflow:workflow-cps:2.23'
-    optionalJenkinsPlugins 'org.jenkins-ci.plugins.workflow:workflow-step-api:2.3'
+    optionalJenkinsPlugins 'org.jenkins-ci.plugins.workflow:workflow-step-api:2.5'
 }
