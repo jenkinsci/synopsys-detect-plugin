@@ -122,9 +122,8 @@
       <artifactId>credentials</artifactId>
       <version>1.9.4</version>
     </dependency>
-    <dependency>
-    	<!-- if our plugin is installed via the Jenkins Update Center, our depdendencies will be installed as well https://groups.google.com/forum/#!topic/jenkinsci-dev/Vf3BaCTiU3E -->
-    	<!-- if our plugin is manually uploaded, our dependencies will not be installed -->
+    <dependency><!-- if our plugin is installed via the Jenkins Update Center, our depdendencies will be installed as well https://groups.google.com/forum/#!topic/jenkinsci-dev/Vf3BaCTiU3E -->
+      <!-- if our plugin is manually uploaded, our dependencies will not be installed -->
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>plain-credentials</artifactId>
       <version>1.0</version>

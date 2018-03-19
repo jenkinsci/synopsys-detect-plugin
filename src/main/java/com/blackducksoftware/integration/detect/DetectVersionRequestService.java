@@ -153,7 +153,7 @@ public class DetectVersionRequestService {
     }
 
     public String getLatestReleasedDetectVersion() throws IntegrationException, IOException {
-        final String detectLatestVersionUrl = getArtifactoryBaseUrl() + "/artifactory/bds-integrations-release/com/blackducksoftware/integration/hub-detect/maven-metadata.xml";
+        final String detectLatestVersionUrl = getArtifactoryBaseUrl() + "/artifactory/api/search/latestVersion?g=com.blackducksoftware.integration&a=hub-detect&repos=bds-integrations-release";
         final RestConnection restConnection = createUnauthenticatedRestConnection(detectLatestVersionUrl);
 
         final Request request = new Request.Builder().uri(detectLatestVersionUrl).mimeType("text/plain").build();
