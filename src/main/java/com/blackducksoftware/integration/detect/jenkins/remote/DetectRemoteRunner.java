@@ -27,6 +27,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.SystemUtils;
 import org.jenkinsci.remoting.Role;
@@ -145,22 +146,28 @@ public class DetectRemoteRunner implements Callable<String, IntegrationException
             setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_AUTO_IMPORT_CERT", String.valueOf(trustSSLCertificates));
             setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_TRUST_CERT", String.valueOf(trustSSLCertificates));
 
-            setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_PROXY_HOST", proxyHost);
+            if (StringUtils.isNotBlank(proxyHost)) {
+                setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_PROXY_HOST", proxyHost);
+            }
             setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_PROXY_PORT", String.valueOf(proxyPort));
-            setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_PROXY_USERNAME", proxyUsername);
-            setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_PROXY_PASSWORD", proxyPassword);
-            setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_PROXY_NTLM_DOMAIN", proxyNtlmDomain);
+            if (StringUtils.isNotBlank(proxyUsername)) {
+                setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_PROXY_USERNAME", proxyUsername);
+            }
+            if (StringUtils.isNotBlank(proxyPassword)) {
+                setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_PROXY_PASSWORD", proxyPassword);
+            }
+            if (StringUtils.isNotBlank(proxyNtlmDomain)) {
+                setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_PROXY_NTLM_DOMAIN", proxyNtlmDomain);
+            }
 
             final Process process = processBuilder.start();
-
             final StreamRedirectThread redirectStdOutThread = new StreamRedirectThread(process.getInputStream(), logger.getJenkinsListener().getLogger());
             redirectStdOutThread.start();
 
-            final StreamRedirectThread redirectErrOutThread = new StreamRedirectThread(process.getErrorStream(), logger.getJenkinsListener().getLogger());
-            redirectErrOutThread.start();
-
             final int exitCode = process.waitFor();
+            redirectStdOutThread.join(0);
 
+            IOUtils.copy(process.getErrorStream(), logger.getJenkinsListener().getLogger());
             if (exitCode != 0) {
                 throw new HubIntegrationException("Hub Detect failed with exit code : " + exitCode);
             }
