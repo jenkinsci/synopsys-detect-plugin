@@ -33,7 +33,6 @@ import org.apache.commons.lang3.StringUtils;
 
 import com.blackducksoftware.integration.detect.DetectVersionRequestService;
 import com.blackducksoftware.integration.exception.IntegrationException;
-import com.blackducksoftware.integration.hub.proxy.ProxyInfo;
 import com.blackducksoftware.integration.log.IntLogger;
 
 public class DetectDownloadManager {
@@ -46,11 +45,12 @@ public class DetectDownloadManager {
 
     private final DetectVersionRequestService detectVersionRequestService;
 
-    public DetectDownloadManager(final IntLogger logger, final String toolsDirectory, final Boolean trustSSLCertificates, final int connectionTimeout, final ProxyInfo proxyInfo) {
+    public DetectDownloadManager(final IntLogger logger, final String toolsDirectory, final Boolean trustSSLCertificates, final int connectionTimeout, final String proxyHost, final int proxyPort,
+            final String proxyUsername, final String proxyPassword, final String proxyNtlmDomain) {
         this.logger = logger;
         this.toolsDirectory = toolsDirectory;
 
-        this.detectVersionRequestService = new DetectVersionRequestService(logger, trustSSLCertificates, connectionTimeout, proxyInfo);
+        this.detectVersionRequestService = new DetectVersionRequestService(logger, trustSSLCertificates, connectionTimeout);
     }
 
     public File handleDownload(final String fileUrl) throws IntegrationException, IOException {

@@ -35,6 +35,7 @@ import org.jenkinsci.remoting.RoleChecker;
 import com.blackducksoftware.integration.detect.jenkins.JenkinsDetectLogger;
 import com.blackducksoftware.integration.detect.jenkins.PluginHelper;
 import com.blackducksoftware.integration.detect.jenkins.tools.DetectDownloadManager;
+import com.blackducksoftware.integration.exception.EncryptionException;
 import com.blackducksoftware.integration.exception.IntegrationException;
 import com.blackducksoftware.integration.hub.exception.HubIntegrationException;
 import com.blackducksoftware.integration.hub.proxy.ProxyInfo;
@@ -62,7 +63,11 @@ public class DetectRemoteRunner implements Callable<String, IntegrationException
 
     private final EnvVars envVars;
 
-    private ProxyInfo proxyInfo;
+    private String proxyHost;
+    private int proxyPort;
+    private String proxyUsername;
+    private String proxyPassword;
+    private String proxyNtlmDomain;
 
     public DetectRemoteRunner(final JenkinsDetectLogger logger, final String javaHome, final String hubUrl, final String hubUsername, final String hubPassword, final String hubApiToken, final int hubTimeout,
             final boolean trustSSLCertificates,
@@ -100,7 +105,7 @@ public class DetectRemoteRunner implements Callable<String, IntegrationException
             }
             logger.info("Running with JAVA : " + javaExecutablePath);
             logger.info("Detect configured : " + detectDownloadUrl);
-            final DetectDownloadManager detectDownloadManager = new DetectDownloadManager(logger, toolsDirectory, trustSSLCertificates, hubTimeout, proxyInfo);
+            final DetectDownloadManager detectDownloadManager = new DetectDownloadManager(logger, toolsDirectory, trustSSLCertificates, hubTimeout, proxyHost, proxyPort, proxyUsername, proxyPassword, proxyNtlmDomain);
             final File hubDetectJar = detectDownloadManager.handleDownload(detectDownloadUrl);
 
             logger.info("Running Detect : " + hubDetectJar.getName());
@@ -140,13 +145,11 @@ public class DetectRemoteRunner implements Callable<String, IntegrationException
             setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_AUTO_IMPORT_CERT", String.valueOf(trustSSLCertificates));
             setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_TRUST_CERT", String.valueOf(trustSSLCertificates));
 
-            if (null != proxyInfo && ProxyInfo.NO_PROXY_INFO != proxyInfo && null != proxyInfo.getHost()) {
-                setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_PROXY_HOST", proxyInfo.getHost());
-                setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_PROXY_PORT", String.valueOf(proxyInfo.getPort()));
-                setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_PROXY_USERNAME", proxyInfo.getUsername());
-                setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_PROXY_PASSWORD", proxyInfo.getDecryptedPassword());
-                setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_PROXY_NTLM_DOMAIN", proxyInfo.getNtlmDomain());
-            }
+            setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_PROXY_HOST", proxyHost);
+            setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_PROXY_PORT", String.valueOf(proxyPort));
+            setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_PROXY_USERNAME", proxyUsername);
+            setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_PROXY_PASSWORD", proxyPassword);
+            setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_PROXY_NTLM_DOMAIN", proxyNtlmDomain);
 
             final Process process = processBuilder.start();
 
@@ -179,7 +182,15 @@ public class DetectRemoteRunner implements Callable<String, IntegrationException
     }
 
     public void setProxyInfo(final ProxyInfo proxyInfo) {
-        this.proxyInfo = proxyInfo;
+        this.proxyHost = proxyInfo.getHost();
+        this.proxyPort = proxyInfo.getPort();
+        this.proxyUsername = proxyInfo.getUsername();
+        try {
+            this.proxyPassword = proxyInfo.getDecryptedPassword();
+        } catch (IllegalArgumentException | EncryptionException e) {
+            logger.error(e.getMessage(), e);
+        }
+        this.proxyNtlmDomain = proxyInfo.getNtlmDomain();
     }
 
 }
