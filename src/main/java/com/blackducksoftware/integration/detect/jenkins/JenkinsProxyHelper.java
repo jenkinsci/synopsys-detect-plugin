@@ -23,20 +23,18 @@
  */
 package com.blackducksoftware.integration.detect.jenkins;
 
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.List;
-import java.util.regex.Pattern;
-
-import org.apache.commons.lang3.StringUtils;
-
 import com.blackducksoftware.integration.hub.proxy.ProxyInfo;
 import com.blackducksoftware.integration.hub.proxy.ProxyInfoBuilder;
 import com.blackducksoftware.integration.util.proxy.ProxyUtil;
 import com.google.common.collect.Lists;
-
 import hudson.ProxyConfiguration;
 import jenkins.model.Jenkins;
+import org.apache.commons.lang3.StringUtils;
+
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.List;
+import java.util.regex.Pattern;
 
 public class JenkinsProxyHelper {
 
@@ -110,18 +108,22 @@ public class JenkinsProxyHelper {
             proxyInfoBuilder.setPort(proxyPort);
             final ProxyUsernameWrapper wrapper = parseProxyUsername(proxyUsernameWithDomain);
             proxyInfoBuilder.setUsername(wrapper.getProxyUsername());
-            proxyInfoBuilder.setPassword(proxyPassword);
             proxyInfoBuilder.setNtlmDomain(wrapper.getNtlmDomain());
+            proxyInfoBuilder.setPassword(proxyPassword);
         }
     }
 
     private ProxyUsernameWrapper parseProxyUsername(final String proxyUsernameWithDomain) {
-        if (proxyUsernameWithDomain.indexOf('\\') >= 0) {
-            final String domain = proxyUsernameWithDomain.substring(0, proxyUsernameWithDomain.indexOf('\\'));
-            final String user = proxyUsernameWithDomain.substring(proxyUsernameWithDomain.indexOf('\\') + 1);
-            return new ProxyUsernameWrapper(user, domain);
+        if (StringUtils.isNotBlank(proxyUsernameWithDomain)) {
+            if (proxyUsernameWithDomain.indexOf('\\') >= 0) {
+                final String domain = proxyUsernameWithDomain.substring(0, proxyUsernameWithDomain.indexOf('\\'));
+                final String user = proxyUsernameWithDomain.substring(proxyUsernameWithDomain.indexOf('\\') + 1);
+                return new ProxyUsernameWrapper(user, domain);
+            } else {
+                return new ProxyUsernameWrapper(proxyUsernameWithDomain, null);
+            }
         } else {
-            return new ProxyUsernameWrapper(proxyUsernameWithDomain, null);
+            return new ProxyUsernameWrapper(null, null);
         }
     }
 
@@ -135,11 +137,11 @@ public class JenkinsProxyHelper {
         }
 
         public String getProxyUsername() {
-            return proxyUsername;
+            return this.proxyUsername;
         }
 
         public String getNtlmDomain() {
-            return ntlmDomain;
+            return this.ntlmDomain;
         }
     }
 
