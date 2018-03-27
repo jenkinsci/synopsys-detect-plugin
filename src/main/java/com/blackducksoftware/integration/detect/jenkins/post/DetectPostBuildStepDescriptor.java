@@ -175,7 +175,7 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
     public ListBoxModel doFillDetectDownloadUrlItems() {
         final ListBoxModel boxModel = new ListBoxModel();
         try {
-            final DetectVersionRequestService detectVersionRequestService = getDetectVersionRequestService(JenkinsProxyHelper.getProxyInfo());
+            final DetectVersionRequestService detectVersionRequestService = getDetectVersionRequestService();
             final List<DetectVersionModel> detectVersionModels = detectVersionRequestService.getDetectVersionModels();
             for (final DetectVersionModel detectVersionModel : detectVersionModels) {
                 boxModel.add(detectVersionModel.getVersionName(), detectVersionModel.getVersionURL());
@@ -197,7 +197,7 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
 
     public FormValidation doCheckDetectDownloadUrl(@QueryParameter("detectDownloadUrl") final String detectDownloadUrl) {
         try {
-            final DetectVersionRequestService detectVersionRequestService = getDetectVersionRequestService(JenkinsProxyHelper.getProxyInfo());
+            final DetectVersionRequestService detectVersionRequestService = getDetectVersionRequestService();
             detectVersionRequestService.getDetectVersionModels();
         } catch (final IntegrationException e) {
             return FormValidation.error(couldNotGetVersionsMessage);
@@ -209,8 +209,8 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
         return FormValidation.ok();
     }
 
-    private DetectVersionRequestService getDetectVersionRequestService(final ProxyInfo proxyInfo) {
-        return new DetectVersionRequestService(new PrintStreamIntLogger(System.out, LogLevel.DEBUG), isTrustSSLCertificates(), getHubTimeout(), proxyInfo);
+    private DetectVersionRequestService getDetectVersionRequestService() {
+        return new DetectVersionRequestService(new PrintStreamIntLogger(System.out, LogLevel.DEBUG), isTrustSSLCertificates(), getHubTimeout());
     }
 
     public FormValidation doCheckHubTimeout(@QueryParameter("hubTimeout") final String hubTimeout) {
@@ -241,8 +241,9 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
         final HubServerConfigValidator validator = new HubServerConfigValidator();
         validator.setHubUrl(hubUrl);
         validator.setAlwaysTrustServerCertificate(trustSSLCertificates);
-        final ProxyInfo proxyInfo = JenkinsProxyHelper.getProxyInfo();
-        if (JenkinsProxyHelper.shouldUseProxy(proxyInfo, hubUrl)) {
+        final JenkinsProxyHelper jenkinsProxyHelper = getJenkinsProxyHelper();
+        final ProxyInfo proxyInfo = jenkinsProxyHelper.getProxyInfoFromJenkins(hubUrl);
+        if (ProxyInfo.NO_PROXY_INFO != proxyInfo) {
             validator.setProxyHost(proxyInfo.getHost());
             validator.setProxyPort(proxyInfo.getPort());
             validator.setProxyUsername(proxyInfo.getUsername());
@@ -334,8 +335,9 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
             hubServerConfigBuilder.setApiToken(hubApiToken);
             hubServerConfigBuilder.setTimeout(hubTimeout);
             hubServerConfigBuilder.setAlwaysTrustServerCertificate(trustSSLCertificates);
-            final ProxyInfo proxyInfo = JenkinsProxyHelper.getProxyInfo();
-            if (JenkinsProxyHelper.shouldUseProxy(proxyInfo, hubUrl)) {
+            final JenkinsProxyHelper jenkinsProxyHelper = getJenkinsProxyHelper();
+            final ProxyInfo proxyInfo = jenkinsProxyHelper.getProxyInfoFromJenkins(hubUrl);
+            if (ProxyInfo.NO_PROXY_INFO != proxyInfo) {
                 hubServerConfigBuilder.setProxyHost(proxyInfo.getHost());
                 hubServerConfigBuilder.setProxyPort(proxyInfo.getPort());
                 hubServerConfigBuilder.setProxyUsername(proxyInfo.getUsername());
@@ -490,6 +492,10 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
             }
         }
         return nodeAsString;
+    }
+
+    public JenkinsProxyHelper getJenkinsProxyHelper() {
+        return new JenkinsProxyHelper();
     }
 
 }

@@ -64,13 +64,30 @@ public class DetectVersionRequestService {
     private final Boolean trustSSLCertificates;
     private final int connectionTimeout;
 
-    private final ProxyInfo proxyInfo;
+    private boolean useJenkinsProxy = true;
+    private String proxyHost;
+    private int proxyPort;
+    private String proxyUsername;
+    private String proxyPassword;
+    private String proxyNtlmDomain;
 
-    public DetectVersionRequestService(final IntLogger logger, final Boolean trustSSLCertificates, final int connectionTimeout, final ProxyInfo proxyInfo) {
+    public DetectVersionRequestService(final IntLogger logger, final Boolean trustSSLCertificates, final int connectionTimeout, final String proxyHost, final int proxyPort,
+            final String proxyUsername, final String proxyPassword, final String proxyNtlmDomain) {
         this.logger = logger;
         this.trustSSLCertificates = trustSSLCertificates;
         this.connectionTimeout = connectionTimeout;
-        this.proxyInfo = proxyInfo;
+        this.useJenkinsProxy = false;
+        this.proxyHost = proxyHost;
+        this.proxyPort = proxyPort;
+        this.proxyUsername = proxyUsername;
+        this.proxyPassword = proxyPassword;
+        this.proxyNtlmDomain = proxyNtlmDomain;
+    }
+
+    public DetectVersionRequestService(final IntLogger logger, final Boolean trustSSLCertificates, final int connectionTimeout) {
+        this.logger = logger;
+        this.trustSSLCertificates = trustSSLCertificates;
+        this.connectionTimeout = connectionTimeout;
     }
 
     public List<DetectVersionModel> getDetectVersionModels() throws IOException, IntegrationException, ParserConfigurationException, SAXException {
@@ -136,7 +153,7 @@ public class DetectVersionRequestService {
     }
 
     public String getLatestReleasedDetectVersion() throws IntegrationException, IOException {
-        final String detectLatestVersionUrl = getArtifactoryBaseUrl() + "/artifactory/bds-integrations-release/com/blackducksoftware/integration/hub-detect/maven-metadata.xml";
+        final String detectLatestVersionUrl = getArtifactoryBaseUrl() + "/artifactory/api/search/latestVersion?g=com.blackducksoftware.integration&a=hub-detect&repos=bds-integrations-release";
         final RestConnection restConnection = createUnauthenticatedRestConnection(detectLatestVersionUrl);
 
         final Request request = new Request.Builder().uri(detectLatestVersionUrl).mimeType("text/plain").build();
@@ -179,7 +196,16 @@ public class DetectVersionRequestService {
     }
 
     private void setProxyInformation(final AbstractRestConnectionBuilder restConnectionBuilder, final String url) {
-        if (JenkinsProxyHelper.shouldUseProxy(proxyInfo, url)) {
+        final JenkinsProxyHelper jenkinsProxyHelper = getJenkinsProxyHelper();
+
+        ProxyInfo proxyInfo = null;
+        if (useJenkinsProxy) {
+            proxyInfo = jenkinsProxyHelper.getProxyInfoFromJenkins(url);
+        } else {
+            proxyInfo = jenkinsProxyHelper.getProxyInfo(url, proxyHost, proxyPort, proxyUsername, proxyPassword, null, proxyNtlmDomain, null);
+        }
+
+        if (ProxyInfo.NO_PROXY_INFO != proxyInfo) {
             restConnectionBuilder.setProxyHost(proxyInfo.getHost());
             restConnectionBuilder.setProxyPort(proxyInfo.getPort());
             restConnectionBuilder.setProxyUsername(proxyInfo.getUsername());
@@ -189,5 +215,9 @@ public class DetectVersionRequestService {
                 logger.error(e.getMessage(), e);
             }
         }
+    }
+
+    public JenkinsProxyHelper getJenkinsProxyHelper() {
+        return new JenkinsProxyHelper();
     }
 }

@@ -23,51 +23,54 @@
  */
 package com.blackducksoftware.integration.detect.jenkins;
 
+import com.blackducksoftware.integration.hub.proxy.ProxyInfo;
+import com.blackducksoftware.integration.hub.proxy.ProxyInfoBuilder;
+import com.blackducksoftware.integration.util.proxy.ProxyUtil;
+import com.google.common.collect.Lists;
+import hudson.ProxyConfiguration;
+import jenkins.model.Jenkins;
+import org.apache.commons.lang3.StringUtils;
+
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.List;
 import java.util.regex.Pattern;
 
-import org.apache.commons.lang3.StringUtils;
-
-import com.blackducksoftware.integration.hub.proxy.ProxyInfo;
-import com.blackducksoftware.integration.hub.proxy.ProxyInfoBuilder;
-import com.blackducksoftware.integration.util.proxy.ProxyUtil;
-import com.google.common.collect.Lists;
-
-import hudson.ProxyConfiguration;
-import jenkins.model.Jenkins;
-
 public class JenkinsProxyHelper {
 
-    public static ProxyInfo getProxyInfo() {
+    public ProxyInfo getProxyInfo(final String url, final String proxyHost, final int proxyPort, final String proxyUsername, final String proxyPassword, final String ignoredProxyHosts, final String ntlmDomain,
+            final String ntlmWorkstation) {
         ProxyInfo proxyInfo = ProxyInfo.NO_PROXY_INFO;
-        final ProxyInfoBuilder proxyInfoBuilder = new ProxyInfoBuilder();
+        if (shouldUseProxy(ignoredProxyHosts, url)) {
+            final ProxyInfoBuilder proxyInfoBuilder = new ProxyInfoBuilder();
+            applyJenkinsProxy(proxyInfoBuilder, proxyHost, proxyPort, proxyUsername, proxyPassword, ntlmDomain);
+            proxyInfo = proxyInfoBuilder.build();
+        }
+        return proxyInfo;
+    }
+
+    public ProxyInfo getProxyInfoFromJenkins(final String url) {
+        ProxyInfo proxyInfo = ProxyInfo.NO_PROXY_INFO;
         final Jenkins jenkins = Jenkins.getInstance();
         if (jenkins != null) {
             final ProxyConfiguration proxyConfig = jenkins.proxy;
             if (proxyConfig != null) {
-                applyJenkinsProxy(proxyConfig, proxyInfoBuilder);
-                proxyInfo = proxyInfoBuilder.build();
+                if (shouldUseProxy(proxyConfig.noProxyHost, url)) {
+                    final ProxyInfoBuilder proxyInfoBuilder = new ProxyInfoBuilder();
+                    applyJenkinsProxy(proxyInfoBuilder, proxyConfig.name, proxyConfig.port, proxyConfig.getUserName(), proxyConfig.getPassword());
+                    proxyInfo = proxyInfoBuilder.build();
+                }
             }
         }
         return proxyInfo;
     }
 
-    public static boolean shouldUseProxy(final ProxyInfo proxyInfo, final String url) {
-        if (StringUtils.isBlank(url) || null == proxyInfo || ProxyInfo.NO_PROXY_INFO == proxyInfo) {
+    private boolean shouldUseProxy(final String noProxyHosts, final String url) {
+        if (StringUtils.isBlank(url)) {
             return false;
         }
         try {
             final URL actualURL = new URL(url);
-            String noProxyHosts = null;
-            final Jenkins jenkins = Jenkins.getInstance();
-            if (jenkins != null) {
-                final ProxyConfiguration proxyConfig = jenkins.proxy;
-                if (proxyConfig != null) {
-                    noProxyHosts = proxyConfig.noProxyHost;
-                }
-            }
             if (StringUtils.isBlank(noProxyHosts)) {
                 return true;
             }
@@ -78,7 +81,7 @@ public class JenkinsProxyHelper {
         }
     }
 
-    private static List<Pattern> getNoProxyHostPatterns(final String noProxyHosts) {
+    private List<Pattern> getNoProxyHostPatterns(final String noProxyHosts) {
         final List<Pattern> noProxyHostPatterns = Lists.newArrayList();
         for (final String currentNoProxyHost : noProxyHosts.split("[ \t\n,|]+")) {
             if (currentNoProxyHost.length() == 0) {
@@ -89,26 +92,56 @@ public class JenkinsProxyHelper {
         return noProxyHostPatterns;
     }
 
-    private static void applyJenkinsProxy(final ProxyConfiguration proxyConfig, final ProxyInfoBuilder proxyInfoBuilder) {
-        if (StringUtils.isNotBlank(proxyConfig.name) && proxyConfig.port >= 0) {
-            proxyInfoBuilder.setHost(proxyConfig.name);
-            proxyInfoBuilder.setPort(proxyConfig.port);
-            applyJenkinsProxyCredentials(proxyConfig, proxyInfoBuilder);
+    private void applyJenkinsProxy(final ProxyInfoBuilder proxyInfoBuilder, final String proxyHost, final int proxyPort, final String proxyUsername, final String proxyPassword, final String ntlmDomain) {
+        if (StringUtils.isNotBlank(proxyHost) && proxyPort >= 0) {
+            proxyInfoBuilder.setHost(proxyHost);
+            proxyInfoBuilder.setPort(proxyPort);
+            proxyInfoBuilder.setUsername(proxyUsername);
+            proxyInfoBuilder.setPassword(proxyPassword);
+            proxyInfoBuilder.setNtlmDomain(ntlmDomain);
         }
     }
 
-    private static void applyJenkinsProxyCredentials(final ProxyConfiguration proxyConfig, final ProxyInfoBuilder proxyInfoBuilder) {
-        if (StringUtils.isNotBlank(proxyConfig.getUserName()) && StringUtils.isNotBlank(proxyConfig.getPassword())) {
-            if (proxyConfig.getUserName().indexOf('\\') >= 0) {
-                final String domain = proxyConfig.getUserName().substring(0, proxyConfig.getUserName().indexOf('\\'));
-                final String user = proxyConfig.getUserName().substring(proxyConfig.getUserName().indexOf('\\') + 1);
-                proxyInfoBuilder.setNtlmDomain(domain);
-                proxyInfoBuilder.setUsername(user);
-                proxyInfoBuilder.setPassword(proxyConfig.getPassword());
+    private void applyJenkinsProxy(final ProxyInfoBuilder proxyInfoBuilder, final String proxyHost, final int proxyPort, final String proxyUsernameWithDomain, final String proxyPassword) {
+        if (StringUtils.isNotBlank(proxyHost) && proxyPort >= 0) {
+            proxyInfoBuilder.setHost(proxyHost);
+            proxyInfoBuilder.setPort(proxyPort);
+            final ProxyUsernameWrapper wrapper = parseProxyUsername(proxyUsernameWithDomain);
+            proxyInfoBuilder.setUsername(wrapper.getProxyUsername());
+            proxyInfoBuilder.setNtlmDomain(wrapper.getNtlmDomain());
+            proxyInfoBuilder.setPassword(proxyPassword);
+        }
+    }
+
+    private ProxyUsernameWrapper parseProxyUsername(final String proxyUsernameWithDomain) {
+        if (StringUtils.isNotBlank(proxyUsernameWithDomain)) {
+            if (proxyUsernameWithDomain.indexOf('\\') >= 0) {
+                final String domain = proxyUsernameWithDomain.substring(0, proxyUsernameWithDomain.indexOf('\\'));
+                final String user = proxyUsernameWithDomain.substring(proxyUsernameWithDomain.indexOf('\\') + 1);
+                return new ProxyUsernameWrapper(user, domain);
             } else {
-                proxyInfoBuilder.setUsername(proxyConfig.getUserName());
-                proxyInfoBuilder.setPassword(proxyConfig.getPassword());
+                return new ProxyUsernameWrapper(proxyUsernameWithDomain, null);
             }
+        } else {
+            return new ProxyUsernameWrapper(null, null);
+        }
+    }
+
+    private class ProxyUsernameWrapper {
+        private final String proxyUsername;
+        private final String ntlmDomain;
+
+        public ProxyUsernameWrapper(final String proxyUsername, final String ntlmDomain) {
+            this.proxyUsername = proxyUsername;
+            this.ntlmDomain = ntlmDomain;
+        }
+
+        public String getProxyUsername() {
+            return this.proxyUsername;
+        }
+
+        public String getNtlmDomain() {
+            return this.ntlmDomain;
         }
     }
 
