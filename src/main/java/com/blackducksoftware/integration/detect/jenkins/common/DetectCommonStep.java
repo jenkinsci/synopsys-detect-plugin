@@ -106,6 +106,9 @@ public class DetectCommonStep {
             logger.error(e.getMessage());
             logger.debug(e.getMessage(), e);
             run.setResult(Result.UNSTABLE);
+        } catch (final InterruptedException e) {
+            logger.error("Detect caller thread was interrupted.", e);
+            Thread.currentThread().interrupt();
         } catch (final Exception e) {
             logger.error(e.getMessage(), e);
             run.setResult(Result.UNSTABLE);
