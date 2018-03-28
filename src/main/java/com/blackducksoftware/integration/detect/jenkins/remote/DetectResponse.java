@@ -23,7 +23,9 @@
  */
 package com.blackducksoftware.integration.detect.jenkins.remote;
 
-public class DetectResponse {
+import java.io.Serializable;
+
+public class DetectResponse implements Serializable {
     private final Exception exception;
     private final int exitCode;
 

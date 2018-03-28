@@ -159,22 +159,17 @@ public class DetectRemoteRunner implements Callable<DetectResponse, IntegrationE
             final Process process = processBuilder.start();
             final StreamRedirectThread redirectStdOutThread = new StreamRedirectThread(process.getInputStream(), logger.getJenkinsListener().getLogger());
             redirectStdOutThread.start();
-            int exitCode = 0;
+            int exitCode = -1;
             try {
                 exitCode = process.waitFor();
                 redirectStdOutThread.join(0);
+                IOUtils.copy(process.getErrorStream(), logger.getJenkinsListener().getLogger());
             } catch (final InterruptedException e) {
                 logger.error("Detect thread was interrupted.", e);
                 process.destroy();
                 redirectStdOutThread.interrupt();
                 Thread.currentThread().interrupt();
-                return new DetectResponse(e);
-            } finally {
-                if (null != process.getErrorStream()) {
-                    IOUtils.copy(process.getErrorStream(), logger.getJenkinsListener().getLogger());
-                }
             }
-
             return new DetectResponse(exitCode);
         } catch (final Exception e) {
             return new DetectResponse(e);
