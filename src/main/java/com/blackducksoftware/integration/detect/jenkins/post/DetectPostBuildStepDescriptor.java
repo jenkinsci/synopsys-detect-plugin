@@ -1,5 +1,5 @@
 /**
- * blackduck-detect-plugin
+ * blackduck-detect
  *
  * Copyright (C) 2018 Black Duck Software, Inc.
  * http://www.blackducksoftware.com/
