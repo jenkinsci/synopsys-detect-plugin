@@ -37,10 +37,8 @@ project.afterEvaluate {
 }
 
 jenkinsPlugin {
-    // We want to create the file name with the name and the version
-    shortName = "${project.name}-${project.version}"
     coreVersion = '2.60.1'
-    displayName = 'Black Duck Detect Plugin'
+    displayName = 'Black Duck Detect'
     url = 'https://wiki.jenkins.io/display/JENKINS/Black+Duck+Detect+Plugin'
     gitHubUrl = 'https://github.com/jenkinsci/blackduck-detect-plugin'
 }

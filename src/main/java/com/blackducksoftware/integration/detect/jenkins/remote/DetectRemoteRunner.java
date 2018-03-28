@@ -23,32 +23,29 @@
  */
 package com.blackducksoftware.integration.detect.jenkins.remote;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-
+import com.blackducksoftware.integration.detect.jenkins.JenkinsDetectLogger;
+import com.blackducksoftware.integration.detect.jenkins.PluginHelper;
+import com.blackducksoftware.integration.detect.jenkins.tools.DetectDownloadManager;
+import com.blackducksoftware.integration.exception.EncryptionException;
+import com.blackducksoftware.integration.exception.IntegrationException;
+import com.blackducksoftware.integration.hub.proxy.ProxyInfo;
+import com.blackducksoftware.integration.hub.service.model.StreamRedirectThread;
+import com.blackducksoftware.integration.util.CIEnvironmentVariables;
+import hudson.EnvVars;
+import hudson.remoting.Callable;
+import jenkins.model.Jenkins;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.SystemUtils;
 import org.jenkinsci.remoting.Role;
 import org.jenkinsci.remoting.RoleChecker;
 
-import com.blackducksoftware.integration.detect.jenkins.JenkinsDetectLogger;
-import com.blackducksoftware.integration.detect.jenkins.PluginHelper;
-import com.blackducksoftware.integration.detect.jenkins.tools.DetectDownloadManager;
-import com.blackducksoftware.integration.exception.EncryptionException;
-import com.blackducksoftware.integration.exception.IntegrationException;
-import com.blackducksoftware.integration.hub.exception.HubIntegrationException;
-import com.blackducksoftware.integration.hub.proxy.ProxyInfo;
-import com.blackducksoftware.integration.hub.service.model.StreamRedirectThread;
-import com.blackducksoftware.integration.util.CIEnvironmentVariables;
-
-import hudson.EnvVars;
-import hudson.remoting.Callable;
-import jenkins.model.Jenkins;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 @SuppressWarnings("serial")
-public class DetectRemoteRunner implements Callable<String, IntegrationException> {
+public class DetectRemoteRunner implements Callable<DetectResponse, IntegrationException> {
     private final JenkinsDetectLogger logger;
     private final String javaHome;
 
@@ -71,8 +68,7 @@ public class DetectRemoteRunner implements Callable<String, IntegrationException
     private String proxyNtlmDomain;
 
     public DetectRemoteRunner(final JenkinsDetectLogger logger, final String javaHome, final String hubUrl, final String hubUsername, final String hubPassword, final String hubApiToken, final int hubTimeout,
-            final boolean trustSSLCertificates,
-            final String detectDownloadUrl, final String toolsDirectory, final List<String> detectProperties, final EnvVars envVars) {
+            final boolean trustSSLCertificates, final String detectDownloadUrl, final String toolsDirectory, final List<String> detectProperties, final EnvVars envVars) {
         this.logger = logger;
         this.javaHome = javaHome;
         this.hubUrl = hubUrl;
@@ -88,7 +84,7 @@ public class DetectRemoteRunner implements Callable<String, IntegrationException
     }
 
     @Override
-    public String call() throws IntegrationException {
+    public DetectResponse call() throws IntegrationException {
         try {
             final CIEnvironmentVariables cIEnvironmentVariables = new CIEnvironmentVariables();
             cIEnvironmentVariables.putAll(envVars);
@@ -168,13 +164,15 @@ public class DetectRemoteRunner implements Callable<String, IntegrationException
             redirectStdOutThread.join(0);
 
             IOUtils.copy(process.getErrorStream(), logger.getJenkinsListener().getLogger());
-            if (exitCode != 0) {
-                throw new HubIntegrationException("Hub Detect failed with exit code : " + exitCode);
-            }
+
+            return new DetectResponse(exitCode);
+        } catch (final InterruptedException e) {
+            logger.error("Detect thread was interrupted.", e);
+            Thread.currentThread().interrupt();
+            return new DetectResponse(e);
         } catch (final Exception e) {
-            throw new IntegrationException(e);
+            return new DetectResponse(e);
         }
-        return null;
     }
 
     private void setProcessEnvironmentVariableString(final ProcessBuilder processBuilder, final String environmentVariableName, final String value) {

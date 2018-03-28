@@ -23,24 +23,18 @@
  */
 package com.blackducksoftware.integration.detect.jenkins.common;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
-import org.apache.tools.ant.types.Commandline;
-
 import com.blackducksoftware.integration.detect.jenkins.HubServerInfoSingleton;
 import com.blackducksoftware.integration.detect.jenkins.JenkinsDetectLogger;
 import com.blackducksoftware.integration.detect.jenkins.JenkinsProxyHelper;
 import com.blackducksoftware.integration.detect.jenkins.PluginHelper;
 import com.blackducksoftware.integration.detect.jenkins.exception.DetectJenkinsException;
 import com.blackducksoftware.integration.detect.jenkins.remote.DetectRemoteRunner;
+import com.blackducksoftware.integration.detect.jenkins.remote.DetectResponse;
 import com.blackducksoftware.integration.detect.jenkins.tools.DummyToolInstallation;
 import com.blackducksoftware.integration.detect.jenkins.tools.DummyToolInstaller;
 import com.blackducksoftware.integration.hub.exception.HubIntegrationException;
 import com.blackducksoftware.integration.hub.proxy.ProxyInfo;
 import com.blackducksoftware.integration.util.CIEnvironmentVariables;
-
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Launcher;
@@ -49,6 +43,11 @@ import hudson.model.Node;
 import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.TaskListener;
+import org.apache.tools.ant.types.Commandline;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 public class DetectCommonStep {
     private final Node node;
@@ -94,7 +93,15 @@ public class DetectCommonStep {
             if (ProxyInfo.NO_PROXY_INFO != proxyInfo) {
                 detectRemoteRunner.setProxyInfo(proxyInfo);
             }
-            node.getChannel().call(detectRemoteRunner);
+            final DetectResponse response = node.getChannel().call(detectRemoteRunner);
+            if (response.getExitCode() > 0) {
+                logger.error("Detect failed with exit code: " + response.getExitCode());
+                run.setResult(Result.FAILURE);
+            } else if (null != response.getException()) {
+                final Exception exception = response.getException();
+                logger.error(exception.getMessage(), exception);
+                run.setResult(Result.UNSTABLE);
+            }
         } catch (final HubIntegrationException e) {
             logger.error(e.getMessage());
             logger.debug(e.getMessage(), e);
