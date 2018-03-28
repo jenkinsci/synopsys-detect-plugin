@@ -99,8 +99,13 @@ public class DetectCommonStep {
                 run.setResult(Result.FAILURE);
             } else if (null != response.getException()) {
                 final Exception exception = response.getException();
-                logger.error(exception.getMessage(), exception);
-                run.setResult(Result.UNSTABLE);
+                if (exception instanceof InterruptedException) {
+                    Thread.currentThread().interrupt();
+                    run.setResult(Result.ABORTED);
+                } else {
+                    logger.error(exception.getMessage(), exception);
+                    run.setResult(Result.UNSTABLE);
+                }
             }
         } catch (final HubIntegrationException e) {
             logger.error(e.getMessage());
@@ -109,6 +114,7 @@ public class DetectCommonStep {
         } catch (final InterruptedException e) {
             logger.error("Detect caller thread was interrupted.", e);
             Thread.currentThread().interrupt();
+            run.setResult(Result.ABORTED);
         } catch (final Exception e) {
             logger.error(e.getMessage(), e);
             run.setResult(Result.UNSTABLE);

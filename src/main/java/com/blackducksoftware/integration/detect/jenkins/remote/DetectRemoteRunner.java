@@ -168,7 +168,7 @@ public class DetectRemoteRunner implements Callable<DetectResponse, IntegrationE
                 logger.error("Detect thread was interrupted.", e);
                 process.destroy();
                 redirectStdOutThread.interrupt();
-                Thread.currentThread().interrupt();
+                return new DetectResponse(e);
             }
             return new DetectResponse(exitCode);
         } catch (final Exception e) {
