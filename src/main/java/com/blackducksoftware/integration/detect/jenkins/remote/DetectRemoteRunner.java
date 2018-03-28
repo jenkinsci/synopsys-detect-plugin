@@ -1,9 +1,9 @@
 /**
  * blackduck-detect
- *
+ * <p>
  * Copyright (C) 2018 Black Duck Software, Inc.
  * http://www.blackducksoftware.com/
- *
+ * <p>
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements. See the NOTICE file
  * distributed with this work for additional information
@@ -11,9 +11,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License. You may obtain a copy of the License at
- *
+ * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -159,17 +159,23 @@ public class DetectRemoteRunner implements Callable<DetectResponse, IntegrationE
             final Process process = processBuilder.start();
             final StreamRedirectThread redirectStdOutThread = new StreamRedirectThread(process.getInputStream(), logger.getJenkinsListener().getLogger());
             redirectStdOutThread.start();
-
-            final int exitCode = process.waitFor();
-            redirectStdOutThread.join(0);
-
-            IOUtils.copy(process.getErrorStream(), logger.getJenkinsListener().getLogger());
+            int exitCode = 0;
+            try {
+                exitCode = process.waitFor();
+                redirectStdOutThread.join(0);
+            } catch (final InterruptedException e) {
+                logger.error("Detect thread was interrupted.", e);
+                process.destroy();
+                redirectStdOutThread.interrupt();
+                Thread.currentThread().interrupt();
+                return new DetectResponse(e);
+            } finally {
+                if (null != process.getErrorStream()) {
+                    IOUtils.copy(process.getErrorStream(), logger.getJenkinsListener().getLogger());
+                }
+            }
 
             return new DetectResponse(exitCode);
-        } catch (final InterruptedException e) {
-            logger.error("Detect thread was interrupted.", e);
-            Thread.currentThread().interrupt();
-            return new DetectResponse(e);
         } catch (final Exception e) {
             return new DetectResponse(e);
         }
