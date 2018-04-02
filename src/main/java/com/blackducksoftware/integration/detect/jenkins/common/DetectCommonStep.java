@@ -23,6 +23,12 @@
  */
 package com.blackducksoftware.integration.detect.jenkins.common;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.tools.ant.types.Commandline;
+
 import com.blackducksoftware.integration.detect.jenkins.HubServerInfoSingleton;
 import com.blackducksoftware.integration.detect.jenkins.JenkinsDetectLogger;
 import com.blackducksoftware.integration.detect.jenkins.JenkinsProxyHelper;
@@ -35,6 +41,7 @@ import com.blackducksoftware.integration.detect.jenkins.tools.DummyToolInstaller
 import com.blackducksoftware.integration.hub.exception.HubIntegrationException;
 import com.blackducksoftware.integration.hub.proxy.ProxyInfo;
 import com.blackducksoftware.integration.util.CIEnvironmentVariables;
+
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Launcher;
@@ -43,11 +50,6 @@ import hudson.model.Node;
 import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.TaskListener;
-import org.apache.tools.ant.types.Commandline;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 
 public class DetectCommonStep {
     private final Node node;
@@ -100,8 +102,8 @@ public class DetectCommonStep {
             } else if (null != response.getException()) {
                 final Exception exception = response.getException();
                 if (exception instanceof InterruptedException) {
-                    Thread.currentThread().interrupt();
                     run.setResult(Result.ABORTED);
+                    Thread.currentThread().interrupt();
                 } else {
                     logger.error(exception.getMessage(), exception);
                     run.setResult(Result.UNSTABLE);
@@ -113,8 +115,8 @@ public class DetectCommonStep {
             run.setResult(Result.UNSTABLE);
         } catch (final InterruptedException e) {
             logger.error("Detect caller thread was interrupted.", e);
-            Thread.currentThread().interrupt();
             run.setResult(Result.ABORTED);
+            Thread.currentThread().interrupt();
         } catch (final Exception e) {
             logger.error(e.getMessage(), e);
             run.setResult(Result.UNSTABLE);
