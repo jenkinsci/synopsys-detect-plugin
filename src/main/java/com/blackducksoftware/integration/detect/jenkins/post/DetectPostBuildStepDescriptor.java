@@ -1,9 +1,9 @@
 /**
  * blackduck-detect
- *
+ * <p>
  * Copyright (C) 2018 Black Duck Software, Inc.
  * http://www.blackducksoftware.com/
- *
+ * <p>
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements. See the NOTICE file
  * distributed with this work for additional information
@@ -11,9 +11,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License. You may obtain a copy of the License at
- *
+ * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -23,7 +23,6 @@
  */
 package com.blackducksoftware.integration.detect.jenkins.post;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.Serializable;
@@ -35,11 +34,8 @@ import java.util.List;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Source;
-import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerException;
-import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 
@@ -90,18 +86,19 @@ import hudson.tasks.Publisher;
 import hudson.util.FormValidation;
 import hudson.util.IOUtils;
 import hudson.util.ListBoxModel;
+import jenkins.util.xml.XMLUtils;
 import net.sf.json.JSONObject;
 
 @Extension()
 @SuppressWarnings("serial")
 public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher> implements Serializable {
+    private final String couldNotGetVersionsMessage = "Could not reach Black Duck public Artifactory";
     private String hubUrl;
     private String hubCredentialsId;
     private int hubTimeout = 120;
     private boolean trustSSLCertificates;
     private String detectArtifactUrl;
     private String detectDownloadUrl;
-    private final String couldNotGetVersionsMessage = "Could not reach Black Duck public Artifactory";
 
     public DetectPostBuildStepDescriptor() {
         super(DetectPostBuildStep.class);
@@ -231,7 +228,6 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
 
     /**
      * Performs on-the-fly validation of the form field 'serverUrl'.
-     *
      */
     public FormValidation doCheckHubUrl(@QueryParameter("hubUrl") final String hubUrl, @QueryParameter("trustSSLCertificates") final boolean trustSSLCertificates) {
         if (StringUtils.isBlank(hubUrl)) {
@@ -276,7 +272,7 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
             final CredentialsMatcher credentialsMatcher = CredentialsMatchers.anyOf(CredentialsMatchers.instanceOf(StandardUsernamePasswordCredentials.class), CredentialsMatchers.instanceOf(StringCredentials.class));
             // Dont want to limit the search to a particular project for the drop down menu
             final AbstractProject<?, ?> project = null;
-            boxModel = new StandardListBoxModel().withEmptySelection().withMatching(credentialsMatcher, CredentialsProvider.lookupCredentials(BaseStandardCredentials.class, project, ACL.SYSTEM, Collections.<DomainRequirement> emptyList()));
+            boxModel = new StandardListBoxModel().withEmptySelection().withMatching(credentialsMatcher, CredentialsProvider.lookupCredentials(BaseStandardCredentials.class, project, ACL.SYSTEM, Collections.<DomainRequirement>emptyList()));
         } finally {
             if (changed) {
                 Thread.currentThread().setContextClassLoader(originalClassLoader);
@@ -308,7 +304,7 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
                 BaseStandardCredentials credential = null;
                 if (StringUtils.isNotBlank(hubCredentialsId)) {
                     final AbstractProject<?, ?> project = null;
-                    final List<BaseStandardCredentials> credentials = CredentialsProvider.lookupCredentials(BaseStandardCredentials.class, project, ACL.SYSTEM, Collections.<DomainRequirement> emptyList());
+                    final List<BaseStandardCredentials> credentials = CredentialsProvider.lookupCredentials(BaseStandardCredentials.class, project, ACL.SYSTEM, Collections.<DomainRequirement>emptyList());
                     final IdMatcher matcher = new IdMatcher(hubCredentialsId);
                     for (final BaseStandardCredentials c : credentials) {
                         if (matcher.matches(c)) {
@@ -356,7 +352,7 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
         } catch (final IllegalStateException e) {
             return FormValidation.error(e.getMessage());
         } catch (final HubIntegrationException e) {
-            String message;
+            final String message;
             if (e.getCause() != null) {
                 message = e.getCause().toString();
                 if (message.contains("(407)")) {
@@ -409,7 +405,7 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
     }
 
     @WebMethod(name = "config.xml")
-    public void doConfigDotXml(final StaplerRequest req, final StaplerResponse rsp) throws IOException, TransformerException, hudson.model.Descriptor.FormException, ParserConfigurationException, SAXException {
+    public void doConfigDotXml(final StaplerRequest req, final StaplerResponse rsp) throws IOException, ParserConfigurationException, SAXException {
         final ClassLoader originalClassLoader = Thread.currentThread().getContextClassLoader();
         boolean changed = false;
         try {
@@ -437,21 +433,22 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
         }
     }
 
-    public void updateByXml(final Source source) throws IOException, TransformerException, ParserConfigurationException, SAXException {
-        final TransformerFactory tFactory = TransformerFactory.newInstance();
-        final Transformer transformer = tFactory.newTransformer();
-        transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
-        transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+    public void updateByXml(final Source source) throws IOException, ParserConfigurationException {
+        final Document doc;
+        try (final StringWriter out = new StringWriter()) {
+            // this allows us to use UTF-8 for storing data,
+            // plus it checks any well-formedness issue in the submitted
+            // data
+            XMLUtils.safeTransform(source, new StreamResult(out));
 
-        final ByteArrayOutputStream byteOutput = new ByteArrayOutputStream();
+            final DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            final DocumentBuilder builder = factory.newDocumentBuilder();
+            final InputSource is = new InputSource(new StringReader(out.toString()));
 
-        final StreamResult result = new StreamResult(byteOutput);
-        transformer.transform(source, result);
-
-        final DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        final DocumentBuilder builder = factory.newDocumentBuilder();
-        final InputSource is = new InputSource(new StringReader(byteOutput.toString("UTF-8")));
-        final Document doc = builder.parse(is);
+            doc = builder.parse(is);
+        } catch (TransformerException | SAXException e) {
+            throw new IOException("Failed to persist configuration.xml", e);
+        }
 
         final String hubUrl = getNodeValue(doc, "hubUrl", null);
         final String hubCredentialsId = getNodeValue(doc, "hubCredentialsId", null);
