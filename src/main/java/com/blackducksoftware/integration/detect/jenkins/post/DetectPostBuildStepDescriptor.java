@@ -404,8 +404,9 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
         return super.configure(req, formData);
     }
 
+    // EX: http://localhost:8080/descriptorByName/com.blackducksoftware.integration.detect.jenkins.post.DetectPostBuildStep/config.xml
     @WebMethod(name = "config.xml")
-    public void doConfigDotXml(final StaplerRequest req, final StaplerResponse rsp) throws IOException, ParserConfigurationException, SAXException {
+    public void doConfigDotXml(final StaplerRequest req, final StaplerResponse rsp) throws IOException, ParserConfigurationException {
         final ClassLoader originalClassLoader = Thread.currentThread().getContextClassLoader();
         boolean changed = false;
         try {
