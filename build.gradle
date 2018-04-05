@@ -55,3 +55,12 @@ dependencies {
     optionalJenkinsPlugins 'org.jenkins-ci.plugins.workflow:workflow-cps:2.23'
     optionalJenkinsPlugins 'org.jenkins-ci.plugins.workflow:workflow-step-api:2.5'
 }
+
+task renameFile << {
+    File libsDirectory = new File(project.getBuildDir(), "libs")
+    File originalFile = new File(libsDirectory, "${project.getName()}.hpi")
+    File newFile = new File(libsDirectory, "${project.getName()}-${project.getVersion()}.hpi")
+    originalFile.renameTo newFile
+}
+
+jpi.finalizedBy renameFile
