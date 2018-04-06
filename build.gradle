@@ -57,10 +57,12 @@ dependencies {
 }
 
 task renameFile << {
-    File libsDirectory = new File(project.getBuildDir(), "libs")
-    File originalFile = new File(libsDirectory, "${project.getName()}.hpi")
-    File newFile = new File(libsDirectory, "${project.getName()}-${project.getVersion()}.hpi")
-    originalFile.renameTo newFile
+    if (project.getVersion().toString().contains("SNAPSHOT")) {
+        File libsDirectory = new File(project.getBuildDir(), "libs")
+        File originalFile = new File(libsDirectory, "${project.getName()}.hpi")
+        File newFile = new File(libsDirectory, "${project.getName()}-${project.getVersion()}.hpi")
+        originalFile.renameTo newFile
+    }
 }
 
 jpi.finalizedBy renameFile
