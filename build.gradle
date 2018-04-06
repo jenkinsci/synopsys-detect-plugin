@@ -15,7 +15,7 @@ version = '1.4.0'
 
 apply plugin: 'com.blackducksoftware.integration.solution'
 
-group = 'org.jenkins-ci.plugins'
+group = 'com.blackducksoftware.integration'
 description = 'Black Duck Detect Plugin for Jenkins'
 
 task listrepos {
