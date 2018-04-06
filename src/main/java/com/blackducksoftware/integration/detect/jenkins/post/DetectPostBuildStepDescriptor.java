@@ -31,6 +31,7 @@ import java.io.StringWriter;
 import java.util.Collections;
 import java.util.List;
 
+import javax.servlet.ServletException;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -78,9 +79,11 @@ import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
 import com.cloudbees.plugins.credentials.matchers.IdMatcher;
 
 import hudson.Extension;
+import hudson.Functions;
 import hudson.model.AbstractProject;
 import hudson.model.Descriptor;
 import hudson.security.ACL;
+import hudson.security.Permission;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Publisher;
 import hudson.util.FormValidation;
@@ -406,7 +409,7 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
 
     // EX: http://localhost:8080/descriptorByName/com.blackducksoftware.integration.detect.jenkins.post.DetectPostBuildStep/config.xml
     @WebMethod(name = "config.xml")
-    public void doConfigDotXml(final StaplerRequest req, final StaplerResponse rsp) throws IOException, ParserConfigurationException {
+    public void doConfigDotXml(final StaplerRequest req, final StaplerResponse rsp) throws IOException, ServletException, ParserConfigurationException {
         final ClassLoader originalClassLoader = Thread.currentThread().getContextClassLoader();
         boolean changed = false;
         try {
@@ -414,12 +417,14 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
                 changed = true;
                 Thread.currentThread().setContextClassLoader(DetectPostBuildStepDescriptor.class.getClassLoader());
             }
+            Functions.checkPermission(Permission.READ);
             if (req.getMethod().equals("GET")) {
                 // read
                 rsp.setContentType("application/xml");
                 IOUtils.copy(getConfigFile().getFile(), rsp.getOutputStream());
                 return;
             }
+            Functions.checkPermission(Permission.CONFIGURE);
             if (req.getMethod().equals("POST")) {
                 // submission
                 updateByXml(new StreamSource(req.getReader()));
