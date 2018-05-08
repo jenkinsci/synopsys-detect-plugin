@@ -23,6 +23,16 @@
  */
 package com.blackducksoftware.integration.detect.jenkins.remote;
 
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.SystemUtils;
+import org.jenkinsci.remoting.Role;
+import org.jenkinsci.remoting.RoleChecker;
+
 import com.blackducksoftware.integration.detect.jenkins.JenkinsDetectLogger;
 import com.blackducksoftware.integration.detect.jenkins.PluginHelper;
 import com.blackducksoftware.integration.detect.jenkins.tools.DetectDownloadManager;
@@ -31,18 +41,10 @@ import com.blackducksoftware.integration.exception.IntegrationException;
 import com.blackducksoftware.integration.hub.proxy.ProxyInfo;
 import com.blackducksoftware.integration.hub.service.model.StreamRedirectThread;
 import com.blackducksoftware.integration.util.CIEnvironmentVariables;
+
 import hudson.EnvVars;
 import hudson.remoting.Callable;
 import jenkins.model.Jenkins;
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.SystemUtils;
-import org.jenkinsci.remoting.Role;
-import org.jenkinsci.remoting.RoleChecker;
-
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
 
 @SuppressWarnings("serial")
 public class DetectRemoteRunner implements Callable<DetectResponse, IntegrationException> {
@@ -131,6 +133,7 @@ public class DetectRemoteRunner implements Callable<DetectResponse, IntegrationE
             commands.add("--detect.phone.home.passthrough.jenkins.plugin.version=" + PluginHelper.getPluginVersion());
 
             final ProcessBuilder processBuilder = new ProcessBuilder(commands);
+            // Why aren't we passing in the workspace that we have available to us in DetectCommonStep?
             processBuilder.directory(new File(cIEnvironmentVariables.getValue("WORKSPACE")));
             processBuilder.environment().putAll(cIEnvironmentVariables.getVariables());
             setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_URL", hubUrl);
