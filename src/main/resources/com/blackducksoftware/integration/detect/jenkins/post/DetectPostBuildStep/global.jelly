@@ -3,13 +3,13 @@
 <f:section title="${%GlobalSectionTitle}">
 	<f:entry title="${%HubURL}" field="hubUrl"
       description="${%HubURLDescription}">
-        <f:textbox field="hubUrl" value="${instance.getHubServerUrl()}"/>
+        <f:textbox field="hubUrl" value="${instance.getHubServerUrl()}" checkMethod="post" />
     </f:entry>
     <f:entry title="${%HubCredentials}" field="hubCredentialsId" >
         <c:select/>
     </f:entry>
-    <f:entry title="${%HubDetectVersion}" field="detectDownloadUrl" >
-        <f:select/>
+    <f:entry title="${%HubDetectVersion}" field="detectDownloadUrl">
+        <f:select checkMethod="post" />
     </f:entry>
     
      <f:advanced>
@@ -17,7 +17,7 @@
           <f:textbox value="${instance.getDetectArtifactUrl()}" />
       </f:entry>
       <f:entry title="${%HubConnectionTimeout}" field="hubTimeout" description="${%HubConnectionTimeoutDescription}" >
-          <f:textbox clazz="required number" />
+          <f:textbox clazz="required number" checkMethod="post" />
       </f:entry>
       <f:entry title="${%TrustSSLCertificates}" field="trustSSLCertificates" >
           <f:checkbox default="false" />

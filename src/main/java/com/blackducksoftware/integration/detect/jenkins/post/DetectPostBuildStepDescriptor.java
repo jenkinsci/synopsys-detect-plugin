@@ -48,6 +48,7 @@ import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
 import org.kohsuke.stapler.WebMethod;
+import org.kohsuke.stapler.verb.POST;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.xml.sax.InputSource;
@@ -195,10 +196,25 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
         return boxModel;
     }
 
+    @POST
     public FormValidation doCheckDetectDownloadUrl(@QueryParameter("detectDownloadUrl") final String detectDownloadUrl) {
+        Jenkins.getInstance().checkPermission(Jenkins.ADMINISTER);
+        if (StringUtils.isBlank(detectDownloadUrl)) {
+            return FormValidation.ok();
+        }
         try {
             final DetectVersionRequestService detectVersionRequestService = getDetectVersionRequestService();
-            detectVersionRequestService.getDetectVersionModels();
+            final List<DetectVersionModel> detectVersionModels = detectVersionRequestService.getDetectVersionModels();
+            boolean foundMatch = false;
+            for (final DetectVersionModel detectVersionModel : detectVersionModels) {
+                if (detectDownloadUrl.equals(detectVersionModel.getVersionURL())) {
+                    foundMatch = true;
+                    break;
+                }
+            }
+            if (!foundMatch) {
+                return FormValidation.error(detectDownloadUrl + ", does not appear to be a valid URL for Detect.");
+            }
         } catch (final IntegrationException e) {
             return FormValidation.error(couldNotGetVersionsMessage);
         } catch (final IOException e) {
@@ -213,7 +229,9 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
         return new DetectVersionRequestService(new PrintStreamIntLogger(System.out, LogLevel.DEBUG), isTrustSSLCertificates(), getHubTimeout());
     }
 
+    @POST
     public FormValidation doCheckHubTimeout(@QueryParameter("hubTimeout") final String hubTimeout) {
+        Jenkins.getInstance().checkPermission(Jenkins.ADMINISTER);
         if (StringUtils.isBlank(hubTimeout)) {
             return FormValidation.error(Messages.DetectPostBuildStep_getPleaseSetTimeout());
         }
@@ -232,7 +250,9 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
     /**
      * Performs on-the-fly validation of the form field 'serverUrl'.
      */
+    @POST
     public FormValidation doCheckHubUrl(@QueryParameter("hubUrl") final String hubUrl, @QueryParameter("trustSSLCertificates") final boolean trustSSLCertificates) {
+        Jenkins.getInstance().checkPermission(Jenkins.ADMINISTER);
         if (StringUtils.isBlank(hubUrl)) {
             return FormValidation.ok();
         }
@@ -264,6 +284,7 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
     }
 
     public ListBoxModel doFillHubCredentialsIdItems() {
+        Jenkins.getInstance().checkPermission(Jenkins.ADMINISTER);
         ListBoxModel boxModel = null;
         final ClassLoader originalClassLoader = Thread.currentThread().getContextClassLoader();
         boolean changed = false;
@@ -274,8 +295,8 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
             }
             final CredentialsMatcher credentialsMatcher = CredentialsMatchers.anyOf(CredentialsMatchers.instanceOf(StandardUsernamePasswordCredentials.class), CredentialsMatchers.instanceOf(StringCredentials.class));
             // Dont want to limit the search to a particular project for the drop down menu
-            final AbstractProject<?, ?> project = null;
-            boxModel = new StandardListBoxModel().withEmptySelection().withMatching(credentialsMatcher, CredentialsProvider.lookupCredentials(BaseStandardCredentials.class, project, ACL.SYSTEM, Collections.<DomainRequirement>emptyList()));
+            boxModel = new StandardListBoxModel().withEmptySelection()
+                    .withMatching(credentialsMatcher, CredentialsProvider.lookupCredentials(BaseStandardCredentials.class, Jenkins.getInstance(), ACL.SYSTEM, Collections.<DomainRequirement>emptyList()));
         } finally {
             if (changed) {
                 Thread.currentThread().setContextClassLoader(originalClassLoader);
@@ -284,8 +305,10 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
         return boxModel;
     }
 
+    @POST
     public FormValidation doTestConnection(@QueryParameter("hubUrl") final String hubUrl, @QueryParameter("hubCredentialsId") final String hubCredentialsId, @QueryParameter("hubTimeout") final String hubTimeout,
             @QueryParameter("trustSSLCertificates") final boolean trustSSLCertificates) {
+        Jenkins.getInstance().checkPermission(Jenkins.ADMINISTER);
         final ClassLoader originalClassLoader = Thread.currentThread().getContextClassLoader();
         boolean changed = false;
         try {
@@ -299,15 +322,13 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
             if (StringUtils.isBlank(hubCredentialsId)) {
                 return FormValidation.error(Messages.DetectPostBuildStep_getPleaseSetHubCredentials());
             }
-
             String credentialUserName = null;
             String credentialPassword = null;
             String hubApiToken = null;
             if (StringUtils.isNotBlank(hubCredentialsId)) {
                 BaseStandardCredentials credential = null;
                 if (StringUtils.isNotBlank(hubCredentialsId)) {
-                    final AbstractProject<?, ?> project = null;
-                    final List<BaseStandardCredentials> credentials = CredentialsProvider.lookupCredentials(BaseStandardCredentials.class, project, ACL.SYSTEM, Collections.<DomainRequirement>emptyList());
+                    final List<BaseStandardCredentials> credentials = CredentialsProvider.lookupCredentials(BaseStandardCredentials.class, Jenkins.getInstance(), ACL.SYSTEM, Collections.<DomainRequirement>emptyList());
                     final IdMatcher matcher = new IdMatcher(hubCredentialsId);
                     for (final BaseStandardCredentials c : credentials) {
                         if (matcher.matches(c)) {

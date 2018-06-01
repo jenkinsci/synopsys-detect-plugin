@@ -35,8 +35,8 @@ import com.cloudbees.plugins.credentials.impl.BaseStandardCredentials;
 import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
 import com.cloudbees.plugins.credentials.matchers.IdMatcher;
 
-import hudson.model.AbstractProject;
 import hudson.security.ACL;
+import jenkins.model.Jenkins;
 
 public class HubServerInfoSingleton {
     private final static HubServerInfoSingleton HUB_SERVER_INFO_SINGLETON;
@@ -139,8 +139,7 @@ public class HubServerInfoSingleton {
     public BaseStandardCredentials getCredential() {
         BaseStandardCredentials credential = null;
         if (StringUtils.isNotBlank(hubCredentialsId)) {
-            final AbstractProject<?, ?> project = null;
-            final List<BaseStandardCredentials> credentials = CredentialsProvider.lookupCredentials(BaseStandardCredentials.class, project, ACL.SYSTEM, Collections.<DomainRequirement> emptyList());
+            final List<BaseStandardCredentials> credentials = CredentialsProvider.lookupCredentials(BaseStandardCredentials.class, Jenkins.getInstance(), ACL.SYSTEM, Collections.<DomainRequirement>emptyList());
             final IdMatcher matcher = new IdMatcher(hubCredentialsId);
             for (final BaseStandardCredentials c : credentials) {
                 if (matcher.matches(c)) {
