@@ -49,8 +49,11 @@ public class DetectDownloadManager {
             final String proxyUsername, final String proxyPassword, final String proxyNtlmDomain) {
         this.logger = logger;
         this.toolsDirectory = toolsDirectory;
-
-        this.detectVersionRequestService = new DetectVersionRequestService(logger, trustSSLCertificates, connectionTimeout);
+        if (StringUtils.isNotBlank(proxyHost)) {
+            this.detectVersionRequestService = new DetectVersionRequestService(logger, trustSSLCertificates, connectionTimeout, proxyHost, proxyPort, proxyUsername, proxyPassword, proxyNtlmDomain);
+        } else {
+            this.detectVersionRequestService = new DetectVersionRequestService(logger, trustSSLCertificates, connectionTimeout);
+        }
     }
 
     public File handleDownload(final String fileUrl) throws IntegrationException, IOException {
