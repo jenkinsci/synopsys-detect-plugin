@@ -59,6 +59,7 @@ import com.blackducksoftware.integration.detect.DetectVersionRequestService;
 import com.blackducksoftware.integration.detect.jenkins.HubServerInfoSingleton;
 import com.blackducksoftware.integration.detect.jenkins.JenkinsProxyHelper;
 import com.blackducksoftware.integration.detect.jenkins.Messages;
+import com.blackducksoftware.integration.detect.jenkins.tools.DetectDownloadManager;
 import com.blackducksoftware.integration.exception.IntegrationException;
 import com.blackducksoftware.integration.hub.configuration.HubServerConfig;
 import com.blackducksoftware.integration.hub.configuration.HubServerConfigBuilder;
@@ -191,7 +192,7 @@ public class DetectPostBuildStepDescriptor extends BuildStepDescriptor<Publisher
             e.printStackTrace(new PrintWriter(sw));
             System.err.println(sw.toString());
         }
-        boxModel.add("Default", "");
+        boxModel.add(String.format("Default (%s)", DetectDownloadManager.DEFAULT_DETECT_VERSION), "");
         boxModel.add("Latest Air Gap Zip", DetectVersionRequestService.AIR_GAP_ZIP.toString());
         return boxModel;
     }

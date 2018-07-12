@@ -37,6 +37,7 @@ import com.blackducksoftware.integration.log.IntLogger;
 
 public class DetectDownloadManager {
     public static final String DEFAULT_DETECT_JAR = "hub-detect-3.1.0.jar";
+    public static final String DEFAULT_DETECT_VERSION = "3.1.0";
     public static final String DETECT_INSTALL_DIRECTORY = "Detect_Installation";
     public static final String DETECT_AIR_GAP_DIRECTORY = "Air_Gap";
 
