@@ -38,9 +38,9 @@ import com.blackducksoftware.integration.detect.jenkins.PluginHelper;
 import com.blackducksoftware.integration.detect.jenkins.tools.DetectDownloadManager;
 import com.blackducksoftware.integration.exception.EncryptionException;
 import com.blackducksoftware.integration.exception.IntegrationException;
-import com.blackducksoftware.integration.hub.proxy.ProxyInfo;
 import com.blackducksoftware.integration.hub.service.model.StreamRedirectThread;
-import com.blackducksoftware.integration.util.CIEnvironmentVariables;
+import com.blackducksoftware.integration.rest.proxy.ProxyInfo;
+import com.blackducksoftware.integration.util.IntEnvironmentVariables;
 
 import hudson.EnvVars;
 import hudson.remoting.Callable;
@@ -88,8 +88,8 @@ public class DetectRemoteRunner implements Callable<DetectResponse, IntegrationE
     @Override
     public DetectResponse call() throws IntegrationException {
         try {
-            final CIEnvironmentVariables cIEnvironmentVariables = new CIEnvironmentVariables();
-            cIEnvironmentVariables.putAll(envVars);
+            final IntEnvironmentVariables intEnvironmentVariables = new IntEnvironmentVariables();
+            intEnvironmentVariables.putAll(envVars);
 
             String javaExecutablePath = "java";
             if (javaHome != null) {
@@ -134,8 +134,8 @@ public class DetectRemoteRunner implements Callable<DetectResponse, IntegrationE
 
             final ProcessBuilder processBuilder = new ProcessBuilder(commands);
             // Why aren't we passing in the workspace that we have available to us in DetectCommonStep?
-            processBuilder.directory(new File(cIEnvironmentVariables.getValue("WORKSPACE")));
-            processBuilder.environment().putAll(cIEnvironmentVariables.getVariables());
+            processBuilder.directory(new File(intEnvironmentVariables.getValue("WORKSPACE")));
+            processBuilder.environment().putAll(intEnvironmentVariables.getVariables());
             setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_URL", hubUrl);
             setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_TIMEOUT", String.valueOf(hubTimeout));
             setProcessEnvironmentVariableString(processBuilder, "BLACKDUCK_HUB_USERNAME", hubUsername);

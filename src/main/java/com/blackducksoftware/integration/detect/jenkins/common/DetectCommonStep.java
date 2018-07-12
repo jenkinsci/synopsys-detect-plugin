@@ -39,8 +39,8 @@ import com.blackducksoftware.integration.detect.jenkins.remote.DetectResponse;
 import com.blackducksoftware.integration.detect.jenkins.tools.DummyToolInstallation;
 import com.blackducksoftware.integration.detect.jenkins.tools.DummyToolInstaller;
 import com.blackducksoftware.integration.hub.exception.HubIntegrationException;
-import com.blackducksoftware.integration.hub.proxy.ProxyInfo;
-import com.blackducksoftware.integration.util.CIEnvironmentVariables;
+import com.blackducksoftware.integration.rest.proxy.ProxyInfo;
+import com.blackducksoftware.integration.util.IntEnvironmentVariables;
 
 import hudson.EnvVars;
 import hudson.FilePath;
@@ -72,7 +72,7 @@ public class DetectCommonStep {
 
     public void runCommonDetectStep(final String detectProperties) {
         final JenkinsDetectLogger logger = new JenkinsDetectLogger(listener);
-        final CIEnvironmentVariables variables = new CIEnvironmentVariables();
+        final IntEnvironmentVariables variables = new IntEnvironmentVariables();
         variables.putAll(envVars);
         logger.setLogLevel(variables);
         try {

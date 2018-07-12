@@ -23,18 +23,20 @@
  */
 package com.blackducksoftware.integration.detect.jenkins;
 
-import com.blackducksoftware.integration.hub.proxy.ProxyInfo;
-import com.blackducksoftware.integration.hub.proxy.ProxyInfoBuilder;
-import com.blackducksoftware.integration.util.proxy.ProxyUtil;
-import com.google.common.collect.Lists;
-import hudson.ProxyConfiguration;
-import jenkins.model.Jenkins;
-import org.apache.commons.lang3.StringUtils;
-
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.List;
 import java.util.regex.Pattern;
+
+import org.apache.commons.lang3.StringUtils;
+
+import com.blackducksoftware.integration.rest.proxy.ProxyInfo;
+import com.blackducksoftware.integration.rest.proxy.ProxyInfoBuilder;
+import com.blackducksoftware.integration.util.proxy.ProxyUtil;
+import com.google.common.collect.Lists;
+
+import hudson.ProxyConfiguration;
+import jenkins.model.Jenkins;
 
 public class JenkinsProxyHelper {
 
