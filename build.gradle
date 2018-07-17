@@ -47,6 +47,8 @@ jenkinsPlugin {
     displayName = 'Black Duck Detect'
     url = 'https://wiki.jenkins.io/display/JENKINS/Black+Duck+Detect+Plugin'
     gitHubUrl = 'https://github.com/jenkinsci/blackduck-detect-plugin'
+
+    pluginFirstClassLoader = true
 }
 
 dependencies {
