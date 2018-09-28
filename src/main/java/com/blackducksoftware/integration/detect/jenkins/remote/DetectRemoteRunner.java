@@ -24,7 +24,9 @@
 package com.blackducksoftware.integration.detect.jenkins.remote;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.apache.commons.io.IOUtils;
@@ -39,6 +41,7 @@ import com.blackducksoftware.integration.detect.jenkins.tools.DetectDownloadMana
 import com.blackducksoftware.integration.exception.EncryptionException;
 import com.blackducksoftware.integration.exception.IntegrationException;
 import com.blackducksoftware.integration.hub.service.model.StreamRedirectThread;
+import com.blackducksoftware.integration.log.LogLevel;
 import com.blackducksoftware.integration.rest.proxy.ProxyInfo;
 import com.blackducksoftware.integration.util.IntEnvironmentVariables;
 
@@ -70,7 +73,7 @@ public class DetectRemoteRunner implements Callable<DetectResponse, IntegrationE
     private String proxyNtlmDomain;
 
     public DetectRemoteRunner(final JenkinsDetectLogger logger, final String javaHome, final String hubUrl, final String hubUsername, final String hubPassword, final String hubApiToken, final int hubTimeout,
-            final boolean trustSSLCertificates, final String detectDownloadUrl, final String toolsDirectory, final List<String> detectProperties, final EnvVars envVars) {
+        final boolean trustSSLCertificates, final String detectDownloadUrl, final String toolsDirectory, final List<String> detectProperties, final EnvVars envVars) {
         this.logger = logger;
         this.javaHome = javaHome;
         this.hubUrl = hubUrl;
@@ -102,12 +105,15 @@ public class DetectRemoteRunner implements Callable<DetectResponse, IntegrationE
                 }
                 javaExecutablePath = java.getCanonicalPath();
             }
-            logger.info("Running with JAVA : " + javaExecutablePath);
-            logger.info("Detect configured : " + detectDownloadUrl);
+            logger.info("Running with JAVA: " + javaExecutablePath);
+            logger.info("Detect configured: " + detectDownloadUrl);
+
+            debuggingLogs(intEnvironmentVariables);
+
             final DetectDownloadManager detectDownloadManager = new DetectDownloadManager(logger, toolsDirectory, trustSSLCertificates, hubTimeout, proxyHost, proxyPort, proxyUsername, proxyPassword, proxyNtlmDomain);
             final File hubDetectJar = detectDownloadManager.handleDownload(detectDownloadUrl);
 
-            logger.info("Running Detect : " + hubDetectJar.getName());
+            logger.info("Running Detect: " + hubDetectJar.getName());
 
             final List<String> commands = new ArrayList<>();
             commands.add(javaExecutablePath);
@@ -126,7 +132,7 @@ public class DetectRemoteRunner implements Callable<DetectResponse, IntegrationE
             if (!setLoggingLevel) {
                 commands.add("--logging.level.com.blackducksoftware.integration=" + logger.getLogLevel().toString());
             }
-            logger.info("Running Detect command : " + StringUtils.join(commands, " "));
+            logger.info("Running Detect command: " + StringUtils.join(commands, " "));
 
             // Phone Home Properties that we do not want logged:
             commands.add("--detect.phone.home.passthrough.jenkins.version=" + Jenkins.getVersion().toString());
@@ -196,10 +202,29 @@ public class DetectRemoteRunner implements Callable<DetectResponse, IntegrationE
         this.proxyUsername = proxyInfo.getUsername();
         try {
             this.proxyPassword = proxyInfo.getDecryptedPassword();
-        } catch (IllegalArgumentException | EncryptionException e) {
+        } catch (final IllegalArgumentException | EncryptionException e) {
             logger.error(e.getMessage(), e);
         }
         this.proxyNtlmDomain = proxyInfo.getNtlmDomain();
+    }
+
+    private void debuggingLogs(final IntEnvironmentVariables intEnvironmentVariables) {
+        logger.debug("PATH: " + intEnvironmentVariables.getValue("PATH"));
+        if (LogLevel.DEBUG == logger.getLogLevel()) {
+            try {
+                logger.info("Java version: ");
+                final ProcessBuilder processBuilder = new ProcessBuilder(Arrays.asList("java", "-version"));
+                processBuilder.environment().putAll(intEnvironmentVariables.getVariables());
+
+                final Process process = processBuilder.start();
+
+                process.waitFor();
+                IOUtils.copy(process.getErrorStream(), logger.getJenkinsListener().getLogger());
+                IOUtils.copy(process.getInputStream(), logger.getJenkinsListener().getLogger());
+            } catch (final InterruptedException | IOException e) {
+                logger.debug("Error printing the JAVA version: " + e.getMessage(), e);
+            }
+        }
     }
 
 }
