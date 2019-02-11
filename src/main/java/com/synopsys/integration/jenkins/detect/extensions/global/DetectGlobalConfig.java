@@ -21,10 +21,9 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package com.synopsys.integration.jenkins.detect.global;
+package com.synopsys.integration.jenkins.detect.extensions.global;
 
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.io.Serializable;
 import java.io.StringReader;
 import java.io.StringWriter;
@@ -59,7 +58,9 @@ import org.w3c.dom.Node;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
+import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
+import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.cloudbees.plugins.credentials.impl.BaseStandardCredentials;
 import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
 import com.cloudbees.plugins.credentials.matchers.IdMatcher;
@@ -90,6 +91,8 @@ import jenkins.util.xml.XMLUtils;
 public class DetectGlobalConfig extends GlobalConfiguration implements Serializable {
     private static final long serialVersionUID = -7629542889827231313L;
     private static final String COULD_NOT_REACH_BLACK_DUCK_PUBLIC_ARTIFACTORY = "Could not reach Black Duck public Artifactory";
+    private static final Class<StringCredentialsImpl> API_TOKEN_CREDENTIALS_CLASS = StringCredentialsImpl.class;
+    private static final Class<UsernamePasswordCredentialsImpl> USERNAME_PASSWORD_CREDENTIALS_CLASS = UsernamePasswordCredentialsImpl.class;
     private final Logger logger = Logger.getLogger(DetectGlobalConfig.class.getName());
 
     private String detectArtifactUrl;
@@ -163,7 +166,7 @@ public class DetectGlobalConfig extends GlobalConfiguration implements Serializa
         save();
     }
 
-    public BlackDuckServerConfig getBlackDuckServerConfig() {
+    public BlackDuckServerConfig getBlackDuckServerConfig() throws IllegalArgumentException {
         return constructBlackDuckServerConfig(url, credentialsId, trustCertificates, timeout);
     }
 
@@ -191,13 +194,19 @@ public class DetectGlobalConfig extends GlobalConfiguration implements Serializa
         } catch (final IntegrationException e) {
             logger.log(Level.SEVERE, COULD_NOT_REACH_BLACK_DUCK_PUBLIC_ARTIFACTORY, e);
         } catch (final Exception e) {
-            final StringWriter sw = new StringWriter();
-            e.printStackTrace(new PrintWriter(sw));
-            System.err.println(sw.toString());
+            logger.log(Level.SEVERE, e.getMessage(), e);
         }
         boxModel.add(String.format("Default (%s)", DetectDownloadManager.DEFAULT_DETECT_VERSION), "");
         boxModel.add("Latest Air Gap Zip", DetectVersionRequestService.AIR_GAP_ZIP);
         return boxModel;
+    }
+
+    public ListBoxModel doFillCredentialsIdItems() {
+        Jenkins.getInstance().checkPermission(Jenkins.ADMINISTER);
+        return new StandardListBoxModel()
+                   .includeEmptyValue()
+                   .includeMatchingAs(ACL.SYSTEM, Jenkins.getInstance(), BaseStandardCredentials.class, Collections.emptyList(),
+                       CredentialsMatchers.either(CredentialsMatchers.instanceOf(API_TOKEN_CREDENTIALS_CLASS), CredentialsMatchers.instanceOf(USERNAME_PASSWORD_CREDENTIALS_CLASS)));
     }
 
     @POST
@@ -226,12 +235,16 @@ public class DetectGlobalConfig extends GlobalConfiguration implements Serializa
     public FormValidation doTestConnection(@QueryParameter("url") final String url, @QueryParameter("credentialsId") final String credentialsId, @QueryParameter("timeout") final String timeout,
         @QueryParameter("trustCertificates") final boolean trustCertificates) {
         Jenkins.getInstance().checkPermission(Jenkins.ADMINISTER);
-        final BlackDuckServerConfig blackDuckServerConfig = constructBlackDuckServerConfig(url, credentialsId, trustCertificates, Integer.valueOf(timeout));
-        final ConnectionResult connectionResult = blackDuckServerConfig.attemptConnection(new PrintStreamIntLogger(System.out, LogLevel.DEBUG));
-        final String credentialsValid = String.format("Credentials valid for: %s", url);
-        return connectionResult.getErrorMessage()
-                   .map(FormValidation::error)
-                   .orElse(FormValidation.ok(credentialsValid));
+        try {
+            final BlackDuckServerConfig blackDuckServerConfig = constructBlackDuckServerConfig(url, credentialsId, trustCertificates, Integer.valueOf(timeout));
+            final ConnectionResult connectionResult = blackDuckServerConfig.attemptConnection(new PrintStreamIntLogger(System.out, LogLevel.DEBUG));
+            final String credentialsValid = String.format("Credentials valid for: %s", url);
+            return connectionResult.getErrorMessage()
+                       .map(FormValidation::error)
+                       .orElse(FormValidation.ok(credentialsValid));
+        } catch (final IllegalArgumentException e) {
+            return FormValidation.error(e.getMessage());
+        }
     }
 
     // EX: http://localhost:8080/descriptorByName/com.blackducksoftware.integration.detect.jenkins.post.DetectPostBuildStep/config.xml
@@ -314,11 +327,11 @@ public class DetectGlobalConfig extends GlobalConfiguration implements Serializa
                    .map(String::trim);
     }
 
-    private DetectVersionRequestService getDetectVersionRequestService() {
-        return new DetectVersionRequestService(new PrintStreamIntLogger(System.out, LogLevel.DEBUG), getBlackDuckServerConfig());
+    private DetectVersionRequestService getDetectVersionRequestService() throws IllegalArgumentException {
+        return new DetectVersionRequestService(new PrintStreamIntLogger(System.out, LogLevel.DEBUG), getTimeout(), getTrustCertificates(), getBlackDuckServerConfig().getProxyInfo());
     }
 
-    private BlackDuckServerConfig constructBlackDuckServerConfig(final String url, final String credentialsId, final boolean trustCertificates, final int timeout) {
+    private BlackDuckServerConfig constructBlackDuckServerConfig(final String url, final String credentialsId, final boolean trustCertificates, final int timeout) throws IllegalArgumentException {
         final BlackDuckServerConfigBuilder builder = new BlackDuckServerConfigBuilder()
                                                          .setUrl(url)
                                                          .setTrustCert(trustCertificates)
@@ -346,23 +359,23 @@ public class DetectGlobalConfig extends GlobalConfiguration implements Serializa
 
     private Optional<String> getBlackDuckUsername(final String credentialsId) {
         return getCredentials(credentialsId)
-                   .filter(UsernamePasswordCredentialsImpl.class::isInstance)
-                   .map(UsernamePasswordCredentialsImpl.class::cast)
+                   .filter(USERNAME_PASSWORD_CREDENTIALS_CLASS::isInstance)
+                   .map(USERNAME_PASSWORD_CREDENTIALS_CLASS::cast)
                    .map(UsernamePasswordCredentialsImpl::getUsername);
     }
 
     private Optional<String> getBlackDuckPassword(final String credentialsId) {
         return getCredentials(credentialsId)
-                   .filter(UsernamePasswordCredentialsImpl.class::isInstance)
-                   .map(UsernamePasswordCredentialsImpl.class::cast)
+                   .filter(USERNAME_PASSWORD_CREDENTIALS_CLASS::isInstance)
+                   .map(USERNAME_PASSWORD_CREDENTIALS_CLASS::cast)
                    .map(UsernamePasswordCredentialsImpl::getPassword)
                    .map(Secret::getPlainText);
     }
 
     private Optional<String> getBlackDuckApiToken(final String credentialsId) {
         return getCredentials(credentialsId)
-                   .filter(StringCredentialsImpl.class::isInstance)
-                   .map(StringCredentialsImpl.class::cast)
+                   .filter(API_TOKEN_CREDENTIALS_CLASS::isInstance)
+                   .map(API_TOKEN_CREDENTIALS_CLASS::cast)
                    .map(StringCredentialsImpl::getSecret)
                    .map(Secret::getPlainText);
     }

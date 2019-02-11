@@ -21,7 +21,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package com.synopsys.integration.jenkins.detect.remote;
+package com.synopsys.integration.jenkins.detect.steps.remote;
 
 import java.io.Serializable;
 

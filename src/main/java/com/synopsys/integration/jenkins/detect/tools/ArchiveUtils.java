@@ -21,7 +21,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package com.blackducksoftware.integration.detect.jenkins.tools;
+package com.synopsys.integration.jenkins.detect.tools;
 
 import java.io.File;
 import java.io.FileOutputStream;

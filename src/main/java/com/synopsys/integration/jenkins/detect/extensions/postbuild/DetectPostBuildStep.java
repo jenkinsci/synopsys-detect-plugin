@@ -21,16 +21,17 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package com.synopsys.integration.jenkins.detect.postbuild;
+package com.synopsys.integration.jenkins.detect.extensions.postbuild;
 
 import java.io.IOException;
 import java.io.Serializable;
 
 import javax.annotation.Nonnull;
 
+import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 
-import com.synopsys.integration.jenkins.detect.common.DetectCommonStep;
+import com.synopsys.integration.jenkins.detect.steps.ExecuteDetectStep;
 
 import hudson.Extension;
 import hudson.FilePath;
@@ -39,12 +40,15 @@ import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
 import hudson.model.JDK;
+import hudson.model.Run;
+import hudson.model.TaskListener;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Publisher;
 import hudson.tasks.Recorder;
+import jenkins.tasks.SimpleBuildStep;
 
-public class DetectPostBuildStep extends Recorder {
+public class DetectPostBuildStep extends Recorder implements SimpleBuildStep {
     public static final String DISPLAY_NAME = "Black Duck Detect";
     private final String detectProperties;
 
@@ -67,12 +71,20 @@ public class DetectPostBuildStep extends Recorder {
         return (DescriptorImpl) super.getDescriptor();
     }
 
+    // Freestyle
     @Override
     public boolean perform(final AbstractBuild<?, ?> build, final Launcher launcher, final BuildListener listener) throws InterruptedException, IOException {
         final String javaHome = getJavaExecutable(build, listener);
-        final DetectCommonStep detectCommonStep = new DetectCommonStep(build.getBuiltOn(), launcher, listener, build.getEnvironment(listener), getWorkingDirectory(build), build, javaHome);
-        detectCommonStep.runCommonDetectStep(detectProperties);
+        final ExecuteDetectStep executeDetectStep = new ExecuteDetectStep(build.getBuiltOn(), listener, build.getEnvironment(listener), build, javaHome);
+        executeDetectStep.executeDetect(detectProperties);
         return true;
+    }
+
+    // Pipeline
+    @Override
+    public void perform(@Nonnull final Run<?, ?> run, @Nonnull final FilePath workspace, @Nonnull final Launcher launcher, @Nonnull final TaskListener listener) throws InterruptedException, IOException {
+        final ExecuteDetectStep executeDetectStep = new ExecuteDetectStep(workspace.toComputer().getNode(), listener, run.getEnvironment(listener), run, null);
+        executeDetectStep.executeDetect(detectProperties);
     }
 
     private String getJavaExecutable(final AbstractBuild<?, ?> build, final BuildListener listener) throws IOException, InterruptedException {
@@ -100,8 +112,9 @@ public class DetectPostBuildStep extends Recorder {
         return new FilePath(build.getBuiltOn().getChannel(), workingDirectory);
     }
 
+    @Symbol("blackduck_detect")
     @Extension
-    public static class DescriptorImpl extends BuildStepDescriptor<Publisher> implements Serializable {
+    public static final class DescriptorImpl extends BuildStepDescriptor<Publisher> implements Serializable {
         private static final long serialVersionUID = 9059602791947799261L;
 
         public DescriptorImpl() {

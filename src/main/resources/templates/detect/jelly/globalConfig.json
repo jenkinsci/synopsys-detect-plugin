@@ -1,17 +1,21 @@
 {
   "template": "globalConfig.tpl",
   "model": {
-    "globalConfigSectionTitle": "Synopsys Coverity",
-    "coverityConnectInstancesTitle": "Coverity Connect Instances",
-    "coverityConnectInstancesField": "coverityConnectInstances",
-    "coverityConnectInstancesAddTitle": "Add Coverity Connect instance",
-    "coverityConnectInstancesDeleteTitle": "Delete Coverity Connect instance",
-    "credentialsField": "credentialId",
-    "credentialsTitle": "Credentials",
+    "globalConfigSectionTitle": "Black Duck Detect",
     "urlField": "url",
-    "urlTitle": "URL",
+    "urlTitle": "Server URL",
+    "credentialsField": "credentialsId",
+    "credentialsTitle": "Credentials",
+    "detectDownloadUrlField": "detectDownloadUrl",
+    "detectDownloadUrlTitle": "Detect version",
+    "detectArtifactUrlField": "detectArtifactUrl",
+    "detectArtifactUrlTitle": "Artifactory base URL",
+    "timeoutField": "timeout",
+    "timeoutTitle": "Connection timeout",
+    "trustCertificatesField": "trustCertificates",
+    "trustCertificatesTitle": "Trust Black Duck certificates",
     "testConnectionMethod": "testConnection",
-    "testConnectionTitle": "Test Connection",
+    "testConnectionTitle": "Test connection",
     "testConnectionProgress": "Testing..."
   }
 }

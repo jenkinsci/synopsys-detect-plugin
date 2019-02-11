@@ -21,7 +21,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package com.blackducksoftware.integration.detect.jenkins.tools;
+package com.synopsys.integration.jenkins.detect.tools;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -31,9 +31,9 @@ import java.io.InputStream;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 
-import com.blackducksoftware.integration.detect.DetectVersionRequestService;
-import com.blackducksoftware.integration.exception.IntegrationException;
-import com.blackducksoftware.integration.log.IntLogger;
+import com.synopsys.integration.exception.IntegrationException;
+import com.synopsys.integration.jenkins.detect.DetectVersionRequestService;
+import com.synopsys.integration.log.IntLogger;
 
 public class DetectDownloadManager {
     public static final String DEFAULT_DETECT_JAR = "hub-detect-3.1.0.jar";
@@ -46,15 +46,10 @@ public class DetectDownloadManager {
 
     private final DetectVersionRequestService detectVersionRequestService;
 
-    public DetectDownloadManager(final IntLogger logger, final String toolsDirectory, final Boolean trustSSLCertificates, final int connectionTimeout, final String proxyHost, final int proxyPort,
-            final String proxyUsername, final String proxyPassword, final String proxyNtlmDomain) {
+    public DetectDownloadManager(final IntLogger logger, final String toolsDirectory, final DetectVersionRequestService detectVersionRequestService) {
         this.logger = logger;
         this.toolsDirectory = toolsDirectory;
-        if (StringUtils.isNotBlank(proxyHost)) {
-            this.detectVersionRequestService = new DetectVersionRequestService(logger, trustSSLCertificates, connectionTimeout, proxyHost, proxyPort, proxyUsername, proxyPassword, proxyNtlmDomain);
-        } else {
-            this.detectVersionRequestService = new DetectVersionRequestService(logger, trustSSLCertificates, connectionTimeout);
-        }
+        this.detectVersionRequestService = detectVersionRequestService;
     }
 
     public File handleDownload(final String fileUrl) throws IntegrationException, IOException {
@@ -100,7 +95,7 @@ public class DetectDownloadManager {
     }
 
     // TODO make this method private in 2.0.0 so that this class can be refactored
-    public String getDetectFileName(final String fileUrl) {
+    private String getDetectFileName(final String fileUrl) {
         if (StringUtils.isNotBlank(fileUrl)) {
             String fileName = trimToFileName(fileUrl);
             if (fileName.endsWith(DetectVersionRequestService.AIR_GAP_ZIP_SUFFIX)) {
@@ -116,7 +111,7 @@ public class DetectDownloadManager {
     }
 
     // TODO make this method private in 2.0.0 so that this class can be refactored
-    public File getInstallationDirectory() throws IntegrationException {
+    private File getInstallationDirectory() throws IntegrationException {
         File installationDirectory = new File(toolsDirectory);
         installationDirectory = new File(installationDirectory, DETECT_INSTALL_DIRECTORY);
         try {
@@ -145,12 +140,12 @@ public class DetectDownloadManager {
     }
 
     // TODO make this method private in 2.0.0 so that this class can be refactored
-    public boolean shouldInstallDetect(final File detectFile, final String fileUrl) {
+    private boolean shouldInstallDetect(final File detectFile, final String fileUrl) {
         return !detectFile.exists() && StringUtils.isNotBlank(fileUrl);
     }
 
     // TODO make this method private in 2.0.0 so that this class can be refactored
-    public boolean shouldInstallDefaultDetect(final File detectFile) {
+    private boolean shouldInstallDefaultDetect(final File detectFile) {
         return !detectFile.exists();
     }
 

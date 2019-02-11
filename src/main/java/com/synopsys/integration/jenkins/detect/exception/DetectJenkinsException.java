@@ -21,7 +21,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package com.blackducksoftware.integration.detect.jenkins.exception;
+package com.synopsys.integration.jenkins.detect.exception;
 
 public class DetectJenkinsException extends Exception {
     private static final long serialVersionUID = -1172941819259598247L;

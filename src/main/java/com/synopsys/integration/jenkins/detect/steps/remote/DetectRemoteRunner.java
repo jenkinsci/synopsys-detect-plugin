@@ -21,7 +21,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package com.synopsys.integration.jenkins.detect.remote;
+package com.synopsys.integration.jenkins.detect.steps.remote;
 
 import java.io.File;
 import java.io.IOException;
@@ -39,34 +39,60 @@ import com.synopsys.integration.blackduck.configuration.BlackDuckServerConfig;
 import com.synopsys.integration.blackduck.configuration.BlackDuckServerConfigBuilder;
 import com.synopsys.integration.blackduck.service.model.StreamRedirectThread;
 import com.synopsys.integration.exception.IntegrationException;
+import com.synopsys.integration.jenkins.detect.DetectVersionRequestService;
 import com.synopsys.integration.jenkins.detect.JenkinsDetectLogger;
 import com.synopsys.integration.jenkins.detect.PluginHelper;
 import com.synopsys.integration.jenkins.detect.tools.DetectDownloadManager;
 import com.synopsys.integration.log.LogLevel;
 import com.synopsys.integration.rest.credentials.Credentials;
+import com.synopsys.integration.rest.credentials.CredentialsBuilder;
+import com.synopsys.integration.rest.proxy.ProxyInfo;
+import com.synopsys.integration.rest.proxy.ProxyInfoBuilder;
 import com.synopsys.integration.util.IntEnvironmentVariables;
 
 import hudson.EnvVars;
 import hudson.remoting.Callable;
 import jenkins.model.Jenkins;
 
-@SuppressWarnings("serial")
 public class DetectRemoteRunner implements Callable<DetectResponse, IntegrationException> {
+    private static final long serialVersionUID = -3893076074803560801L;
     private final JenkinsDetectLogger logger;
     private final String javaHome;
+    private final Integer blackDuckTimeout;
+    private final Boolean blackDuckTrustCertificates;
 
-    private final BlackDuckServerConfig blackDuckServerConfig;
     private final String detectDownloadUrl;
     private final String toolsDirectory;
     private final List<String> detectProperties;
 
     private final EnvVars envVars;
+    private final String blackDuckPassword;
+    private final String blackDuckUsername;
+    private final String blackDuckUrl;
+    private final String blackDuckApiToken;
+    private final String blackDuckProxyHost;
+    private final Integer blackDuckProxyPort;
+    private final String blackDuckProxyUsername;
+    private final String blackDuckProxyPassword;
+    private final String blackDuckProxyNtlmDomain;
+    private final String blackDuckProxyNtlmWorkstation;
 
     public DetectRemoteRunner(final JenkinsDetectLogger logger, final String javaHome, final BlackDuckServerConfig blackDuckServerConfig, final String detectDownloadUrl, final String toolsDirectory, final List<String> detectProperties,
         final EnvVars envVars) {
         this.logger = logger;
         this.javaHome = javaHome;
-        this.blackDuckServerConfig = blackDuckServerConfig;
+        this.blackDuckUrl = blackDuckServerConfig.getBlackDuckUrl().toString();
+        this.blackDuckTimeout = blackDuckServerConfig.getTimeout();
+        this.blackDuckUsername = blackDuckServerConfig.getCredentials().flatMap(Credentials::getUsername).orElse(StringUtils.EMPTY);
+        this.blackDuckPassword = blackDuckServerConfig.getCredentials().flatMap(Credentials::getPassword).orElse(StringUtils.EMPTY);
+        this.blackDuckApiToken = blackDuckServerConfig.getApiToken().orElse(StringUtils.EMPTY);
+        this.blackDuckTrustCertificates = blackDuckServerConfig.isAlwaysTrustServerCertificate();
+        this.blackDuckProxyHost = blackDuckServerConfig.getProxyInfo().getHost().orElse(StringUtils.EMPTY);
+        this.blackDuckProxyPort = blackDuckServerConfig.getProxyInfo().getPort();
+        this.blackDuckProxyUsername = blackDuckServerConfig.getProxyInfo().getUsername().orElse(StringUtils.EMPTY);
+        this.blackDuckProxyPassword = blackDuckServerConfig.getProxyInfo().getPassword().orElse(StringUtils.EMPTY);
+        this.blackDuckProxyNtlmDomain = blackDuckServerConfig.getProxyInfo().getNtlmDomain().orElse(StringUtils.EMPTY);
+        this.blackDuckProxyNtlmWorkstation = blackDuckServerConfig.getProxyInfo().getNtlmWorkstation().orElse(StringUtils.EMPTY);
         this.detectDownloadUrl = detectDownloadUrl;
         this.toolsDirectory = toolsDirectory;
         this.detectProperties = detectProperties;
@@ -95,7 +121,23 @@ public class DetectRemoteRunner implements Callable<DetectResponse, IntegrationE
 
             debuggingLogs(intEnvironmentVariables);
 
-            final DetectDownloadManager detectDownloadManager = new DetectDownloadManager(logger, toolsDirectory, blackDuckServerConfig);
+            ProxyInfo blackDuckProxyInfo;
+            try {
+                final ProxyInfoBuilder proxyInfoBuilder = ProxyInfo.newBuilder();
+                proxyInfoBuilder.setHost(blackDuckProxyHost);
+                proxyInfoBuilder.setPort(blackDuckProxyPort);
+                final CredentialsBuilder credentialsBuilder = Credentials.newBuilder();
+                credentialsBuilder.setUsernameAndPassword(blackDuckProxyUsername, blackDuckProxyPassword);
+                proxyInfoBuilder.setCredentials(credentialsBuilder.build());
+                proxyInfoBuilder.setNtlmDomain(blackDuckProxyNtlmDomain);
+                proxyInfoBuilder.setNtlmWorkstation(blackDuckProxyNtlmWorkstation);
+                blackDuckProxyInfo = proxyInfoBuilder.build();
+            } catch (final Exception e) {
+                blackDuckProxyInfo = null;
+            }
+
+            final DetectVersionRequestService detectVersionRequestService = new DetectVersionRequestService(logger, blackDuckTimeout, blackDuckTrustCertificates, blackDuckProxyInfo);
+            final DetectDownloadManager detectDownloadManager = new DetectDownloadManager(logger, toolsDirectory, detectVersionRequestService);
             final File hubDetectJar = detectDownloadManager.handleDownload(detectDownloadUrl);
 
             logger.info("Running Detect: " + hubDetectJar.getName());
@@ -128,18 +170,18 @@ public class DetectRemoteRunner implements Callable<DetectResponse, IntegrationE
             processBuilder.directory(new File(intEnvironmentVariables.getValue("WORKSPACE")));
             processBuilder.environment().putAll(intEnvironmentVariables.getVariables());
 
-            setProcessEnvironmentVariableString(processBuilder, BlackDuckServerConfigBuilder.Property.URL, blackDuckServerConfig.getBlackDuckUrl().toString());
-            setProcessEnvironmentVariableString(processBuilder, BlackDuckServerConfigBuilder.Property.TIMEOUT, String.valueOf(blackDuckServerConfig.getTimeout()));
-            setProcessEnvironmentVariableString(processBuilder, BlackDuckServerConfigBuilder.Property.USERNAME, blackDuckServerConfig.getCredentials().flatMap(Credentials::getUsername).orElse(StringUtils.EMPTY));
-            setProcessEnvironmentVariableString(processBuilder, BlackDuckServerConfigBuilder.Property.PASSWORD, blackDuckServerConfig.getCredentials().flatMap(Credentials::getPassword).orElse(StringUtils.EMPTY));
-            setProcessEnvironmentVariableString(processBuilder, BlackDuckServerConfigBuilder.Property.API_TOKEN, blackDuckServerConfig.getApiToken().orElse(StringUtils.EMPTY));
-            setProcessEnvironmentVariableString(processBuilder, BlackDuckServerConfigBuilder.Property.TRUST_CERT, String.valueOf(blackDuckServerConfig.isAlwaysTrustServerCertificate()));
-            setProcessEnvironmentVariableString(processBuilder, BlackDuckServerConfigBuilder.Property.PROXY_HOST, blackDuckServerConfig.getProxyInfo().getHost().orElse(StringUtils.EMPTY));
-            setProcessEnvironmentVariableString(processBuilder, BlackDuckServerConfigBuilder.Property.PROXY_PORT, String.valueOf(blackDuckServerConfig.getProxyInfo().getPort()));
-            setProcessEnvironmentVariableString(processBuilder, BlackDuckServerConfigBuilder.Property.PROXY_USERNAME, blackDuckServerConfig.getProxyInfo().getUsername().orElse(StringUtils.EMPTY));
-            setProcessEnvironmentVariableString(processBuilder, BlackDuckServerConfigBuilder.Property.PROXY_PASSWORD, blackDuckServerConfig.getProxyInfo().getPassword().orElse(StringUtils.EMPTY));
-            setProcessEnvironmentVariableString(processBuilder, BlackDuckServerConfigBuilder.Property.PROXY_NTLM_DOMAIN, blackDuckServerConfig.getProxyInfo().getNtlmDomain().orElse(StringUtils.EMPTY));
-            setProcessEnvironmentVariableString(processBuilder, BlackDuckServerConfigBuilder.Property.PROXY_NTLM_WORKSTATION, blackDuckServerConfig.getProxyInfo().getNtlmWorkstation().orElse(StringUtils.EMPTY));
+            setProcessEnvironmentVariableString(processBuilder, BlackDuckServerConfigBuilder.Property.URL, blackDuckUrl);
+            setProcessEnvironmentVariableString(processBuilder, BlackDuckServerConfigBuilder.Property.TIMEOUT, String.valueOf(blackDuckTimeout));
+            setProcessEnvironmentVariableString(processBuilder, BlackDuckServerConfigBuilder.Property.USERNAME, blackDuckUsername);
+            setProcessEnvironmentVariableString(processBuilder, BlackDuckServerConfigBuilder.Property.PASSWORD, blackDuckPassword);
+            setProcessEnvironmentVariableString(processBuilder, BlackDuckServerConfigBuilder.Property.API_TOKEN, blackDuckApiToken);
+            setProcessEnvironmentVariableString(processBuilder, BlackDuckServerConfigBuilder.Property.TRUST_CERT, String.valueOf(blackDuckTrustCertificates));
+            setProcessEnvironmentVariableString(processBuilder, BlackDuckServerConfigBuilder.Property.PROXY_HOST, blackDuckProxyHost);
+            setProcessEnvironmentVariableString(processBuilder, BlackDuckServerConfigBuilder.Property.PROXY_PORT, String.valueOf(blackDuckProxyPort));
+            setProcessEnvironmentVariableString(processBuilder, BlackDuckServerConfigBuilder.Property.PROXY_USERNAME, blackDuckProxyUsername);
+            setProcessEnvironmentVariableString(processBuilder, BlackDuckServerConfigBuilder.Property.PROXY_PASSWORD, blackDuckProxyPassword);
+            setProcessEnvironmentVariableString(processBuilder, BlackDuckServerConfigBuilder.Property.PROXY_NTLM_DOMAIN, blackDuckProxyNtlmDomain);
+            setProcessEnvironmentVariableString(processBuilder, BlackDuckServerConfigBuilder.Property.PROXY_NTLM_WORKSTATION, blackDuckProxyNtlmWorkstation);
 
             final Process process = processBuilder.start();
             final StreamRedirectThread redirectStdOutThread = new StreamRedirectThread(process.getInputStream(), logger.getJenkinsListener().getLogger());

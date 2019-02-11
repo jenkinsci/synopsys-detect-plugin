@@ -21,7 +21,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package com.blackducksoftware.integration.detect;
+package com.synopsys.integration.jenkins.detect;
 
 public class DetectVersionModel {
     private final String versionURL;

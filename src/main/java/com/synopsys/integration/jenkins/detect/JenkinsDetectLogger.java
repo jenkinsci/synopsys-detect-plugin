@@ -21,14 +21,14 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package com.blackducksoftware.integration.detect.jenkins;
+package com.synopsys.integration.jenkins.detect;
 
 import java.io.PrintWriter;
 import java.io.Serializable;
 import java.io.StringWriter;
 
-import com.blackducksoftware.integration.log.IntLogger;
-import com.blackducksoftware.integration.log.LogLevel;
+import com.synopsys.integration.log.IntLogger;
+import com.synopsys.integration.log.LogLevel;
 
 import hudson.model.TaskListener;
 
@@ -48,13 +48,13 @@ public class JenkinsDetectLogger extends IntLogger implements Serializable {
     }
 
     @Override
-    public void setLogLevel(final LogLevel level) {
-        this.level = level;
+    public LogLevel getLogLevel() {
+        return level;
     }
 
     @Override
-    public LogLevel getLogLevel() {
-        return level;
+    public void setLogLevel(final LogLevel level) {
+        this.level = level;
     }
 
     /**

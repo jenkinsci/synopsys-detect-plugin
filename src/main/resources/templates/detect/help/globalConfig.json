@@ -1,17 +1,30 @@
 {
   "helpHtml.tpl": {
-    "url": {
+    "detectArtifactUrl": {
       "overview": [
-        "Specify the URL for your Coverity Connect instance.",
-        "Populates the $COV_HOST and $COV_PORT environment variables"
+        "Specify the base Artifactory URL containing the Black Duck Detect Air-gap zip."
       ]
     },
-    "credentialId": {
+    "detectDownloadUrl": {
       "overview": [
-        "Specify credentials for authenticating with your Coverity Connect instance."
-      ],
-      "notes": [
-        "\"Username with password\" is the only kind of credentials supported."
+        "Choose the version of Black Duck Detect you would like to use."
+      ]
+    },
+    "url": {
+      "overview": [
+        "Provide the URL that lets you access your Hub server. For example &quot;https://hub.example.com/&quot"
+      ]
+    },
+    "credentialsId": {
+      "overview": [
+        "Choose the Username and Password from the list to authenticate to the Black Duck server.",
+        "Alternatively, choose the Api Token from the list to authenticate to the Black Duck server.",
+        "If the credentials you are looking for are not in the list then you can add them with the Add button."
+      ]
+    },
+    "trustCertificates": {
+      "overview": [
+        "Select 'Trust Hub SSL Certificates' if you want to trust the Hub server certificates."
       ]
     }
   }

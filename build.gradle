@@ -1,3 +1,6 @@
+import com.synopsys.integration.jenkins.detect.GenerateHtml
+import com.synopsys.integration.jenkins.detect.GenerateJelly
+
 buildscript {
     repositories {
         jcenter()
@@ -8,22 +11,14 @@ buildscript {
 }
 
 plugins {
-    id 'org.jenkins-ci.jpi' version '0.25.0'
+    id 'org.jenkins-ci.jpi' version '0.27.0'
 }
 
-version = '1.5.1-SNAPSHOT'
-
-apply plugin: 'com.blackducksoftware.integration.solution'
-
-group = 'com.blackducksoftware.integration'
+group = 'org.jenkins-ci.plugins'
+version = '2.0.0-SNAPSHOT'
 description = 'Black Duck Detect Plugin for Jenkins'
 
-task listrepos {
-    doLast {
-        println "Repositories:"
-        project.repositories.each { println "Name: " + it.name + "; url: " + it.url }
-    }
-}
+apply plugin: 'com.blackducksoftware.integration.solution'
 
 def jcenterRepo = project.repositories.findByName('BintrayJCenter')
 project.repositories.remove(jcenterRepo)
@@ -52,25 +47,42 @@ jenkinsPlugin {
 }
 
 dependencies {
-    compile 'com.blackducksoftware.integration:hub-common:35.0.0'
+    compile 'com.blackducksoftware.integration:blackduck-common:41.2.0'
     compile 'org.jvnet.localizer:localizer:1.24'
 
-    jenkinsPlugins 'org.jenkins-ci.plugins:credentials:1.9.4'
+    jenkinsPlugins 'org.jenkins-ci.plugins:credentials:2.1.10'
     jenkinsPlugins 'org.jenkins-ci.plugins:plain-credentials:1.0'
 
     optionalJenkinsPlugins 'org.jenkins-ci.plugins:job-dsl:1.67'
     optionalJenkinsPlugins 'org.jenkins-ci.plugins.workflow:workflow-job:2.9'
     optionalJenkinsPlugins 'org.jenkins-ci.plugins.workflow:workflow-cps:2.23'
-    optionalJenkinsPlugins 'org.jenkins-ci.plugins.workflow:workflow-step-api:2.5'
+    optionalJenkinsPlugins 'org.jenkins-ci.plugins.workflow:workflow-step-api:2.10'
 }
 
-task renameFile << {
-    if (project.getVersion().toString().contains("SNAPSHOT")) {
-        File libsDirectory = new File(project.getBuildDir(), "libs")
-        File originalFile = new File(libsDirectory, "${project.getName()}.hpi")
-        File newFile = new File(libsDirectory, "${project.getName()}-${project.getVersion()}.hpi")
-        originalFile.renameTo newFile
+task renameFile {
+    doLast {
+        if (project.version.toString().contains("SNAPSHOT")) {
+            File libsDirectory = new File(project.buildDir, "libs")
+            File originalFile = new File(libsDirectory, "${project.getName()}.hpi")
+            File newFile = new File(libsDirectory, "${project.getName()}-${project.version}.hpi")
+            originalFile.renameTo newFile
+        }
     }
 }
 
+task generateJelly(type: GenerateJelly) {
+    pathToExtensionResourcesPackage = 'src/main/resources/com/synopsys/integration/jenkins/detect/extensions/'
+    pathToJellyJson = 'src/main/resources/templates/detect/jelly/'
+    outputPathToJson = ['postbuild/DetectPostBuildStep': 'postBuild.json',
+                        'global/DetectGlobalConfig'    : 'globalConfig.json',]
+}
+
+task generateHelp(type: GenerateHtml) {
+    pathToExtensionResourcesPackage = 'src/main/resources/com/synopsys/integration/jenkins/detect/extensions/'
+    pathToHelpJson = 'src/main/resources/templates/detect/help/'
+    outputPathToJson = ['postbuild/DetectPostBuildStep': 'postBuild.json',
+                        'global/DetectGlobalConfig'    : 'globalConfig.json',]
+}
+
+compileJava.dependsOn generateHelp, generateJelly
 jpi.finalizedBy renameFile

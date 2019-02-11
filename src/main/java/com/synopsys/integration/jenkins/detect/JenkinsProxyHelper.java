@@ -21,7 +21,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package com.blackducksoftware.integration.detect.jenkins;
+package com.synopsys.integration.jenkins.detect;
 
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -30,120 +30,68 @@ import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
 
-import com.blackducksoftware.integration.rest.proxy.ProxyInfo;
-import com.blackducksoftware.integration.rest.proxy.ProxyInfoBuilder;
-import com.blackducksoftware.integration.util.proxy.ProxyUtil;
-import com.google.common.collect.Lists;
+import com.synopsys.integration.rest.credentials.Credentials;
+import com.synopsys.integration.rest.credentials.CredentialsBuilder;
+import com.synopsys.integration.rest.proxy.ProxyInfo;
+import com.synopsys.integration.rest.proxy.ProxyInfoBuilder;
+import com.synopsys.integration.util.proxy.ProxyUtil;
 
 import hudson.ProxyConfiguration;
 import jenkins.model.Jenkins;
 
 public class JenkinsProxyHelper {
-
-    public ProxyInfo getProxyInfo(final String url, final String proxyHost, final int proxyPort, final String proxyUsername, final String proxyPassword, final String ignoredProxyHosts, final String ntlmDomain,
-            final String ntlmWorkstation) {
+    public static ProxyInfo getProxyInfoFromJenkins(final String url) {
         ProxyInfo proxyInfo = ProxyInfo.NO_PROXY_INFO;
-        if (shouldUseProxy(ignoredProxyHosts, url)) {
-            final ProxyInfoBuilder proxyInfoBuilder = new ProxyInfoBuilder();
-            applyJenkinsProxy(proxyInfoBuilder, proxyHost, proxyPort, proxyUsername, proxyPassword, ntlmDomain);
-            proxyInfo = proxyInfoBuilder.build();
-        }
-        return proxyInfo;
-    }
-
-    public ProxyInfo getProxyInfoFromJenkins(final String url) {
-        ProxyInfo proxyInfo = ProxyInfo.NO_PROXY_INFO;
-        final Jenkins jenkins = Jenkins.getInstance();
+        final Jenkins jenkins = Jenkins.getInstanceOrNull();
         if (jenkins != null) {
             final ProxyConfiguration proxyConfig = jenkins.proxy;
             if (proxyConfig != null) {
-                if (shouldUseProxy(proxyConfig.noProxyHost, url)) {
-                    final ProxyInfoBuilder proxyInfoBuilder = new ProxyInfoBuilder();
-                    applyJenkinsProxy(proxyInfoBuilder, proxyConfig.name, proxyConfig.port, proxyConfig.getUserName(), proxyConfig.getPassword());
-                    proxyInfo = proxyInfoBuilder.build();
+                final String username;
+                final String ntlmDomain;
+                final String[] possiblyDomainSlashUsername = proxyConfig.getUserName().split(Pattern.quote("\\"));
+                if (possiblyDomainSlashUsername.length == 1 || possiblyDomainSlashUsername[0].length() == 0) {
+                    ntlmDomain = null;
+                    username = proxyConfig.getUserName();
+                } else {
+                    ntlmDomain = possiblyDomainSlashUsername[0];
+                    username = possiblyDomainSlashUsername[1];
                 }
+
+                proxyInfo = getProxyInfo(url, proxyConfig.name, proxyConfig.port, username, proxyConfig.getPassword(), proxyConfig.getNoProxyHostPatterns(), ntlmDomain, StringUtils.EMPTY);
             }
         }
         return proxyInfo;
     }
 
-    private boolean shouldUseProxy(final String noProxyHosts, final String url) {
-        if (StringUtils.isBlank(url)) {
-            return false;
+    public static ProxyInfo getProxyInfo(final String url, final String proxyHost, final int proxyPort, final String proxyUsername, final String proxyPassword, final List<Pattern> ignoredProxyHosts, final String ntlmDomain,
+        final String ntlmWorkstation) {
+        ProxyInfo proxyInfo = ProxyInfo.NO_PROXY_INFO;
+
+        if (shouldUseProxy(url, ignoredProxyHosts)) {
+            final ProxyInfoBuilder proxyInfoBuilder = ProxyInfo.newBuilder();
+
+            final CredentialsBuilder credentialsBuilder = Credentials.newBuilder();
+            credentialsBuilder.setUsernameAndPassword(proxyUsername, proxyPassword);
+
+            proxyInfoBuilder.setHost(proxyHost);
+            proxyInfoBuilder.setPort(proxyPort);
+            proxyInfoBuilder.setCredentials(credentialsBuilder.build());
+            proxyInfoBuilder.setNtlmDomain(StringUtils.trimToNull(ntlmDomain));
+            proxyInfoBuilder.setNtlmWorkstation(StringUtils.trimToNull(ntlmWorkstation));
+
+            proxyInfo = proxyInfoBuilder.build();
+
         }
+
+        return proxyInfo;
+    }
+
+    private static boolean shouldUseProxy(final String url, final List<Pattern> noProxyHosts) {
         try {
             final URL actualURL = new URL(url);
-            if (StringUtils.isBlank(noProxyHosts)) {
-                return true;
-            }
-            final List<Pattern> noProxyHostPatterns = getNoProxyHostPatterns(noProxyHosts);
-            return !ProxyUtil.shouldIgnoreHost(actualURL.getHost(), noProxyHostPatterns);
+            return !ProxyUtil.shouldIgnoreHost(actualURL.getHost(), noProxyHosts);
         } catch (final MalformedURLException e) {
             return false;
-        }
-    }
-
-    private List<Pattern> getNoProxyHostPatterns(final String noProxyHosts) {
-        final List<Pattern> noProxyHostPatterns = Lists.newArrayList();
-        for (final String currentNoProxyHost : noProxyHosts.split("[ \t\n,|]+")) {
-            if (currentNoProxyHost.length() == 0) {
-                continue;
-            }
-            noProxyHostPatterns.add(Pattern.compile(currentNoProxyHost.replace(".", "\\.").replace("*", ".*")));
-        }
-        return noProxyHostPatterns;
-    }
-
-    private void applyJenkinsProxy(final ProxyInfoBuilder proxyInfoBuilder, final String proxyHost, final int proxyPort, final String proxyUsername, final String proxyPassword, final String ntlmDomain) {
-        if (StringUtils.isNotBlank(proxyHost) && proxyPort >= 0) {
-            proxyInfoBuilder.setHost(proxyHost);
-            proxyInfoBuilder.setPort(proxyPort);
-            proxyInfoBuilder.setUsername(proxyUsername);
-            proxyInfoBuilder.setPassword(proxyPassword);
-            proxyInfoBuilder.setNtlmDomain(ntlmDomain);
-        }
-    }
-
-    private void applyJenkinsProxy(final ProxyInfoBuilder proxyInfoBuilder, final String proxyHost, final int proxyPort, final String proxyUsernameWithDomain, final String proxyPassword) {
-        if (StringUtils.isNotBlank(proxyHost) && proxyPort >= 0) {
-            proxyInfoBuilder.setHost(proxyHost);
-            proxyInfoBuilder.setPort(proxyPort);
-            final ProxyUsernameWrapper wrapper = parseProxyUsername(proxyUsernameWithDomain);
-            proxyInfoBuilder.setUsername(wrapper.getProxyUsername());
-            proxyInfoBuilder.setNtlmDomain(wrapper.getNtlmDomain());
-            proxyInfoBuilder.setPassword(proxyPassword);
-        }
-    }
-
-    private ProxyUsernameWrapper parseProxyUsername(final String proxyUsernameWithDomain) {
-        if (StringUtils.isNotBlank(proxyUsernameWithDomain)) {
-            if (proxyUsernameWithDomain.indexOf('\\') >= 0) {
-                final String domain = proxyUsernameWithDomain.substring(0, proxyUsernameWithDomain.indexOf('\\'));
-                final String user = proxyUsernameWithDomain.substring(proxyUsernameWithDomain.indexOf('\\') + 1);
-                return new ProxyUsernameWrapper(user, domain);
-            } else {
-                return new ProxyUsernameWrapper(proxyUsernameWithDomain, null);
-            }
-        } else {
-            return new ProxyUsernameWrapper(null, null);
-        }
-    }
-
-    private class ProxyUsernameWrapper {
-        private final String proxyUsername;
-        private final String ntlmDomain;
-
-        public ProxyUsernameWrapper(final String proxyUsername, final String ntlmDomain) {
-            this.proxyUsername = proxyUsername;
-            this.ntlmDomain = ntlmDomain;
-        }
-
-        public String getProxyUsername() {
-            return this.proxyUsername;
-        }
-
-        public String getNtlmDomain() {
-            return this.ntlmDomain;
         }
     }
 

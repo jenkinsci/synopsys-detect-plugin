@@ -21,10 +21,13 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package com.blackducksoftware.integration.detect.jenkins;
+package com.synopsys.integration.jenkins.detect;
+
+import com.synopsys.integration.jenkins.detect.extensions.global.DetectGlobalConfig;
 
 import hudson.Plugin;
 import hudson.PluginWrapper;
+import jenkins.model.GlobalConfiguration;
 import jenkins.model.Jenkins;
 
 public class PluginHelper {
@@ -46,4 +49,9 @@ public class PluginHelper {
         }
         return pluginVersion;
     }
+
+    public static DetectGlobalConfig getDetectGlobalConfig() {
+        return GlobalConfiguration.all().get(DetectGlobalConfig.class);
+    }
+
 }

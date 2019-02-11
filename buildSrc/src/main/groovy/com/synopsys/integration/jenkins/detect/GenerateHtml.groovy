@@ -1,4 +1,4 @@
-package com.synopsys.integration.jenkins.blackduck
+package com.synopsys.integration.jenkins.detect
 
 import groovy.json.JsonSlurper
 import groovy.text.Template
@@ -35,7 +35,7 @@ class GenerateHtml extends DefaultTask {
                 templateEntry.value.entrySet().each { fieldEntry ->
                     String fieldName = fieldEntry.key
                     Map model = fieldEntry.value
-                    com.synopsys.integration.jenkins.coverity.GenerationUtils.writeTemplate(template, model, outputPath, "help-${fieldName}.html")
+                    GenerationUtils.writeTemplate(template, model, outputPath, "help-${fieldName}.html")
                 }
             }
         }

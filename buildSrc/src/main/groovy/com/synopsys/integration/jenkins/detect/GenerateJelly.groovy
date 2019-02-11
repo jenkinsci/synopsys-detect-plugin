@@ -1,4 +1,4 @@
-package com.synopsys.integration.jenkins.blackduck
+package com.synopsys.integration.jenkins.detect
 
 import groovy.json.JsonSlurper
 import groovy.text.Template
@@ -34,11 +34,8 @@ class GenerateJelly extends DefaultTask {
             final String templateName = jsonObject.template
 
             Template template = engine.createTemplateByPath("templates/jelly/${templateName}")
-            com.synopsys.integration.jenkins.coverity.GenerationUtils.writeTemplate(template, model, outputPath, 'config.jelly')
+            GenerationUtils.writeTemplate(template, model, outputPath, 'config.jelly')
         }
     }
-
-    static final String SELECT = 'f:select'
-    static final String TEXTBOX = 'f:textbox'
 
 }

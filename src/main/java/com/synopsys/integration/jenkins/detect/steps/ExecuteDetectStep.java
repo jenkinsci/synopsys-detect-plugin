@@ -21,7 +21,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package com.synopsys.integration.jenkins.detect.common;
+package com.synopsys.integration.jenkins.detect.steps;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,8 +35,8 @@ import com.synopsys.integration.jenkins.detect.JenkinsDetectLogger;
 import com.synopsys.integration.jenkins.detect.PluginHelper;
 import com.synopsys.integration.jenkins.detect.exception.DetectJenkinsException;
 import com.synopsys.integration.jenkins.detect.extensions.global.DetectGlobalConfig;
-import com.synopsys.integration.jenkins.detect.remote.DetectRemoteRunner;
-import com.synopsys.integration.jenkins.detect.remote.DetectResponse;
+import com.synopsys.integration.jenkins.detect.steps.remote.DetectRemoteRunner;
+import com.synopsys.integration.jenkins.detect.steps.remote.DetectResponse;
 import com.synopsys.integration.jenkins.detect.tools.DummyToolInstallation;
 import com.synopsys.integration.jenkins.detect.tools.DummyToolInstaller;
 import com.synopsys.integration.util.IntEnvironmentVariables;

@@ -1,4 +1,4 @@
-package com.synopsys.integration.jenkins.blackduck
+package com.synopsys.integration.jenkins.detect
 
 import groovy.text.Template
 
