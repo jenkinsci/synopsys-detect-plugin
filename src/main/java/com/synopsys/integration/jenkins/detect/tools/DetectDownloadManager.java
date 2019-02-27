@@ -21,132 +21,80 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package com.synopsys.integration.jenkins.detect.tools;
+package com.synopsys.integration.jenkins.detect.steps;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import com.synopsys.integration.exception.IntegrationException;
-import com.synopsys.integration.jenkins.detect.DetectVersionRequestService;
 import com.synopsys.integration.log.IntLogger;
+import com.synopsys.integration.rest.client.IntHttpClient;
+import com.synopsys.integration.rest.proxy.ProxyInfo;
+import com.synopsys.integration.rest.request.Request;
+import com.synopsys.integration.rest.request.Response;
 
 public class DetectDownloadManager {
-    public static final String DEFAULT_DETECT_JAR = "hub-detect-3.1.0.jar";
-    public static final String DEFAULT_DETECT_VERSION = "3.1.0";
     public static final String DETECT_INSTALL_DIRECTORY = "Detect_Installation";
-    public static final String DETECT_AIR_GAP_DIRECTORY = "Air_Gap";
+    //TODO: Update these
+    public static final String LATEST_SHELL_SCRIPT_URL = "https://raw.githubusercontent.com/blackducksoftware/hub-detect/gh-pages/hub-detect.sh";
+    public static final String LATEST_POWERSHELL_SCRIPT_URL = "https://raw.githubusercontent.com/blackducksoftware/hub-detect/gh-pages/hub-detect.ps1";
 
     private final IntLogger logger;
     private final String toolsDirectory;
+    private final Integer blackDuckTimeout;
+    private final Boolean blackDuckTrustCertificates;
+    private final ProxyInfo blackDuckProxyInfo;
 
-    private final DetectVersionRequestService detectVersionRequestService;
-
-    public DetectDownloadManager(final IntLogger logger, final String toolsDirectory, final DetectVersionRequestService detectVersionRequestService) {
+    public DetectDownloadManager(final IntLogger logger, final String toolsDirectory, final Integer blackDuckTimeout, final Boolean blackDuckTrustCertificates, final ProxyInfo blackDuckProxyInfo) {
         this.logger = logger;
         this.toolsDirectory = toolsDirectory;
-        this.detectVersionRequestService = detectVersionRequestService;
+        this.blackDuckTimeout = blackDuckTimeout;
+        this.blackDuckTrustCertificates = blackDuckTrustCertificates;
+        this.blackDuckProxyInfo = blackDuckProxyInfo;
     }
 
-    public File handleDownload(final String fileUrl) throws IntegrationException, IOException {
-        File detectFile = null;
-        String downloadUrl = fileUrl;
-        if (DetectVersionRequestService.LATEST_RELELASE.equals(fileUrl) || DetectVersionRequestService.AIR_GAP_ZIP.equals(fileUrl)) {
-            final String versionName = detectVersionRequestService.getLatestReleasedDetectVersion();
-            downloadUrl = detectVersionRequestService.getDetectVersionFileURL(versionName);
-        }
+    public File downloadScript(final String scriptDownloadUrl) throws IntegrationException, IOException {
+        final String scriptFileName = scriptDownloadUrl.substring(scriptDownloadUrl.lastIndexOf("/") + 1).trim();
+        final File scriptDownloadDirectory = prepareScriptDownloadDirectory();
+        final File localScriptFile = new File(scriptDownloadDirectory, scriptFileName);
 
-        detectFile = getDetectJarFile(downloadUrl);
-
-        if (shouldInstallDetect(detectFile, downloadUrl)) {
-            if (downloadUrl.endsWith(".zip")) {
-                final File airGapZip = new File(getAirGapDirectory(), trimToFileName(downloadUrl));
-                logger.info("Downloading Hub Detect air gap zip from : " + downloadUrl + " to : " + airGapZip.getAbsolutePath());
-                detectVersionRequestService.downloadFile(downloadUrl, airGapZip);
-                logger.info("Unzipping air gap files...");
-                ArchiveUtils.unzip(airGapZip);
-            } else {
-                logger.info("Downloading Hub Detect from : " + downloadUrl + " to : " + detectFile.getAbsolutePath());
-                detectVersionRequestService.downloadFile(downloadUrl, detectFile);
-            }
-        } else if (shouldInstallDefaultDetect(detectFile)) {
-            logger.info("Moving the default Hub Detect jar to : " + detectFile.getAbsolutePath());
-            final InputStream inputStream = getClass().getResourceAsStream("/" + DEFAULT_DETECT_JAR);
-            final FileOutputStream fileOutputStream = new FileOutputStream(detectFile);
-            IOUtils.copy(inputStream, fileOutputStream);
+        if (shouldDownloadScript(scriptDownloadUrl, localScriptFile)) {
+            logger.info("Downloading Detect from: " + scriptDownloadUrl + " to: " + localScriptFile.getAbsolutePath());
+            downloadScriptTo(scriptDownloadUrl, localScriptFile);
         } else {
-            logger.debug("Hub Detect is already installed at : " + detectFile.getAbsolutePath());
+            logger.debug("Detect is already installed at: " + localScriptFile.getAbsolutePath());
         }
-        return detectFile;
+
+        return localScriptFile;
     }
 
-    private File getDetectJarFile(final String fileUrl) throws IntegrationException {
-        File installationDirectory = getInstallationDirectory();
-        if (StringUtils.isNotBlank(fileUrl) && fileUrl.endsWith(DetectVersionRequestService.AIR_GAP_ZIP_SUFFIX)) {
-            installationDirectory = getAirGapDirectory();
-            installationDirectory = new File(installationDirectory, getUnzippedDirectoryName(fileUrl));
-        }
-        final String detectFileName = getDetectFileName(fileUrl);
-        return new File(installationDirectory, detectFileName);
+    private boolean shouldDownloadScript(final String scriptDownloadUrl, final File localScriptFile) {
+        return !localScriptFile.exists() && StringUtils.isNotBlank(scriptDownloadUrl);
     }
 
-    // TODO make this method private in 2.0.0 so that this class can be refactored
-    private String getDetectFileName(final String fileUrl) {
-        if (StringUtils.isNotBlank(fileUrl)) {
-            String fileName = trimToFileName(fileUrl);
-            if (fileName.endsWith(DetectVersionRequestService.AIR_GAP_ZIP_SUFFIX)) {
-                fileName = fileName.replace(DetectVersionRequestService.AIR_GAP_ZIP_SUFFIX, ".jar");
-            }
-            return fileName;
-        }
-        return DEFAULT_DETECT_JAR;
-    }
+    private File prepareScriptDownloadDirectory() throws IntegrationException {
+        final File installationDirectory = new File(toolsDirectory, DETECT_INSTALL_DIRECTORY);
 
-    private String trimToFileName(final String fileUrl) {
-        return fileUrl.substring(fileUrl.lastIndexOf("/") + 1).trim();
-    }
-
-    // TODO make this method private in 2.0.0 so that this class can be refactored
-    private File getInstallationDirectory() throws IntegrationException {
-        File installationDirectory = new File(toolsDirectory);
-        installationDirectory = new File(installationDirectory, DETECT_INSTALL_DIRECTORY);
         try {
             installationDirectory.mkdirs();
         } catch (final Exception e) {
             throw new IntegrationException("Could not create the Detect installation directory: " + installationDirectory.getAbsolutePath(), e);
         }
+
         return installationDirectory;
     }
 
-    private File getAirGapDirectory() throws IntegrationException {
-        final File airGapDirectory = new File(getInstallationDirectory(), DETECT_AIR_GAP_DIRECTORY);
-        try {
-            airGapDirectory.mkdirs();
-        } catch (final Exception e) {
-            throw new IntegrationException("Could not create the Detect air gap directory: " + airGapDirectory.getAbsolutePath(), e);
+    private void downloadScriptTo(final String url, final File file) throws IntegrationException, IOException {
+        final IntHttpClient intHttpClient = new IntHttpClient(logger, blackDuckTimeout, blackDuckTrustCertificates, blackDuckProxyInfo);
+
+        final Request request = new Request.Builder().uri(url).build();
+        try (final Response response = intHttpClient.execute(request); final FileOutputStream fileOutputStream = new FileOutputStream(file)) {
+            IOUtils.copy(response.getContent(), fileOutputStream);
         }
-        return airGapDirectory;
-    }
-
-    private String getUnzippedDirectoryName(final String fileUrl) {
-        if (StringUtils.isNotBlank(fileUrl)) {
-            return ArchiveUtils.getUnzippedDirectoryName(fileUrl); // fileUrl.substring(fileUrl.lastIndexOf('/') + 1, fileUrl.lastIndexOf('.'));
-        }
-        return ArchiveUtils.getUnzippedDirectoryName(DEFAULT_DETECT_JAR); // DEFAULT_DETECT_JAR.substring(0, DEFAULT_DETECT_JAR.lastIndexOf('.'));
-    }
-
-    // TODO make this method private in 2.0.0 so that this class can be refactored
-    private boolean shouldInstallDetect(final File detectFile, final String fileUrl) {
-        return !detectFile.exists() && StringUtils.isNotBlank(fileUrl);
-    }
-
-    // TODO make this method private in 2.0.0 so that this class can be refactored
-    private boolean shouldInstallDefaultDetect(final File detectFile) {
-        return !detectFile.exists();
     }
 
 }
