@@ -27,11 +27,9 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.io.StringReader;
 import java.io.StringWriter;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.Collections;
-import java.util.List;
 import java.util.Optional;
+import java.util.function.BiFunction;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -45,7 +43,6 @@ import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 
 import org.apache.commons.lang.StringUtils;
-import org.jenkinsci.plugins.plaincredentials.impl.StringCredentialsImpl;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
@@ -58,23 +55,21 @@ import org.w3c.dom.Node;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
-import com.cloudbees.plugins.credentials.CredentialsMatchers;
-import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.cloudbees.plugins.credentials.impl.BaseStandardCredentials;
-import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
-import com.cloudbees.plugins.credentials.matchers.IdMatcher;
 import com.synopsys.integration.blackduck.configuration.BlackDuckServerConfig;
 import com.synopsys.integration.blackduck.configuration.BlackDuckServerConfigBuilder;
-import com.synopsys.integration.blackduck.configuration.ConnectionResult;
-import com.synopsys.integration.exception.IntegrationException;
-import com.synopsys.integration.jenkins.detect.DetectVersionModel;
-import com.synopsys.integration.jenkins.detect.DetectVersionRequestService;
 import com.synopsys.integration.jenkins.detect.JenkinsProxyHelper;
-import com.synopsys.integration.jenkins.detect.tools.DetectDownloadManager;
+import com.synopsys.integration.jenkins.detect.SynopsysCredentialsHelper;
 import com.synopsys.integration.log.LogLevel;
 import com.synopsys.integration.log.PrintStreamIntLogger;
+import com.synopsys.integration.polaris.common.configuration.PolarisServerConfig;
+import com.synopsys.integration.polaris.common.configuration.PolarisServerConfigBuilder;
+import com.synopsys.integration.rest.client.AuthenticatingIntHttpClient;
+import com.synopsys.integration.rest.client.ConnectionResult;
 import com.synopsys.integration.rest.proxy.ProxyInfo;
+import com.synopsys.integration.util.Buildable;
+import com.synopsys.integration.util.IntegrationBuilder;
 
 import hudson.Extension;
 import hudson.Functions;
@@ -82,7 +77,6 @@ import hudson.security.ACL;
 import hudson.util.FormValidation;
 import hudson.util.IOUtils;
 import hudson.util.ListBoxModel;
-import hudson.util.Secret;
 import jenkins.model.GlobalConfiguration;
 import jenkins.model.Jenkins;
 import jenkins.util.xml.XMLUtils;
@@ -90,164 +84,150 @@ import jenkins.util.xml.XMLUtils;
 @Extension
 public class DetectGlobalConfig extends GlobalConfiguration implements Serializable {
     private static final long serialVersionUID = -7629542889827231313L;
-    private static final String COULD_NOT_REACH_BLACK_DUCK_PUBLIC_ARTIFACTORY = "Could not reach Black Duck public Artifactory";
-    private static final Class<StringCredentialsImpl> API_TOKEN_CREDENTIALS_CLASS = StringCredentialsImpl.class;
-    private static final Class<UsernamePasswordCredentialsImpl> USERNAME_PASSWORD_CREDENTIALS_CLASS = UsernamePasswordCredentialsImpl.class;
     private final Logger logger = Logger.getLogger(DetectGlobalConfig.class.getName());
 
-    private String detectArtifactUrl;
-    private String detectDownloadUrl;
-    private String url;
-    private String credentialsId;
-    private int timeout;
-    private boolean trustCertificates;
+    private String blackDuckUrl;
+    private String blackDuckCredentialsId;
+    private int blackDuckTimeout = 120;
+    private boolean trustBlackDuckCertificates;
+    private String polarisUrl;
+    private String polarisCredentialsId;
+    private int polarisTimeout = 120;
+    private boolean trustPolarisCertificates;
 
     @DataBoundConstructor
     public DetectGlobalConfig() {
     }
 
-    public String getUrl() {
-        return url;
+    public String getBlackDuckUrl() {
+        return blackDuckUrl;
     }
 
     @DataBoundSetter
-    public void setUrl(final String url) {
-        this.url = url;
+    public void setBlackDuckUrl(final String blackDuckUrl) {
+        this.blackDuckUrl = blackDuckUrl;
         save();
     }
 
-    public int getTimeout() {
-        return timeout;
+    public int getBlackDuckTimeout() {
+        return blackDuckTimeout;
     }
 
     @DataBoundSetter
-    public void setTimeout(final int timeout) {
-        this.timeout = timeout;
+    public void setBlackDuckTimeout(final int blackDuckTimeout) {
+        this.blackDuckTimeout = blackDuckTimeout;
         save();
     }
 
-    public boolean getTrustCertificates() {
-        return trustCertificates;
+    public boolean getTrustBlackDuckCertificates() {
+        return trustBlackDuckCertificates;
     }
 
     @DataBoundSetter
-    public void setTrustCertificates(final boolean trustCertificates) {
-        this.trustCertificates = trustCertificates;
+    public void setTrustBlackDuckCertificates(final boolean trustBlackDuckCertificates) {
+        this.trustBlackDuckCertificates = trustBlackDuckCertificates;
         save();
     }
 
-    public String getCredentialsId() {
-        return credentialsId;
+    public String getBlackDuckCredentialsId() {
+        return blackDuckCredentialsId;
     }
 
     @DataBoundSetter
-    public void setCredentialsId(final String credentialsId) {
-        this.credentialsId = credentialsId;
+    public void setBlackDuckCredentialsId(final String blackDuckCredentialsId) {
+        this.blackDuckCredentialsId = blackDuckCredentialsId;
         save();
     }
 
-    public String getDetectArtifactUrl() {
-        return detectArtifactUrl;
+    public String getPolarisUrl() {
+        return polarisUrl;
     }
 
     @DataBoundSetter
-    public void setDetectArtifactUrl(final String detectArtifactUrl) {
-        this.detectArtifactUrl = detectArtifactUrl;
+    public void setPolarisUrl(final String polarisUrl) {
+        this.polarisUrl = polarisUrl;
         save();
     }
 
-    public String getDetectDownloadUrl() {
-        return detectDownloadUrl;
+    public String getPolarisCredentialsId() {
+        return polarisCredentialsId;
     }
 
     @DataBoundSetter
-    public void setDetectDownloadUrl(final String detectDownloadUrl) {
-        this.detectDownloadUrl = detectDownloadUrl;
+    public void setPolarisCredentialsId(final String polarisCredentialsId) {
+        this.polarisCredentialsId = polarisCredentialsId;
         save();
+    }
+
+    public boolean getTrustPolarisCertificates() {
+        return trustPolarisCertificates;
+    }
+
+    @DataBoundSetter
+    public void setTrustPolarisCertificates(final boolean trustPolarisCertificates) {
+        this.trustPolarisCertificates = trustPolarisCertificates;
+        save();
+    }
+
+    public int getPolarisTimeout() {
+        return polarisTimeout;
+    }
+
+    @DataBoundSetter
+    public void setPolarisTimeout(final int polarisTimeout) {
+        this.polarisTimeout = polarisTimeout;
+        save();
+    }
+
+    public Optional<String> getPolarisApiToken(@QueryParameter("polarisCredentialsId") final String polarisCredentialsId) {
+        return SynopsysCredentialsHelper.getApiTokenFromCredentials(polarisCredentialsId);
     }
 
     public BlackDuckServerConfig getBlackDuckServerConfig() throws IllegalArgumentException {
-        return constructBlackDuckServerConfig(url, credentialsId, trustCertificates, timeout);
+        return getBlackDuckServerConfigBuilder().build();
     }
 
-    public Optional<URL> getBlackDuckUrl() {
-        URL blackDuckUrl = null;
-        if (url != null) {
-            try {
-                blackDuckUrl = new URL(url);
-            } catch (final MalformedURLException ignored) {
-                // Handled by form validation in the global configuration
-            }
-        }
-
-        return Optional.ofNullable(blackDuckUrl);
+    public BlackDuckServerConfigBuilder getBlackDuckServerConfigBuilder() throws IllegalArgumentException {
+        return createBlackDuckServerConfigBuilder(blackDuckUrl, blackDuckCredentialsId, trustBlackDuckCertificates, blackDuckTimeout);
     }
 
-    public ListBoxModel doFillDetectDownloadUrlItems() {
-        final ListBoxModel boxModel = new ListBoxModel();
-        try {
-            final DetectVersionRequestService detectVersionRequestService = getDetectVersionRequestService();
-            final List<DetectVersionModel> detectVersionModels = detectVersionRequestService.getDetectVersionModels();
-            for (final DetectVersionModel detectVersionModel : detectVersionModels) {
-                boxModel.add(detectVersionModel.getVersionName(), detectVersionModel.getVersionURL());
-            }
-        } catch (final IntegrationException e) {
-            logger.log(Level.SEVERE, COULD_NOT_REACH_BLACK_DUCK_PUBLIC_ARTIFACTORY, e);
-        } catch (final Exception e) {
-            logger.log(Level.SEVERE, e.getMessage(), e);
-        }
-        boxModel.add(String.format("Default (%s)", DetectDownloadManager.DEFAULT_DETECT_VERSION), "");
-        boxModel.add("Latest Air Gap Zip", DetectVersionRequestService.AIR_GAP_ZIP);
-        return boxModel;
+    public PolarisServerConfig getPolarisServerConfig() throws IllegalArgumentException {
+        return getPolarisServerConfigBuilder().build();
     }
 
-    public ListBoxModel doFillCredentialsIdItems() {
+    public PolarisServerConfigBuilder getPolarisServerConfigBuilder() throws IllegalArgumentException {
+        return createPolarisServerConfigBuilder(polarisUrl, polarisCredentialsId, trustPolarisCertificates, polarisTimeout);
+    }
+
+    public ListBoxModel doFillBlackDuckCredentialsIdItems() {
         Jenkins.getInstance().checkPermission(Jenkins.ADMINISTER);
         return new StandardListBoxModel()
                    .includeEmptyValue()
-                   .includeMatchingAs(ACL.SYSTEM, Jenkins.getInstance(), BaseStandardCredentials.class, Collections.emptyList(),
-                       CredentialsMatchers.either(CredentialsMatchers.instanceOf(API_TOKEN_CREDENTIALS_CLASS), CredentialsMatchers.instanceOf(USERNAME_PASSWORD_CREDENTIALS_CLASS)));
+                   .includeMatchingAs(ACL.SYSTEM, Jenkins.getInstance(), BaseStandardCredentials.class, Collections.emptyList(), SynopsysCredentialsHelper.API_TOKEN_OR_USERNAME_PASSWORD_CREDENTIALS);
+    }
+
+    public ListBoxModel doFillPolarisCredentialsIdItems() {
+        Jenkins.getInstance().checkPermission(Jenkins.ADMINISTER);
+        return new StandardListBoxModel()
+                   .includeEmptyValue()
+                   .includeMatchingAs(ACL.SYSTEM, Jenkins.getInstance(), BaseStandardCredentials.class, Collections.emptyList(), SynopsysCredentialsHelper.API_TOKEN_CREDENTIALS);
     }
 
     @POST
-    public FormValidation doCheckDetectDownloadUrl(@QueryParameter("detectDownloadUrl") final String detectDownloadUrl) {
-        Jenkins.getInstance().checkPermission(Jenkins.ADMINISTER);
-        if (StringUtils.isBlank(detectDownloadUrl)) {
-            return FormValidation.ok();
-        }
-        try {
-            final boolean foundMatch = getDetectVersionRequestService().getDetectVersionModels().stream()
-                                           .map(DetectVersionModel::getVersionURL)
-                                           .anyMatch(detectDownloadUrl::equals);
-
-            if (!foundMatch) {
-                return FormValidation.error(detectDownloadUrl + ", does not appear to be a valid URL for Detect.");
-            }
-        } catch (final IntegrationException e) {
-            return FormValidation.error(COULD_NOT_REACH_BLACK_DUCK_PUBLIC_ARTIFACTORY);
-        } catch (final Exception e) {
-            return FormValidation.error(e.toString());
-        }
-        return FormValidation.ok();
+    public FormValidation doTestBlackDuckConnection(@QueryParameter("blackDuckUrl") final String blackDuckUrl, @QueryParameter("blackDuckCredentialsId") final String blackDuckCredentialsId,
+        @QueryParameter("blackDuckTimeout") final String blackDuckTimeout, @QueryParameter("trustBlackDuckCertificates") final boolean trustBlackDuckCertificates) {
+        final BlackDuckServerConfigBuilder blackDuckServerConfigBuilder = createBlackDuckServerConfigBuilder(blackDuckUrl, blackDuckCredentialsId, trustBlackDuckCertificates, Integer.valueOf(blackDuckTimeout));
+        return validateConnection(blackDuckServerConfigBuilder, BlackDuckServerConfig::createBlackDuckHttpClient);
     }
 
     @POST
-    public FormValidation doTestConnection(@QueryParameter("url") final String url, @QueryParameter("credentialsId") final String credentialsId, @QueryParameter("timeout") final String timeout,
-        @QueryParameter("trustCertificates") final boolean trustCertificates) {
-        Jenkins.getInstance().checkPermission(Jenkins.ADMINISTER);
-        try {
-            final BlackDuckServerConfig blackDuckServerConfig = constructBlackDuckServerConfig(url, credentialsId, trustCertificates, Integer.valueOf(timeout));
-            final ConnectionResult connectionResult = blackDuckServerConfig.attemptConnection(new PrintStreamIntLogger(System.out, LogLevel.DEBUG));
-            final String credentialsValid = String.format("Credentials valid for: %s", url);
-            return connectionResult.getErrorMessage()
-                       .map(FormValidation::error)
-                       .orElse(FormValidation.ok(credentialsValid));
-        } catch (final IllegalArgumentException e) {
-            return FormValidation.error(e.getMessage());
-        }
+    public FormValidation doTestPolarisConnection(@QueryParameter("polarisUrl") final String polarisUrl, @QueryParameter("polarisCredentialsId") final String polarisCredentialsId,
+        @QueryParameter("polarisTimeout") final String polarisTimeout, @QueryParameter("trustPolarisCertificates") final boolean trustPolarisCertificates) {
+        final PolarisServerConfigBuilder polarisServerConfigBuilder = createPolarisServerConfigBuilder(polarisUrl, polarisCredentialsId, trustPolarisCertificates, Integer.valueOf(polarisTimeout));
+        return validateConnection(polarisServerConfigBuilder, PolarisServerConfig::createPolarisHttpClient);
     }
 
-    // EX: http://localhost:8080/descriptorByName/com.blackducksoftware.integration.detect.jenkins.post.DetectPostBuildStep/config.xml
+    // EX: http://localhost:8080/descriptorByName/com.synopsys.integration.jenkins.detect.extensions.global.DetectGlobalConfig/config.xml
     @WebMethod(name = "config.xml")
     public void doConfigDotXml(final StaplerRequest req, final StaplerResponse rsp) throws IOException, ServletException, ParserConfigurationException {
         final ClassLoader originalClassLoader = Thread.currentThread().getContextClassLoader();
@@ -257,6 +237,7 @@ public class DetectGlobalConfig extends GlobalConfiguration implements Serializa
                 changed = true;
                 Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
             }
+
             Functions.checkPermission(Jenkins.ADMINISTER);
             if (req.getMethod().equals("GET")) {
                 // read
@@ -279,7 +260,20 @@ public class DetectGlobalConfig extends GlobalConfiguration implements Serializa
         }
     }
 
-    public void updateByXml(final Source source) throws IOException, ParserConfigurationException {
+    private <T extends Buildable> FormValidation validateConnection(final IntegrationBuilder<T> configBuilder, final BiFunction<T, PrintStreamIntLogger, AuthenticatingIntHttpClient> createHttpClientMethod) {
+        Jenkins.getInstance().checkPermission(Jenkins.ADMINISTER);
+        try {
+            final T config = configBuilder.build();
+            final ConnectionResult connectionResult = createHttpClientMethod.apply(config, new PrintStreamIntLogger(System.out, LogLevel.DEBUG)).attemptConnection();
+            return connectionResult.getFailureMessage()
+                       .map(FormValidation::error)
+                       .orElse(FormValidation.ok("Connection successful"));
+        } catch (final IllegalArgumentException e) {
+            return FormValidation.error(e.getMessage());
+        }
+    }
+
+    private void updateByXml(final Source source) throws IOException, ParserConfigurationException {
         final Document doc;
         try (final StringWriter out = new StringWriter()) {
             // this allows us to use UTF-8 for storing data,
@@ -296,27 +290,23 @@ public class DetectGlobalConfig extends GlobalConfiguration implements Serializa
             throw new IOException("Failed to persist configuration.xml", e);
         }
 
-        final String hubUrl = getNodeValue(doc, "url").orElse(StringUtils.EMPTY);
-        final String hubCredentialsId = getNodeValue(doc, "credentialsId").orElse(StringUtils.EMPTY);
-        final String hubTimeout = getNodeValue(doc, "timeout").orElse("120");
-        final String trustSSLCertificatesString = getNodeValue(doc, "trustCertificates").orElse("false");
-        final String detectArtifactUrl = getNodeValue(doc, "detectArtifactUrl").orElse(StringUtils.EMPTY);
-        final String detectDownloadUrl = getNodeValue(doc, "detectDownloadUrl").orElse(StringUtils.EMPTY);
+        final String blackDuckUrl = getNodeValue(doc, "blackDuckUrl").orElse(StringUtils.EMPTY);
+        final String blackDuckCredentialsId = getNodeValue(doc, "blackDuckCredentialsId").orElse(StringUtils.EMPTY);
+        final int blackDuckTimeout = getNodeIntegerValue(doc, "blackDuckTimeout").orElse(120);
+        final boolean trustBlackDuckCertificates = getNodeBooleanValue(doc, "trustBlackDuckCertificates").orElse(false);
+        final String polarisUrl = getNodeValue(doc, "polarisUrl").orElse(StringUtils.EMPTY);
+        final String polarisCredentialsId = getNodeValue(doc, "polarisCredentialsId").orElse(StringUtils.EMPTY);
+        final int polarisTimeout = getNodeIntegerValue(doc, "polarisTimeout").orElse(120);
+        final boolean trustPolarisCertificates = getNodeBooleanValue(doc, "trustPolarisCertificates").orElse(false);
 
-        int serverTimeout = 120;
-        final boolean trustSSLCertificates = Boolean.valueOf(trustSSLCertificatesString);
-        try {
-            serverTimeout = Integer.valueOf(hubTimeout);
-        } catch (final NumberFormatException e) {
-            logger.log(Level.SEVERE, "Could not convert the provided timeout: " + hubTimeout + ", to an int value.", e);
-        }
-
-        setUrl(hubUrl);
-        setCredentialsId(hubCredentialsId);
-        setTimeout(serverTimeout);
-        setTrustCertificates(trustSSLCertificates);
-        setDetectArtifactUrl(detectArtifactUrl);
-        setDetectDownloadUrl(detectDownloadUrl);
+        setBlackDuckUrl(blackDuckUrl);
+        setBlackDuckCredentialsId(blackDuckCredentialsId);
+        setBlackDuckTimeout(blackDuckTimeout);
+        setTrustBlackDuckCertificates(trustBlackDuckCertificates);
+        setPolarisUrl(polarisUrl);
+        setPolarisCredentialsId(polarisCredentialsId);
+        setPolarisTimeout(polarisTimeout);
+        setTrustPolarisCertificates(trustPolarisCertificates);
         save();
     }
 
@@ -327,21 +317,32 @@ public class DetectGlobalConfig extends GlobalConfiguration implements Serializa
                    .map(String::trim);
     }
 
-    private DetectVersionRequestService getDetectVersionRequestService() throws IllegalArgumentException {
-        return new DetectVersionRequestService(new PrintStreamIntLogger(System.out, LogLevel.DEBUG), getTimeout(), getTrustCertificates(), getBlackDuckServerConfig().getProxyInfo());
+    private Optional<Boolean> getNodeBooleanValue(final Document doc, final String tagName) {
+        return getNodeValue(doc, tagName).map(Boolean::valueOf);
     }
 
-    private BlackDuckServerConfig constructBlackDuckServerConfig(final String url, final String credentialsId, final boolean trustCertificates, final int timeout) throws IllegalArgumentException {
-        final BlackDuckServerConfigBuilder builder = new BlackDuckServerConfigBuilder()
-                                                         .setUrl(url)
+    private Optional<Integer> getNodeIntegerValue(final Document doc, final String tagName) {
+        try {
+            return getNodeValue(doc, tagName).map(Integer::valueOf);
+        } catch (final NumberFormatException ignored) {
+            logger.log(Level.WARNING, "Could not parse node " + tagName + ", provided value is not a valid integer. Using default value.");
+            return Optional.empty();
+        }
+    }
+
+    private BlackDuckServerConfigBuilder createBlackDuckServerConfigBuilder(final String blackDuckUrl, final String credentialsId, final boolean trustCertificates, final int timeout) {
+        final BlackDuckServerConfigBuilder builder = BlackDuckServerConfig.newBuilder()
+                                                         .setUrl(blackDuckUrl)
                                                          .setTrustCert(trustCertificates)
                                                          .setTimeout(timeout);
 
-        getBlackDuckUsername(credentialsId).ifPresent(builder::setUsername);
-        getBlackDuckPassword(credentialsId).ifPresent(builder::setPassword);
-        getBlackDuckApiToken(credentialsId).ifPresent(builder::setApiToken);
+        SynopsysCredentialsHelper.getUsernameFromCredentials(credentialsId).ifPresent(builder::setUsername);
+        SynopsysCredentialsHelper.getPasswordFromCredentials(credentialsId).ifPresent(builder::setPassword);
+        SynopsysCredentialsHelper.getApiTokenFromCredentials(credentialsId).ifPresent(builder::setApiToken);
 
-        final ProxyInfo proxyInfo = JenkinsProxyHelper.getProxyInfoFromJenkins(url);
+        final ProxyInfo proxyInfo = JenkinsProxyHelper.getProxyInfoFromJenkins(blackDuckUrl);
+
+        //TODO: Just set the proxyInfo with the next version of Black Duck common
 
         proxyInfo.getHost().ifPresent(builder::setProxyHost);
 
@@ -354,42 +355,32 @@ public class DetectGlobalConfig extends GlobalConfiguration implements Serializa
         proxyInfo.getNtlmDomain().ifPresent(builder::setProxyNtlmDomain);
         proxyInfo.getNtlmWorkstation().ifPresent(builder::setProxyNtlmWorkstation);
 
-        return builder.build();
+        return builder;
     }
 
-    private Optional<String> getBlackDuckUsername(final String credentialsId) {
-        return getCredentials(credentialsId)
-                   .filter(USERNAME_PASSWORD_CREDENTIALS_CLASS::isInstance)
-                   .map(USERNAME_PASSWORD_CREDENTIALS_CLASS::cast)
-                   .map(UsernamePasswordCredentialsImpl::getUsername);
-    }
+    private PolarisServerConfigBuilder createPolarisServerConfigBuilder(final String polarisUrl, final String credentialsId, final boolean trustCertificates, final int timeout) {
+        final PolarisServerConfigBuilder builder = PolarisServerConfig.newBuilder();
+        builder.setPolarisUrl(polarisUrl);
+        builder.setTrustCert(trustCertificates);
+        builder.setTimeoutSeconds(timeout);
+        SynopsysCredentialsHelper.getApiTokenFromCredentials(credentialsId).ifPresent(builder::setAccessToken);
 
-    private Optional<String> getBlackDuckPassword(final String credentialsId) {
-        return getCredentials(credentialsId)
-                   .filter(USERNAME_PASSWORD_CREDENTIALS_CLASS::isInstance)
-                   .map(USERNAME_PASSWORD_CREDENTIALS_CLASS::cast)
-                   .map(UsernamePasswordCredentialsImpl::getPassword)
-                   .map(Secret::getPlainText);
-    }
+        final ProxyInfo proxyInfo = JenkinsProxyHelper.getProxyInfoFromJenkins(polarisUrl);
 
-    private Optional<String> getBlackDuckApiToken(final String credentialsId) {
-        return getCredentials(credentialsId)
-                   .filter(API_TOKEN_CREDENTIALS_CLASS::isInstance)
-                   .map(API_TOKEN_CREDENTIALS_CLASS::cast)
-                   .map(StringCredentialsImpl::getSecret)
-                   .map(Secret::getPlainText);
-    }
+        //TODO: Just set the proxyInfo with the next version of Black Duck common
 
-    private Optional<BaseStandardCredentials> getCredentials(final String credentialsId) {
-        if (StringUtils.isBlank(credentialsId)) {
-            return Optional.empty();
+        proxyInfo.getHost().ifPresent(builder::setProxyHost);
+
+        if (proxyInfo.getPort() != 0) {
+            builder.setProxyPort(proxyInfo.getPort());
         }
 
-        final IdMatcher idMatcher = new IdMatcher(credentialsId);
+        proxyInfo.getUsername().ifPresent(builder::setProxyUsername);
+        proxyInfo.getPassword().ifPresent(builder::setProxyPassword);
+        proxyInfo.getNtlmDomain().ifPresent(builder::setProxyNtlmDomain);
+        proxyInfo.getNtlmWorkstation().ifPresent(builder::setProxyNtlmWorkstation);
 
-        return CredentialsProvider.lookupCredentials(BaseStandardCredentials.class, Jenkins.getInstance(), ACL.SYSTEM, Collections.emptyList()).stream()
-                   .filter(idMatcher::matches)
-                   .findAny();
+        return builder;
     }
 
 }

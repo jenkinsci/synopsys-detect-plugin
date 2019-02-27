@@ -74,8 +74,8 @@ public class DetectPostBuildStep extends Recorder implements SimpleBuildStep {
     // Freestyle
     @Override
     public boolean perform(final AbstractBuild<?, ?> build, final Launcher launcher, final BuildListener listener) throws InterruptedException, IOException {
-        final String javaHome = getJavaExecutable(build, listener);
-        final ExecuteDetectStep executeDetectStep = new ExecuteDetectStep(build.getBuiltOn(), listener, build.getEnvironment(listener), build, javaHome);
+        final String javaHome = getJavaHome(build, listener);
+        final ExecuteDetectStep executeDetectStep = new ExecuteDetectStep(build.getBuiltOn(), listener, build.getWorkspace(), build.getEnvironment(listener), build, javaHome);
         executeDetectStep.executeDetect(detectProperties);
         return true;
     }
@@ -83,33 +83,18 @@ public class DetectPostBuildStep extends Recorder implements SimpleBuildStep {
     // Pipeline
     @Override
     public void perform(@Nonnull final Run<?, ?> run, @Nonnull final FilePath workspace, @Nonnull final Launcher launcher, @Nonnull final TaskListener listener) throws InterruptedException, IOException {
-        final ExecuteDetectStep executeDetectStep = new ExecuteDetectStep(workspace.toComputer().getNode(), listener, run.getEnvironment(listener), run, null);
+        final ExecuteDetectStep executeDetectStep = new ExecuteDetectStep(workspace.toComputer().getNode(), listener, workspace, run.getEnvironment(listener), run, null);
         executeDetectStep.executeDetect(detectProperties);
     }
 
-    private String getJavaExecutable(final AbstractBuild<?, ?> build, final BuildListener listener) throws IOException, InterruptedException {
+    private String getJavaHome(final AbstractBuild<?, ?> build, final BuildListener listener) throws IOException, InterruptedException {
         JDK jdk = build.getProject().getJDK();
         if (jdk == null) {
             return null;
         }
         jdk = build.getProject().getJDK().forNode(build.getBuiltOn(), listener);
-        String javaHome = null;
-        if (jdk != null) {
-            javaHome = jdk.getHome();
-        }
 
-        return javaHome;
-    }
-
-    public FilePath getWorkingDirectory(final AbstractBuild<?, ?> build) throws InterruptedException {
-        final String workingDirectory;
-        if (build.getWorkspace() == null) {
-            // might be using custom workspace
-            workingDirectory = build.getProject().getCustomWorkspace();
-        } else {
-            workingDirectory = build.getWorkspace().getRemote();
-        }
-        return new FilePath(build.getBuiltOn().getChannel(), workingDirectory);
+        return jdk.getHome();
     }
 
     @Symbol("blackduck_detect")

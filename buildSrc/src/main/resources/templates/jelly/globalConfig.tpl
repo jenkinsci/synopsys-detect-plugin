@@ -2,28 +2,45 @@ package templates.jelly
 
 'j:jelly'('xmlns:j': 'jelly:core', 'xmlns:f': '/lib/form', 'xmlns:c': '/lib/credentials') {
     'f:section'(title: globalConfigSectionTitle) {
-        'f:entry'(field: urlField, title: urlTitle) {
+        'f:entry'(field: blackDuckUrlField, title: blackDuckUrlTitle) {
             'f:textbox'()
         }
-        'f:entry'(field: credentialsField, title: credentialsTitle) {
+
+        'f:entry'(field: blackDuckCredentialsField, title: blackDuckCredentialsTitle) {
             'c:select'()
         }
-        'f:entry'(field: detectDownloadUrlField, title: detectDownloadUrlTitle) {
-            'f:select'(checkmethod: 'post')
-        }
+
         'f:advanced'() {
-            'f:entry'(field: detectArtifactUrlField, title: detectArtifactUrlTitle) {
-                'f:textbox'()
-            }
-            'f:entry'(field: timeoutField, title: timeoutTitle) {
+            'f:entry'(field: blackDuckTimeoutField, title: blackDuckTimeoutTitle) {
                 'f:textbox'(clazz: 'required number', checkmethod: 'post')
             }
-            'f:entry'(field: trustCertificatesField, title: trustCertificatesTitle) {
+            'f:entry'(field: trustBlackDuckCertificatesField, title: trustBlackDuckCertificatesTitle) {
                 'f:checkbox'(default: 'false')
             }
         }
 
-        'f:validateButton'(method: testConnectionMethod, title: testConnectionTitle, progress: testConnectionProgress, with: "${urlField},${credentialsField},${timeoutField},${trustCertificatesField}")
+        'f:validateButton'(method: testBlackDuckConnectionMethod, title: testBlackDuckConnectionTitle, progress: testConnectionProgress, with: "${blackDuckUrlField},${blackDuckCredentialsField},${blackDuckTimeoutField},${trustBlackDuckCertificatesField}")
+
+
+        'f:entry'(field: polarisUrlField, title: polarisUrlTitle) {
+            'f:textbox'()
+        }
+
+        'f:entry'(field: polarisCredentialsField, title: polarisCredentialsTitle) {
+            'c:select'()
+        }
+
+        'f:advanced'() {
+            'f:entry'(field: polarisTimeoutField, title: polarisTimeoutTitle) {
+                'f:textbox'(clazz: 'required number', checkmethod: 'post')
+            }
+            'f:entry'(field: trustPolarisCertificatesField, title: trustPolarisCertificatesTitle) {
+                'f:checkbox'(default: 'false')
+            }
+        }
+
+        'f:validateButton'(method: testPolarisConnectionMethod, title: testPolarisConnectionTitle, progress: testConnectionProgresss, with: "${polarisUrlField},${polarisCredentialsTitle},${polarisTimeoutField},${trustPolarisCertificatesField}")
+
     }
 
 }

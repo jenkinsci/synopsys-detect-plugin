@@ -21,7 +21,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package com.synopsys.integration.jenkins.detect.steps;
+package com.synopsys.integration.jenkins.detect.tools;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -31,30 +31,23 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import com.synopsys.integration.exception.IntegrationException;
+import com.synopsys.integration.jenkins.detect.JenkinsProxyHelper;
 import com.synopsys.integration.log.IntLogger;
 import com.synopsys.integration.rest.client.IntHttpClient;
-import com.synopsys.integration.rest.proxy.ProxyInfo;
 import com.synopsys.integration.rest.request.Request;
 import com.synopsys.integration.rest.request.Response;
 
 public class DetectDownloadManager {
     public static final String DETECT_INSTALL_DIRECTORY = "Detect_Installation";
-    //TODO: Update these
-    public static final String LATEST_SHELL_SCRIPT_URL = "https://raw.githubusercontent.com/blackducksoftware/hub-detect/gh-pages/hub-detect.sh";
-    public static final String LATEST_POWERSHELL_SCRIPT_URL = "https://raw.githubusercontent.com/blackducksoftware/hub-detect/gh-pages/hub-detect.ps1";
+    public static final String LATEST_SHELL_SCRIPT_URL = "https://synopsys-sig.github.io/synopsys-detect-scripts/detect.sh";
+    public static final String LATEST_POWERSHELL_SCRIPT_URL = "https://synopsys-sig.github.io/synopsys-detect-scripts/detect.ps1";
 
     private final IntLogger logger;
     private final String toolsDirectory;
-    private final Integer blackDuckTimeout;
-    private final Boolean blackDuckTrustCertificates;
-    private final ProxyInfo blackDuckProxyInfo;
 
-    public DetectDownloadManager(final IntLogger logger, final String toolsDirectory, final Integer blackDuckTimeout, final Boolean blackDuckTrustCertificates, final ProxyInfo blackDuckProxyInfo) {
+    public DetectDownloadManager(final IntLogger logger, final String toolsDirectory) {
         this.logger = logger;
         this.toolsDirectory = toolsDirectory;
-        this.blackDuckTimeout = blackDuckTimeout;
-        this.blackDuckTrustCertificates = blackDuckTrustCertificates;
-        this.blackDuckProxyInfo = blackDuckProxyInfo;
     }
 
     public File downloadScript(final String scriptDownloadUrl) throws IntegrationException, IOException {
@@ -89,7 +82,7 @@ public class DetectDownloadManager {
     }
 
     private void downloadScriptTo(final String url, final File file) throws IntegrationException, IOException {
-        final IntHttpClient intHttpClient = new IntHttpClient(logger, blackDuckTimeout, blackDuckTrustCertificates, blackDuckProxyInfo);
+        final IntHttpClient intHttpClient = new IntHttpClient(logger, 120, true, JenkinsProxyHelper.getProxyInfoFromJenkins(url));
 
         final Request request = new Request.Builder().uri(url).build();
         try (final Response response = intHttpClient.execute(request); final FileOutputStream fileOutputStream = new FileOutputStream(file)) {
