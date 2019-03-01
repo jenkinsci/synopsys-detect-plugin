@@ -1,5 +1,5 @@
 /**
- * blackduck-detect
+ * synopsys-detect
  *
  * Copyright (C) 2019 Black Duck Software, Inc.
  * http://www.blackducksoftware.com/
@@ -35,12 +35,10 @@ public class DummyToolInstallation extends ToolInstallation {
 
     @Override
     public ToolDescriptor<?> getDescriptor() {
-
         return new DummyToolInstallationDescriptor();
     }
 
     public static class DummyToolInstallationDescriptor extends ToolDescriptor<DummyToolInstallation> {
-
         public DummyToolInstallationDescriptor() {
         }
 
@@ -54,4 +52,5 @@ public class DummyToolInstallation extends ToolInstallation {
             return "Dummy_Tool_Installation_Descriptor";
         }
     }
+
 }

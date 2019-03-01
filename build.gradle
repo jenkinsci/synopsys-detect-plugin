@@ -16,7 +16,7 @@ plugins {
 
 group = 'org.jenkins-ci.plugins'
 version = '2.0.0-SNAPSHOT'
-description = 'Black Duck Detect Plugin for Jenkins'
+description = 'Synopsys Detect Plugin for Jenkins'
 
 apply plugin: 'com.blackducksoftware.integration.solution'
 
@@ -39,16 +39,16 @@ project.afterEvaluate {
 
 jenkinsPlugin {
     coreVersion = '2.60.1'
-    displayName = 'Black Duck Detect'
-    url = 'https://wiki.jenkins.io/display/JENKINS/Black+Duck+Detect+Plugin'
-    gitHubUrl = 'https://github.com/jenkinsci/blackduck-detect-plugin'
+    displayName = 'Synopsys Detect'
+    url = 'https://wiki.jenkins.io/display/JENKINS/Synopsys+Detect+Plugin'
+    gitHubUrl = 'https://github.com/jenkinsci/synopsys-detect-plugin'
 
     pluginFirstClassLoader = true
 }
 
 dependencies {
     compile 'com.blackducksoftware.integration:blackduck-common:42.1.0'
-    compile 'com.synopsys.integration:polaris-common:0.7.1'
+    compile 'com.synopsys.integration:polaris-common:0.7.3'
     compile 'org.jvnet.localizer:localizer:1.24'
 
     jenkinsPlugins 'org.jenkins-ci.plugins:credentials:2.1.10'

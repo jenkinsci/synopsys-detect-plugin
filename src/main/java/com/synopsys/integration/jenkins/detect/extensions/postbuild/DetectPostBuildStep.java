@@ -1,5 +1,5 @@
 /**
- * blackduck-detect
+ * synopsys-detect
  *
  * Copyright (C) 2019 Black Duck Software, Inc.
  * http://www.blackducksoftware.com/
@@ -49,7 +49,8 @@ import hudson.tasks.Recorder;
 import jenkins.tasks.SimpleBuildStep;
 
 public class DetectPostBuildStep extends Recorder implements SimpleBuildStep {
-    public static final String DISPLAY_NAME = "Black Duck Detect";
+    public static final String DISPLAY_NAME = "Synopsys Detect";
+    public static final String PIPELINE_NAME = "synopsys_detect";
     private final String detectProperties;
 
     @DataBoundConstructor
@@ -97,7 +98,7 @@ public class DetectPostBuildStep extends Recorder implements SimpleBuildStep {
         return jdk.getHome();
     }
 
-    @Symbol("blackduck_detect")
+    @Symbol(PIPELINE_NAME)
     @Extension
     public static final class DescriptorImpl extends BuildStepDescriptor<Publisher> implements Serializable {
         private static final long serialVersionUID = 9059602791947799261L;

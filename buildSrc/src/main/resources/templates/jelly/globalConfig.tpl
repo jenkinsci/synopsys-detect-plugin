@@ -39,7 +39,7 @@ package templates.jelly
             }
         }
 
-        'f:validateButton'(method: testPolarisConnectionMethod, title: testPolarisConnectionTitle, progress: testConnectionProgresss, with: "${polarisUrlField},${polarisCredentialsTitle},${polarisTimeoutField},${trustPolarisCertificatesField}")
+        'f:validateButton'(method: testPolarisConnectionMethod, title: testPolarisConnectionTitle, progress: testConnectionProgresss, with: "${polarisUrlField},${polarisCredentialsField},${polarisTimeoutField},${trustPolarisCertificatesField}")
 
     }
 

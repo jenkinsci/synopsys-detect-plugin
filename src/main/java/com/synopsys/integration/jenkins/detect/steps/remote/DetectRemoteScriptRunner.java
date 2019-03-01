@@ -1,5 +1,5 @@
 /**
- * blackduck-detect
+ * synopsys-detect
  *
  * Copyright (C) 2019 Black Duck Software, Inc.
  * http://www.blackducksoftware.com/
@@ -41,8 +41,9 @@ public class DetectRemoteScriptRunner extends DetectRemoteRunner {
     private final String toolsDirectory;
     private String detectScriptPath;
 
-    public DetectRemoteScriptRunner(final JenkinsDetectLogger logger, final String toolsDirectory, final List<String> detectProperties, final String workspacePath, final EnvVars envVars) {
-        super(logger, detectProperties, envVars, workspacePath);
+    public DetectRemoteScriptRunner(final JenkinsDetectLogger logger, final String toolsDirectory, final String workspacePath, final EnvVars envVars, final String jenkinsVersion, final String pluginVersion,
+        final List<String> detectProperties) {
+        super(logger, detectProperties, envVars, workspacePath, jenkinsVersion, pluginVersion);
         this.toolsDirectory = toolsDirectory;
     }
 

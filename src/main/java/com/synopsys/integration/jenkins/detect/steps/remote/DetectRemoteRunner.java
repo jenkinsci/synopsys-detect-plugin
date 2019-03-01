@@ -1,5 +1,5 @@
 /**
- * blackduck-detect
+ * synopsys-detect
  *
  * Copyright (C) 2019 Black Duck Software, Inc.
  * http://www.blackducksoftware.com/
@@ -35,11 +35,9 @@ import org.jenkinsci.remoting.RoleChecker;
 import com.synopsys.integration.blackduck.service.model.StreamRedirectThread;
 import com.synopsys.integration.exception.IntegrationException;
 import com.synopsys.integration.jenkins.detect.JenkinsDetectLogger;
-import com.synopsys.integration.jenkins.detect.PluginHelper;
 
 import hudson.EnvVars;
 import hudson.remoting.Callable;
-import jenkins.model.Jenkins;
 
 public abstract class DetectRemoteRunner implements Callable<DetectResponse, IntegrationException> {
     private static final long serialVersionUID = -4754831395795794586L;
@@ -48,12 +46,16 @@ public abstract class DetectRemoteRunner implements Callable<DetectResponse, Int
     protected final List<String> detectProperties;
     protected final EnvVars envVars;
     protected final String workspacePath;
+    private final String jenkinsVersion;
+    private final String pluginVersion;
 
-    public DetectRemoteRunner(final JenkinsDetectLogger logger, final List<String> detectProperties, final EnvVars envVars, final String workspacePath) {
+    public DetectRemoteRunner(final JenkinsDetectLogger logger, final List<String> detectProperties, final EnvVars envVars, final String workspacePath, final String jenkinsVersion, final String pluginVersion) {
         this.logger = logger;
         this.detectProperties = detectProperties;
         this.envVars = envVars;
         this.workspacePath = workspacePath;
+        this.jenkinsVersion = jenkinsVersion;
+        this.pluginVersion = pluginVersion;
     }
 
     @Override
@@ -106,8 +108,8 @@ public abstract class DetectRemoteRunner implements Callable<DetectResponse, Int
         logger.info("Running Detect command: " + StringUtils.join(commandLineParameters, " "));
 
         // Phone Home Properties that we do not want logged:
-        commandLineParameters.add(formatAsCommandLineParameter("detect.phone.home.passthrough.jenkins.version", Jenkins.getVersion().toString()));
-        commandLineParameters.add(formatAsCommandLineParameter("detect.phone.home.passthrough.jenkins.plugin.version", PluginHelper.getPluginVersion()));
+        commandLineParameters.add(formatAsCommandLineParameter("detect.phone.home.passthrough.jenkins.version", jenkinsVersion));
+        commandLineParameters.add(formatAsCommandLineParameter("detect.phone.home.passthrough.jenkins.plugin.version", pluginVersion));
 
         final ProcessBuilder processBuilder = new ProcessBuilder(commandLineParameters).directory(new File(workspacePath));
         processBuilder.environment().putAll(envVars);

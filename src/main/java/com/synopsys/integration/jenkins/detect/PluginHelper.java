@@ -1,5 +1,5 @@
 /**
- * blackduck-detect
+ * synopsys-detect
  *
  * Copyright (C) 2019 Black Duck Software, Inc.
  * http://www.blackducksoftware.com/
@@ -31,7 +31,15 @@ import jenkins.model.GlobalConfiguration;
 import jenkins.model.Jenkins;
 
 public class PluginHelper {
-    public static final String UNKNOWN_VERSION = "<unknown>";
+    public static final String UNKNOWN_VERSION = "UNKNOWN_VERSION";
+
+    public static String getJenkinsVersion() {
+        try {
+            return Jenkins.getVersion().toString();
+        } catch (final Exception e) {
+            return UNKNOWN_VERSION;
+        }
+    }
 
     public static String getPluginVersion() {
         String pluginVersion = UNKNOWN_VERSION;
@@ -47,6 +55,8 @@ public class PluginHelper {
                 }
             }
         }
+        pluginVersion = pluginVersion.split("\\s+")[0];
+
         return pluginVersion;
     }
 

@@ -1,5 +1,5 @@
 /**
- * blackduck-detect
+ * synopsys-detect
  *
  * Copyright (C) 2019 Black Duck Software, Inc.
  * http://www.blackducksoftware.com/
@@ -42,8 +42,9 @@ public class DetectRemoteJarRunner extends DetectRemoteRunner {
     private final String pathToDetectJar;
     private String javaExecutablePath;
 
-    public DetectRemoteJarRunner(final JenkinsDetectLogger logger, final EnvVars envVars, final String workspacePath, final List<String> detectProperties, final String javaHome, final String pathToDetectJar) {
-        super(logger, detectProperties, envVars, workspacePath);
+    public DetectRemoteJarRunner(final JenkinsDetectLogger logger, final EnvVars envVars, final String workspacePath, final String jenkinsVersion, final String pluginVersion, final String javaHome,
+        final String pathToDetectJar, final List<String> detectProperties) {
+        super(logger, detectProperties, envVars, workspacePath, jenkinsVersion, pluginVersion);
         this.javaHome = javaHome;
         this.pathToDetectJar = pathToDetectJar;
     }

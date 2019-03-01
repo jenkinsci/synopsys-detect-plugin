@@ -1,5 +1,5 @@
 /**
- * blackduck-detect
+ * synopsys-detect
  *
  * Copyright (C) 2019 Black Duck Software, Inc.
  * http://www.blackducksoftware.com/
@@ -27,7 +27,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.tools.ant.types.Commandline;
@@ -37,14 +38,13 @@ import com.synopsys.integration.exception.IntegrationException;
 import com.synopsys.integration.jenkins.detect.JenkinsDetectLogger;
 import com.synopsys.integration.jenkins.detect.PluginHelper;
 import com.synopsys.integration.jenkins.detect.exception.DetectJenkinsException;
-import com.synopsys.integration.jenkins.detect.extensions.global.DetectGlobalConfig;
 import com.synopsys.integration.jenkins.detect.steps.remote.DetectRemoteJarRunner;
 import com.synopsys.integration.jenkins.detect.steps.remote.DetectRemoteRunner;
 import com.synopsys.integration.jenkins.detect.steps.remote.DetectRemoteScriptRunner;
 import com.synopsys.integration.jenkins.detect.steps.remote.DetectResponse;
 import com.synopsys.integration.jenkins.detect.tools.DummyToolInstallation;
 import com.synopsys.integration.jenkins.detect.tools.DummyToolInstaller;
-import com.synopsys.integration.polaris.common.configuration.PolarisServerConfig;
+import com.synopsys.integration.polaris.common.configuration.PolarisServerConfigBuilder;
 import com.synopsys.integration.util.IntEnvironmentVariables;
 
 import hudson.EnvVars;
@@ -77,32 +77,15 @@ public class ExecuteDetectStep {
         final IntEnvironmentVariables variables = new IntEnvironmentVariables();
         variables.putAll(envVars);
         logger.setLogLevel(variables);
+
         try {
             final String pluginVersion = PluginHelper.getPluginVersion();
             logger.info("Running Detect version: " + pluginVersion);
 
-            final DetectGlobalConfig detectGlobalConfig = PluginHelper.getDetectGlobalConfig();
+            populateAllBlackDuckEnvironmentVariables(envVars::putIfNotNull);
+            populateAllPolarisEnvironmentVariables(envVars::putIfNotNull);
 
-            final BlackDuckServerConfigBuilder blackDuckServerConfigBuilder = detectGlobalConfig.getBlackDuckServerConfigBuilder();
-            final Map<String, String> blackDuckEnvVars = Arrays.stream(BlackDuckServerConfigBuilder.Property.values())
-                                                             .collect(Collectors.toMap(BlackDuckServerConfigBuilder.Property::getBlackDuckEnvironmentVariableKey, blackDuckServerConfigBuilder::get));
-
-            envVars.putAll(blackDuckEnvVars);
-
-            final PolarisServerConfig polarisServerConfig = detectGlobalConfig.getPolarisServerConfig();
-            polarisServerConfig.populateEnvironmentVariables(envVars::put);
-
-            final String pathToDetectJar = envVars.get("DETECT_JAR", StringUtils.EMPTY);
-
-            final DetectRemoteRunner detectRunner;
-
-            if (StringUtils.isNotBlank(pathToDetectJar)) {
-                detectRunner = new DetectRemoteJarRunner(logger, envVars, workspace.getRemote(), getCorrectedParameters(detectProperties), javaHome, pathToDetectJar);
-            } else {
-                final DummyToolInstaller dummyInstaller = new DummyToolInstaller();
-                final String toolsDirectory = dummyInstaller.getToolDir(new DummyToolInstallation(), node).getRemote();
-                detectRunner = new DetectRemoteScriptRunner(logger, toolsDirectory, getCorrectedParameters(detectProperties), workspace.getRemote(), envVars);
-            }
+            final DetectRemoteRunner detectRunner = createAppropriateDetectRemoteRunner(logger, detectProperties);
 
             final DetectResponse response = node.getChannel().call(detectRunner);
 
@@ -110,27 +93,59 @@ public class ExecuteDetectStep {
                 logger.error("Detect failed with exit code: " + response.getExitCode());
                 run.setResult(Result.FAILURE);
             } else if (null != response.getException()) {
-                final Exception exception = response.getException();
-                if (exception instanceof InterruptedException) {
-                    run.setResult(Result.ABORTED);
-                    Thread.currentThread().interrupt();
-                } else {
-                    logger.error(exception.getMessage(), exception);
-                    run.setResult(Result.UNSTABLE);
-                }
+                throw new DetectJenkinsException("Detect encountered an exception", response.getException());
             }
-        } catch (final IntegrationException e) {
-            logger.error(e.getMessage());
-            logger.debug(e.getMessage(), e);
-            run.setResult(Result.UNSTABLE);
-        } catch (final InterruptedException e) {
-            logger.error("Detect caller thread was interrupted.", e);
-            run.setResult(Result.ABORTED);
-            Thread.currentThread().interrupt();
         } catch (final Exception e) {
-            logger.error(e.getMessage(), e);
-            run.setResult(Result.UNSTABLE);
+            setBuildStatusFromException(logger, e, run::setResult);
         }
+    }
+
+    private void populateAllBlackDuckEnvironmentVariables(final BiConsumer<String, String> environmentPutter) {
+        final BlackDuckServerConfigBuilder blackDuckServerConfigBuilder = PluginHelper.getDetectGlobalConfig().getBlackDuckServerConfigBuilder();
+
+        Arrays.stream(BlackDuckServerConfigBuilder.Property.values())
+            .forEach(property -> environmentPutter.accept(property.getBlackDuckEnvironmentVariableKey(), blackDuckServerConfigBuilder.get(property)));
+    }
+
+    // TODO: Replace these puts with a cleaner impl (see populateAllBlackDuckEnvironmentVariables) when Polaris Common supports it
+    private void populateAllPolarisEnvironmentVariables(final BiConsumer<String, String> environmentPutter) {
+        final PolarisServerConfigBuilder polarisServerConfigBuilder = PluginHelper.getDetectGlobalConfig().getPolarisServerConfigBuilder();
+
+        environmentPutter.accept("POLARIS_TIMEOUT_IN_SECONDS", String.valueOf(polarisServerConfigBuilder.getTimeoutSeconds()));
+        environmentPutter.accept("POLARIS_TRUST_CERT", String.valueOf(polarisServerConfigBuilder.isTrustCert()));
+        environmentPutter.accept("POLARIS_PROXY_HOST", polarisServerConfigBuilder.getProxyHost());
+        environmentPutter.accept("POLARIS_PROXY_USERNAME", polarisServerConfigBuilder.getProxyUsername());
+        environmentPutter.accept("POLARIS_PROXY_PASSWORD", polarisServerConfigBuilder.getProxyPassword());
+        environmentPutter.accept("POLARIS_PROXY_NTLM_DOMAIN", polarisServerConfigBuilder.getProxyNtlmDomain());
+        environmentPutter.accept("POLARIS_PROXY_NTLM_WORKSTATION", polarisServerConfigBuilder.getProxyNtlmWorkstation());
+        if (polarisServerConfigBuilder.getProxyPort() != -1) {
+            environmentPutter.accept("POLARIS_PROXY_PORT", String.valueOf(polarisServerConfigBuilder.getProxyPort()));
+        }
+
+        try {
+            polarisServerConfigBuilder.build().populateEnvironmentVariables(environmentPutter);
+        } catch (final Exception ignored) {
+            // If this doesn't work, Detect will throw an exception later on.
+        }
+
+    }
+
+    private DetectRemoteRunner createAppropriateDetectRemoteRunner(final JenkinsDetectLogger logger, final String detectProperties) throws DetectJenkinsException {
+        final DetectRemoteRunner detectRunner;
+        final String pathToDetectJar = envVars.get("DETECT_JAR");
+
+        final String jenkinsVersion = PluginHelper.getJenkinsVersion();
+        final String pluginVersion = PluginHelper.getPluginVersion();
+
+        if (StringUtils.isNotBlank(pathToDetectJar)) {
+            detectRunner = new DetectRemoteJarRunner(logger, envVars, workspace.getRemote(), jenkinsVersion, pluginVersion, javaHome, pathToDetectJar, getCorrectedParameters(detectProperties));
+        } else {
+            final DummyToolInstaller dummyInstaller = new DummyToolInstaller();
+            final String toolsDirectory = dummyInstaller.getToolDir(new DummyToolInstallation(), node).getRemote();
+            detectRunner = new DetectRemoteScriptRunner(logger, toolsDirectory, workspace.getRemote(), envVars, jenkinsVersion, pluginVersion, getCorrectedParameters(detectProperties));
+        }
+
+        return detectRunner;
     }
 
     private List<String> getCorrectedParameters(final String commandLineParameters) throws DetectJenkinsException {
@@ -151,6 +166,21 @@ public class ExecuteDetectStep {
             return newValue;
         }
         return null;
+    }
+
+    private void setBuildStatusFromException(final JenkinsDetectLogger logger, final Exception exception, final Consumer<Result> resultConsumer) {
+        if (exception instanceof InterruptedException) {
+            logger.error("Detect thread was interrupted", exception);
+            resultConsumer.accept(Result.ABORTED);
+            Thread.currentThread().interrupt();
+        } else if (exception instanceof IntegrationException) {
+            logger.error(exception.getMessage());
+            logger.debug(exception.getMessage(), exception);
+            resultConsumer.accept(Result.UNSTABLE);
+        } else {
+            logger.error(exception.getMessage(), exception);
+            resultConsumer.accept(Result.UNSTABLE);
+        }
     }
 
 }
