@@ -1,5 +1,5 @@
 /**
- * synopsys-detect
+ * blackduck-detect
  *
  * Copyright (C) 2019 Black Duck Software, Inc.
  * http://www.blackducksoftware.com/
@@ -68,7 +68,7 @@ public class DetectRemoteScriptRunner extends DetectRemoteRunner {
     @Override
     protected List<String> getInvocationParameters() throws IntegrationException {
         if (Platform.current() == Platform.WINDOWS) {
-            return Arrays.asList("powershell", detectScriptPath, "|", "iex;", "detect");
+            return Arrays.asList("powershell", String.format("\"%s | iex; detect\"", detectScriptPath));
         } else {
             return Arrays.asList("bash", detectScriptPath);
         }
