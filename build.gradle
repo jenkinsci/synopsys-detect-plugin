@@ -15,7 +15,7 @@ plugins {
 }
 
 group = 'org.jenkins-ci.plugins'
-version = '2.0.0-SNAPSHOT'
+version = '2.0.0'
 description = 'Synopsys Detect Plugin for Jenkins'
 
 apply plugin: 'com.blackducksoftware.integration.solution'
