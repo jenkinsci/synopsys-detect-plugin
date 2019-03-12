@@ -80,7 +80,7 @@ public class ExecuteDetectStep {
 
         try {
             final String pluginVersion = PluginHelper.getPluginVersion();
-            logger.info("Running Detect version: " + pluginVersion);
+            logger.info("Running Detect jenkins plugin version: " + pluginVersion);
 
             populateAllBlackDuckEnvironmentVariables(envVars::putIfNotNull);
             populateAllPolarisEnvironmentVariables(envVars::putIfNotNull);

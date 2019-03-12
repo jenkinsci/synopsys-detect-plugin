@@ -68,7 +68,7 @@ public class DetectRemoteScriptRunner extends DetectRemoteRunner {
     @Override
     protected List<String> getInvocationParameters() throws IntegrationException {
         if (Platform.current() == Platform.WINDOWS) {
-            return Arrays.asList("powershell", String.format("\"%s | iex; detect\"", detectScriptPath));
+            return Arrays.asList("powershell", String.format("\"Import-Module %s; detect\"", detectScriptPath));
         } else {
             return Arrays.asList("bash", detectScriptPath);
         }
