@@ -14,7 +14,7 @@ plugins {
     id 'org.jenkins-ci.jpi' version '0.27.0'
 }
 
-group = 'org.jenkins-ci.plugins'
+group = 'com.blackducksoftware.integration'
 version = '2.0.0-SNAPSHOT'
 description = 'Synopsys Detect Plugin for Jenkins'
 
