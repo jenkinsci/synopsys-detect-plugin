@@ -83,7 +83,7 @@ import jenkins.util.xml.XMLUtils;
 @Extension
 public class DetectGlobalConfig extends GlobalConfiguration implements Serializable {
     private static final long serialVersionUID = -7629542889827231313L;
-    private final Logger logger = Logger.getLogger(DetectGlobalConfig.class.getName());
+    private transient final Logger logger = Logger.getLogger(DetectGlobalConfig.class.getName());
 
     private String blackDuckUrl;
     private String blackDuckCredentialsId;
@@ -96,6 +96,7 @@ public class DetectGlobalConfig extends GlobalConfiguration implements Serializa
 
     @DataBoundConstructor
     public DetectGlobalConfig() {
+        load();
     }
 
     public String getBlackDuckUrl() {

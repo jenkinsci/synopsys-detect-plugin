@@ -11,7 +11,7 @@ buildscript {
 }
 
 plugins {
-    id 'org.jenkins-ci.jpi' version '0.27.0'
+    id 'org.jenkins-ci.jpi' version '0.31.0'
 }
 
 group = 'com.blackducksoftware.integration'
@@ -40,6 +40,7 @@ project.afterEvaluate {
 jenkinsPlugin {
     coreVersion = '2.60.1'
     displayName = 'Synopsys Detect'
+    compatibleSinceVersion = '2.0.0'
     url = 'https://wiki.jenkins.io/display/JENKINS/Synopsys+Detect+Plugin'
     gitHubUrl = 'https://github.com/jenkinsci/synopsys-detect-plugin'
 
