@@ -2,7 +2,7 @@
   "helpHtml.tpl": {
     "detectProperties": {
       "overview": [
-        "The command line options to pass to Black Duck Detect"
+        "The command line options to pass to Synopsys Detect"
       ]
     }
   }
