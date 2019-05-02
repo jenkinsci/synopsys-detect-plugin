@@ -25,6 +25,7 @@ package com.synopsys.integration.jenkins.detect;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.List;
+import java.util.Optional;
 import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
@@ -40,26 +41,25 @@ import jenkins.model.Jenkins;
 
 public class JenkinsProxyHelper {
     public static ProxyInfo getProxyInfoFromJenkins(final String url) {
-        ProxyInfo proxyInfo = ProxyInfo.NO_PROXY_INFO;
-        final Jenkins jenkins = Jenkins.getInstanceOrNull();
-        if (jenkins != null) {
-            final ProxyConfiguration proxyConfig = jenkins.proxy;
-            if (proxyConfig != null) {
-                final String username;
-                final String ntlmDomain;
-                final String[] possiblyDomainSlashUsername = proxyConfig.getUserName().split(Pattern.quote("\\"));
-                if (possiblyDomainSlashUsername.length == 1 || possiblyDomainSlashUsername[0].length() == 0) {
-                    ntlmDomain = null;
-                    username = proxyConfig.getUserName();
-                } else {
-                    ntlmDomain = possiblyDomainSlashUsername[0];
-                    username = possiblyDomainSlashUsername[1];
-                }
+        final ProxyConfiguration proxyConfig = Optional.ofNullable(Jenkins.getInstanceOrNull()).map(jenkins -> jenkins.proxy).orElse(null);
+        if (proxyConfig == null) {
+            return ProxyInfo.NO_PROXY_INFO;
+        }
 
-                proxyInfo = getProxyInfo(url, proxyConfig.name, proxyConfig.port, username, proxyConfig.getPassword(), proxyConfig.getNoProxyHostPatterns(), ntlmDomain, StringUtils.EMPTY);
+        String username = null;
+        String ntlmDomain = null;
+        if (StringUtils.isNotBlank(proxyConfig.getUserName())) {
+            final String[] possiblyDomainSlashUsername = proxyConfig.getUserName().split(Pattern.quote("\\"));
+            if (possiblyDomainSlashUsername.length == 1 || possiblyDomainSlashUsername[0].length() == 0) {
+                ntlmDomain = null;
+                username = proxyConfig.getUserName();
+            } else {
+                ntlmDomain = possiblyDomainSlashUsername[0];
+                username = possiblyDomainSlashUsername[1];
             }
         }
-        return proxyInfo;
+
+        return getProxyInfo(url, proxyConfig.name, proxyConfig.port, username, proxyConfig.getPassword(), proxyConfig.getNoProxyHostPatterns(), ntlmDomain, StringUtils.EMPTY);
     }
 
     public static ProxyInfo getProxyInfo(final String url, final String proxyHost, final int proxyPort, final String proxyUsername, final String proxyPassword, final List<Pattern> ignoredProxyHosts, final String ntlmDomain,
