@@ -38,8 +38,8 @@ import com.synopsys.integration.rest.request.Response;
 
 public class DetectDownloadManager {
     public static final String DETECT_INSTALL_DIRECTORY = "Detect_Installation";
-    public static final String LATEST_SHELL_SCRIPT_URL = "https://synopsys-sig.github.io/synopsys-detect-scripts/detect.sh";
-    public static final String LATEST_POWERSHELL_SCRIPT_URL = "https://synopsys-sig.github.io/synopsys-detect-scripts/detect.ps1";
+    public static final String LATEST_SHELL_SCRIPT_URL = "https://detect.synopsys.com/detect.sh";
+    public static final String LATEST_POWERSHELL_SCRIPT_URL = "https://detect.synopsys.com/detect.ps1";
 
     private final IntLogger logger;
     private final String toolsDirectory;
@@ -55,10 +55,10 @@ public class DetectDownloadManager {
         final File localScriptFile = new File(scriptDownloadDirectory, scriptFileName);
 
         if (shouldDownloadScript(scriptDownloadUrl, localScriptFile)) {
-            logger.info("Downloading Detect from: " + scriptDownloadUrl + " to: " + localScriptFile.getAbsolutePath());
+            logger.info("Downloading Detect script from " + scriptDownloadUrl + " to " + localScriptFile.getAbsolutePath());
             downloadScriptTo(scriptDownloadUrl, localScriptFile);
         } else {
-            logger.debug("Detect is already installed at: " + localScriptFile.getAbsolutePath());
+            logger.info("Running already installed Detect script " + localScriptFile.getAbsolutePath());
         }
 
         return localScriptFile;
