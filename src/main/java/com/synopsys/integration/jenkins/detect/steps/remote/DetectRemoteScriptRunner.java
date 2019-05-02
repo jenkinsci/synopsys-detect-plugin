@@ -25,6 +25,7 @@ package com.synopsys.integration.jenkins.detect.steps.remote;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Function;
 
 import org.apache.commons.lang.StringUtils;
 
@@ -41,10 +42,18 @@ public class DetectRemoteScriptRunner extends DetectRemoteRunner {
     private final String toolsDirectory;
     private String detectScriptPath;
 
-    public DetectRemoteScriptRunner(final JenkinsDetectLogger logger, final String toolsDirectory, final String workspacePath, final EnvVars envVars, final String jenkinsVersion, final String pluginVersion,
-        final List<String> detectProperties) {
+    public DetectRemoteScriptRunner(final JenkinsDetectLogger logger, final String toolsDirectory, final String workspacePath, final EnvVars envVars, final String jenkinsVersion, final String pluginVersion, final String detectProperties) {
         super(logger, detectProperties, envVars, workspacePath, jenkinsVersion, pluginVersion);
         this.toolsDirectory = toolsDirectory;
+    }
+
+    @Override
+    public Function<String, String> getEscapingFunction() {
+        if (Platform.current() == Platform.WINDOWS) {
+            return IntegrationEscapeUtils::escapePowerShell;
+        } else {
+            return IntegrationEscapeUtils::escapeXSI;
+        }
     }
 
     @Override

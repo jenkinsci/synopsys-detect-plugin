@@ -24,10 +24,15 @@ package com.synopsys.integration.jenkins.detect.steps.remote;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.tools.ant.types.Commandline;
 import org.jenkinsci.remoting.Role;
 import org.jenkinsci.remoting.RoleChecker;
 
@@ -36,19 +41,20 @@ import com.synopsys.integration.exception.IntegrationException;
 import com.synopsys.integration.jenkins.detect.JenkinsDetectLogger;
 
 import hudson.EnvVars;
+import hudson.Util;
 import hudson.remoting.Callable;
 
 public abstract class DetectRemoteRunner implements Callable<DetectResponse, IntegrationException> {
     private static final long serialVersionUID = -4754831395795794586L;
     private static final String SYNOPSYS_LOG_LEVEL_PARAMETER = "logging.level.com.synopsys.integration";
     protected final JenkinsDetectLogger logger;
-    protected final List<String> detectProperties;
+    protected final String detectProperties;
     protected final EnvVars envVars;
     protected final String workspacePath;
     private final String jenkinsVersion;
     private final String pluginVersion;
 
-    public DetectRemoteRunner(final JenkinsDetectLogger logger, final List<String> detectProperties, final EnvVars envVars, final String workspacePath, final String jenkinsVersion, final String pluginVersion) {
+    public DetectRemoteRunner(final JenkinsDetectLogger logger, final String detectProperties, final EnvVars envVars, final String workspacePath, final String jenkinsVersion, final String pluginVersion) {
         this.logger = logger;
         this.detectProperties = detectProperties;
         this.envVars = envVars;
@@ -88,12 +94,15 @@ public abstract class DetectRemoteRunner implements Callable<DetectResponse, Int
 
     protected abstract List<String> getInvocationParameters() throws Exception;
 
+    protected abstract Function<String, String> getEscapingFunction();
+
     private ProcessBuilder createDetectProcessBuilder(final List<String> invocationParameters) throws Exception {
         final List<String> commandLineParameters = new ArrayList<>(invocationParameters);
+        final List<String> detectArguments = parseDetectArguments(logger, detectProperties, getEscapingFunction());
 
         boolean setLoggingLevel = false;
-        if (detectProperties != null && !detectProperties.isEmpty()) {
-            for (final String property : detectProperties) {
+        if (detectArguments != null && !detectArguments.isEmpty()) {
+            for (final String property : detectArguments) {
                 if (property.toLowerCase().contains(SYNOPSYS_LOG_LEVEL_PARAMETER)) {
                     setLoggingLevel = true;
                 }
@@ -113,6 +122,27 @@ public abstract class DetectRemoteRunner implements Callable<DetectResponse, Int
         final ProcessBuilder processBuilder = new ProcessBuilder(commandLineParameters).directory(new File(workspacePath));
         processBuilder.environment().putAll(envVars);
         return processBuilder;
+    }
+
+    private List<String> parseDetectArguments(final JenkinsDetectLogger logger, final String detectArgumentsBlob, final Function<String, String> escapeStringForExecution) {
+        return Arrays.stream(Commandline.translateCommandline(detectArgumentsBlob))
+                   .map(argumentBlobString -> argumentBlobString.split("\\r?\\n"))
+                   .flatMap(Arrays::stream)
+                   .filter(StringUtils::isNotBlank)
+                   .map(argument -> handleVariableReplacement(logger, envVars, argument))
+                   .map(escapeStringForExecution)
+                   .collect(Collectors.toList());
+    }
+
+    private String handleVariableReplacement(final JenkinsDetectLogger logger, final Map<String, String> variables, final String value) {
+        if (value != null) {
+            final String newValue = Util.replaceMacro(value, variables);
+            if (StringUtils.isNotBlank(newValue) && newValue.contains("$")) {
+                logger.warn("Variable may not have been properly replaced. Argument: " + value + ", resolved argument: " + newValue + ". Make sure the variable has been properly defined.");
+            }
+            return newValue;
+        }
+        return null;
     }
 
     private String formatAsCommandLineParameter(final String detectProperty, final String value) {

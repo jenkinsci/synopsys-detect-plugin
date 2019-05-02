@@ -26,6 +26,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Function;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.SystemUtils;
@@ -42,7 +43,7 @@ public class DetectRemoteJarRunner extends DetectRemoteRunner {
     private String javaExecutablePath;
 
     public DetectRemoteJarRunner(final JenkinsDetectLogger logger, final EnvVars envVars, final String workspacePath, final String jenkinsVersion, final String pluginVersion, final String javaHome,
-        final String pathToDetectJar, final List<String> detectProperties) {
+        final String pathToDetectJar, final String detectProperties) {
         super(logger, detectProperties, envVars, workspacePath, jenkinsVersion, pluginVersion);
         this.javaHome = javaHome;
         this.pathToDetectJar = pathToDetectJar;
@@ -62,6 +63,11 @@ public class DetectRemoteJarRunner extends DetectRemoteRunner {
         logger.info("Running Detect: " + detectJar.getName());
 
         return Arrays.asList(javaExecutablePath, "-jar", detectJar.getCanonicalPath());
+    }
+
+    @Override
+    protected Function<String, String> getEscapingFunction() {
+        return Function.identity();
     }
 
     private String calculateJavaExecutablePath(final String javaHome) throws IOException {

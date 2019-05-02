@@ -22,15 +22,11 @@
  */
 package com.synopsys.integration.jenkins.detect.steps;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-import org.apache.commons.lang.StringUtils;
-import org.apache.tools.ant.types.Commandline;
+import org.apache.commons.lang3.StringUtils;
 
 import com.synopsys.integration.blackduck.configuration.BlackDuckServerConfigBuilder;
 import com.synopsys.integration.exception.IntegrationException;
@@ -48,7 +44,6 @@ import com.synopsys.integration.util.IntEnvironmentVariables;
 
 import hudson.EnvVars;
 import hudson.FilePath;
-import hudson.Util;
 import hudson.model.Node;
 import hudson.model.Result;
 import hudson.model.Run;
@@ -137,34 +132,14 @@ public class ExecuteDetectStep {
         final String pluginVersion = PluginHelper.getPluginVersion();
 
         if (StringUtils.isNotBlank(pathToDetectJar)) {
-            detectRunner = new DetectRemoteJarRunner(logger, envVars, workspace.getRemote(), jenkinsVersion, pluginVersion, javaHome, pathToDetectJar, getCorrectedParameters(detectProperties));
+            detectRunner = new DetectRemoteJarRunner(logger, envVars, workspace.getRemote(), jenkinsVersion, pluginVersion, javaHome, pathToDetectJar, detectProperties);
         } else {
             final DummyToolInstaller dummyInstaller = new DummyToolInstaller();
             final String toolsDirectory = dummyInstaller.getToolDir(new DummyToolInstallation(), node).getRemote();
-            detectRunner = new DetectRemoteScriptRunner(logger, toolsDirectory, workspace.getRemote(), envVars, jenkinsVersion, pluginVersion, getCorrectedParameters(detectProperties));
+            detectRunner = new DetectRemoteScriptRunner(logger, toolsDirectory, workspace.getRemote(), envVars, jenkinsVersion, pluginVersion, detectProperties);
         }
 
         return detectRunner;
-    }
-
-    private List<String> getCorrectedParameters(final String commandLineParameters) throws DetectJenkinsException {
-        final String[] separatedParameters = Commandline.translateCommandline(commandLineParameters);
-        final List<String> correctedParameters = new ArrayList<>();
-        for (final String parameter : separatedParameters) {
-            correctedParameters.add(handleVariableReplacement(envVars, parameter));
-        }
-        return correctedParameters;
-    }
-
-    private String handleVariableReplacement(final Map<String, String> variables, final String value) throws DetectJenkinsException {
-        if (value != null) {
-            final String newValue = Util.replaceMacro(value, variables);
-            if (StringUtils.isNotBlank(newValue) && newValue.contains("$")) {
-                throw new DetectJenkinsException("Variable was not properly replaced. Value: " + value + ", Result: " + newValue + ". Make sure the variable has been properly defined.");
-            }
-            return newValue;
-        }
-        return null;
     }
 
     private void setBuildStatusFromException(final JenkinsDetectLogger logger, final Exception exception, final Consumer<Result> resultConsumer) {
