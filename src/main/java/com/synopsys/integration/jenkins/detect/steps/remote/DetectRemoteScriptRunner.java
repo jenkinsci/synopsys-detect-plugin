@@ -28,6 +28,7 @@ import java.util.List;
 
 import org.apache.commons.lang.StringUtils;
 
+import com.synopsys.integration.IntegrationEscapeUtils;
 import com.synopsys.integration.exception.IntegrationException;
 import com.synopsys.integration.jenkins.detect.JenkinsDetectLogger;
 import com.synopsys.integration.jenkins.detect.tools.DetectDownloadManager;
@@ -67,7 +68,7 @@ public class DetectRemoteScriptRunner extends DetectRemoteRunner {
     @Override
     protected List<String> getInvocationParameters() throws IntegrationException {
         if (Platform.current() == Platform.WINDOWS) {
-            return Arrays.asList("powershell", String.format("\"Import-Module %s; detect\"", detectScriptPath));
+            return Arrays.asList("powershell", String.format("\"Import-Module %s; detect\"", IntegrationEscapeUtils.escapePowerShell(detectScriptPath)));
         } else {
             return Arrays.asList("bash", detectScriptPath);
         }
