@@ -26,6 +26,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
@@ -34,7 +35,6 @@ import com.synopsys.integration.rest.credentials.Credentials;
 import com.synopsys.integration.rest.credentials.CredentialsBuilder;
 import com.synopsys.integration.rest.proxy.ProxyInfo;
 import com.synopsys.integration.rest.proxy.ProxyInfoBuilder;
-import com.synopsys.integration.util.proxy.ProxyUtil;
 
 import hudson.ProxyConfiguration;
 import jenkins.model.Jenkins;
@@ -88,10 +88,24 @@ public class JenkinsProxyHelper {
     private static boolean shouldUseProxy(final String url, final List<Pattern> noProxyHosts) {
         try {
             final URL actualURL = new URL(url);
-            return !ProxyUtil.shouldIgnoreHost(actualURL.getHost(), noProxyHosts);
+            return !shouldIgnoreHost(actualURL.getHost(), noProxyHosts);
         } catch (final MalformedURLException e) {
             return false;
         }
+    }
+
+    private static boolean shouldIgnoreHost(final String hostToMatch, final List<Pattern> ignoredProxyHostPatterns) {
+        if (StringUtils.isBlank(hostToMatch) || ignoredProxyHostPatterns == null || ignoredProxyHostPatterns.isEmpty()) {
+            return false;
+        }
+
+        for (final Pattern ignoredProxyHostPattern : ignoredProxyHostPatterns) {
+            final Matcher m = ignoredProxyHostPattern.matcher(hostToMatch);
+            if (m.matches()) {
+                return true;
+            }
+        }
+        return false;
     }
 
 }

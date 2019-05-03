@@ -47,8 +47,9 @@ public class DummyToolInstaller extends ToolInstaller {
         return new DummyToolInstallerDescriptor();
     }
 
-    public FilePath getToolDir(final ToolInstallation tool, final Node node) {
-        final FilePath toolsDir = preferredLocation(tool, node);
+    public FilePath getToolDir(final Node node) {
+        final DummyToolInstallation dummyToolInstallation = new DummyToolInstallation();
+        final FilePath toolsDir = preferredLocation(dummyToolInstallation, node);
         // preferredLocation will return {root}/tools/descriptorId/installationName
         // and we want to return {root}/tools
         return toolsDir.getParent().getParent();

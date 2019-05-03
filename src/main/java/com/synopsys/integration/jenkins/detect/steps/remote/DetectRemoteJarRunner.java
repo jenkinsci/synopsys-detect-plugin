@@ -25,6 +25,7 @@ package com.synopsys.integration.jenkins.detect.steps.remote;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.function.Function;
 
@@ -34,17 +35,15 @@ import org.apache.commons.lang3.SystemUtils;
 import com.synopsys.integration.jenkins.detect.JenkinsDetectLogger;
 import com.synopsys.integration.log.LogLevel;
 
-import hudson.EnvVars;
-
 public class DetectRemoteJarRunner extends DetectRemoteRunner {
     private static final long serialVersionUID = -3893076074803560801L;
     private final String javaHome;
     private final String pathToDetectJar;
     private String javaExecutablePath;
 
-    public DetectRemoteJarRunner(final JenkinsDetectLogger logger, final EnvVars envVars, final String workspacePath, final String jenkinsVersion, final String pluginVersion, final String javaHome,
+    public DetectRemoteJarRunner(final JenkinsDetectLogger logger, final HashMap<String, String> environmentVariables, final String workspacePath, final String jenkinsVersion, final String pluginVersion, final String javaHome,
         final String pathToDetectJar, final String detectProperties) {
-        super(logger, detectProperties, envVars, workspacePath, jenkinsVersion, pluginVersion);
+        super(logger, detectProperties, environmentVariables, workspacePath, jenkinsVersion, pluginVersion);
         this.javaHome = javaHome;
         this.pathToDetectJar = pathToDetectJar;
     }
@@ -86,12 +85,12 @@ public class DetectRemoteJarRunner extends DetectRemoteRunner {
     }
 
     private void logJavaVersion() {
-        logger.debug("PATH: " + envVars.get("PATH"));
+        logger.debug("PATH: " + environmentVariables.get("PATH"));
         if (LogLevel.DEBUG == logger.getLogLevel()) {
             try {
                 logger.info("Java version: ");
                 final ProcessBuilder processBuilder = new ProcessBuilder(Arrays.asList("java", "-version"));
-                processBuilder.environment().putAll(envVars);
+                processBuilder.environment().putAll(environmentVariables);
                 final Process process = processBuilder.start();
                 process.waitFor();
                 IOUtils.copy(process.getErrorStream(), logger.getJenkinsListener().getLogger());

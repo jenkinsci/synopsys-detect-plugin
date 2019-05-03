@@ -1,8 +1,31 @@
+/**
+ * blackduck-detect
+ *
+ * Copyright (c) 2019 Synopsys, Inc.
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements. See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership. The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
 package com.synopsys.integration.jenkins.detect.steps;
 
-import java.util.Arrays;
 import java.util.Map;
 import java.util.function.BiConsumer;
+
+import org.apache.commons.lang3.StringUtils;
 
 import com.synopsys.integration.blackduck.configuration.BlackDuckServerConfigBuilder;
 import com.synopsys.integration.jenkins.detect.JenkinsDetectLogger;
@@ -10,10 +33,10 @@ import com.synopsys.integration.jenkins.detect.PluginHelper;
 import com.synopsys.integration.polaris.common.configuration.PolarisServerConfigBuilder;
 import com.synopsys.integration.util.IntEnvironmentVariables;
 
-public class SetDetectEnvironmentStep {
+public class CreateDetectEnvironmentStep {
     private final JenkinsDetectLogger logger;
 
-    public SetDetectEnvironmentStep(final JenkinsDetectLogger logger) {
+    public CreateDetectEnvironmentStep(final JenkinsDetectLogger logger) {
         this.logger = logger;
     }
 
@@ -34,30 +57,27 @@ public class SetDetectEnvironmentStep {
     private void populateAllBlackDuckEnvironmentVariables(final BiConsumer<String, String> environmentPutter) {
         final BlackDuckServerConfigBuilder blackDuckServerConfigBuilder = PluginHelper.getDetectGlobalConfig().getBlackDuckServerConfigBuilder();
 
-        Arrays.stream(BlackDuckServerConfigBuilder.Property.values())
-            .forEach(property -> environmentPutter.accept(property.getBlackDuckEnvironmentVariableKey(), blackDuckServerConfigBuilder.get(property)));
+        blackDuckServerConfigBuilder.getProperties()
+            .forEach((builderPropertyKey, propertyValue) -> acceptIfNotNull(environmentPutter, builderPropertyKey.getKey(), propertyValue));
     }
 
-    // TODO: Replace these puts with a cleaner impl (see populateAllBlackDuckEnvironmentVariables) when Polaris Common supports it
     private void populateAllPolarisEnvironmentVariables(final BiConsumer<String, String> environmentPutter) {
         final PolarisServerConfigBuilder polarisServerConfigBuilder = PluginHelper.getDetectGlobalConfig().getPolarisServerConfigBuilder();
 
-        environmentPutter.accept("POLARIS_TIMEOUT_IN_SECONDS", String.valueOf(polarisServerConfigBuilder.getTimeoutSeconds()));
-        environmentPutter.accept("POLARIS_TRUST_CERT", String.valueOf(polarisServerConfigBuilder.isTrustCert()));
-        environmentPutter.accept("POLARIS_PROXY_HOST", polarisServerConfigBuilder.getProxyHost());
-        environmentPutter.accept("POLARIS_PROXY_USERNAME", polarisServerConfigBuilder.getProxyUsername());
-        environmentPutter.accept("POLARIS_PROXY_PASSWORD", polarisServerConfigBuilder.getProxyPassword());
-        environmentPutter.accept("POLARIS_PROXY_NTLM_DOMAIN", polarisServerConfigBuilder.getProxyNtlmDomain());
-        environmentPutter.accept("POLARIS_PROXY_NTLM_WORKSTATION", polarisServerConfigBuilder.getProxyNtlmWorkstation());
-        if (polarisServerConfigBuilder.getProxyPort() != -1) {
-            environmentPutter.accept("POLARIS_PROXY_PORT", String.valueOf(polarisServerConfigBuilder.getProxyPort()));
-        }
+        polarisServerConfigBuilder.getProperties()
+            .forEach((builderPropertyKey, propertyValue) -> acceptIfNotNull(environmentPutter, builderPropertyKey.getKey(), propertyValue));
 
         try {
             polarisServerConfigBuilder.build().populateEnvironmentVariables(environmentPutter);
         } catch (final Exception ignored) {
             // If this doesn't work, Detect will throw an exception later on.
         }
-
     }
+
+    private void acceptIfNotNull(final BiConsumer<String, String> environmentPutter, final String key, final String value) {
+        if (StringUtils.isNoneBlank(key, value)) {
+            environmentPutter.accept(key, value);
+        }
+    }
+
 }

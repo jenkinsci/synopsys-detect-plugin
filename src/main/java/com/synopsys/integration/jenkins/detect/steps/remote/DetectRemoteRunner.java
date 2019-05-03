@@ -25,8 +25,8 @@ package com.synopsys.integration.jenkins.detect.steps.remote;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -40,7 +40,6 @@ import com.synopsys.integration.blackduck.service.model.StreamRedirectThread;
 import com.synopsys.integration.exception.IntegrationException;
 import com.synopsys.integration.jenkins.detect.JenkinsDetectLogger;
 
-import hudson.EnvVars;
 import hudson.Util;
 import hudson.remoting.Callable;
 
@@ -49,15 +48,15 @@ public abstract class DetectRemoteRunner implements Callable<DetectResponse, Int
     private static final String SYNOPSYS_LOG_LEVEL_PARAMETER = "logging.level.com.synopsys.integration";
     protected final JenkinsDetectLogger logger;
     protected final String detectProperties;
-    protected final EnvVars envVars;
+    protected final HashMap<String, String> environmentVariables;
     protected final String workspacePath;
     private final String jenkinsVersion;
     private final String pluginVersion;
 
-    public DetectRemoteRunner(final JenkinsDetectLogger logger, final String detectProperties, final EnvVars envVars, final String workspacePath, final String jenkinsVersion, final String pluginVersion) {
+    public DetectRemoteRunner(final JenkinsDetectLogger logger, final String detectProperties, final HashMap<String, String> environmentVariables, final String workspacePath, final String jenkinsVersion, final String pluginVersion) {
         this.logger = logger;
         this.detectProperties = detectProperties;
-        this.envVars = envVars;
+        this.environmentVariables = environmentVariables;
         this.workspacePath = workspacePath;
         this.jenkinsVersion = jenkinsVersion;
         this.pluginVersion = pluginVersion;
@@ -120,7 +119,7 @@ public abstract class DetectRemoteRunner implements Callable<DetectResponse, Int
         commandLineParameters.add(formatAsCommandLineParameter("detect.phone.home.passthrough.jenkins.plugin.version", pluginVersion));
 
         final ProcessBuilder processBuilder = new ProcessBuilder(commandLineParameters).directory(new File(workspacePath));
-        processBuilder.environment().putAll(envVars);
+        processBuilder.environment().putAll(environmentVariables);
         return processBuilder;
     }
 
@@ -129,14 +128,14 @@ public abstract class DetectRemoteRunner implements Callable<DetectResponse, Int
                    .map(argumentBlobString -> argumentBlobString.split("\\r?\\n"))
                    .flatMap(Arrays::stream)
                    .filter(StringUtils::isNotBlank)
-                   .map(argument -> handleVariableReplacement(logger, envVars, argument))
+                   .map(argument -> handleVariableReplacement(logger, argument))
                    .map(escapeStringForExecution)
                    .collect(Collectors.toList());
     }
 
-    private String handleVariableReplacement(final JenkinsDetectLogger logger, final Map<String, String> variables, final String value) {
+    private String handleVariableReplacement(final JenkinsDetectLogger logger, final String value) {
         if (value != null) {
-            final String newValue = Util.replaceMacro(value, variables);
+            final String newValue = Util.replaceMacro(value, environmentVariables);
             if (StringUtils.isNotBlank(newValue) && newValue.contains("$")) {
                 logger.warn("Variable may not have been properly replaced. Argument: " + value + ", resolved argument: " + newValue + ". Make sure the variable has been properly defined.");
             }

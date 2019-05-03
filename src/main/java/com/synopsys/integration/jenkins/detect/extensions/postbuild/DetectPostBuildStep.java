@@ -24,32 +24,38 @@ package com.synopsys.integration.jenkins.detect.extensions.postbuild;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.function.Consumer;
 
 import javax.annotation.Nonnull;
 
-import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 
-import com.synopsys.integration.jenkins.detect.steps.ExecuteDetectStep;
+import com.synopsys.integration.exception.IntegrationException;
+import com.synopsys.integration.jenkins.detect.JenkinsDetectLogger;
+import com.synopsys.integration.jenkins.detect.exception.DetectJenkinsException;
+import com.synopsys.integration.jenkins.detect.steps.CreateDetectEnvironmentStep;
+import com.synopsys.integration.jenkins.detect.steps.CreateDetectRunnerStep;
+import com.synopsys.integration.jenkins.detect.steps.remote.DetectRemoteRunner;
+import com.synopsys.integration.jenkins.detect.steps.remote.DetectResponse;
+import com.synopsys.integration.jenkins.detect.tools.DummyToolInstaller;
+import com.synopsys.integration.util.IntEnvironmentVariables;
 
 import hudson.Extension;
-import hudson.FilePath;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
 import hudson.model.JDK;
-import hudson.model.Run;
-import hudson.model.TaskListener;
+import hudson.model.Node;
+import hudson.model.Result;
+import hudson.remoting.VirtualChannel;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Publisher;
 import hudson.tasks.Recorder;
-import jenkins.tasks.SimpleBuildStep;
 
-public class DetectPostBuildStep extends Recorder implements SimpleBuildStep {
+public class DetectPostBuildStep extends Recorder {
     public static final String DISPLAY_NAME = "Synopsys Detect";
-    public static final String PIPELINE_NAME = "synopsys_detect";
     private final String detectProperties;
 
     @DataBoundConstructor
@@ -74,30 +80,59 @@ public class DetectPostBuildStep extends Recorder implements SimpleBuildStep {
     // Freestyle
     @Override
     public boolean perform(final AbstractBuild<?, ?> build, final Launcher launcher, final BuildListener listener) throws InterruptedException, IOException {
-        final String javaHome = getJavaHome(build, listener);
-        final ExecuteDetectStep executeDetectStep = new ExecuteDetectStep(build.getBuiltOn(), listener, build.getWorkspace(), build.getEnvironment(listener), build, javaHome);
-        executeDetectStep.executeDetect(detectProperties);
+        final JenkinsDetectLogger logger = new JenkinsDetectLogger(listener);
+
+        try {
+            final CreateDetectEnvironmentStep createDetectEnvironmentStep = new CreateDetectEnvironmentStep(logger);
+            final IntEnvironmentVariables intEnvironmentVariables = createDetectEnvironmentStep.setDetectEnvironment(build.getEnvironment(listener));
+
+            final CreateDetectRunnerStep createDetectRunnerStep = new CreateDetectRunnerStep(logger);
+            final Node node = build.getBuiltOn();
+            final String javaHome = getJavaHome(build, node, listener);
+            final String remoteWorkspacePath = build.getWorkspace().getRemote();
+            final String remoteToolsDirectory = new DummyToolInstaller().getToolDir(node).getRemote();
+            final DetectRemoteRunner detectRemoteRunner = createDetectRunnerStep.createAppropriateDetectRemoteRunner(intEnvironmentVariables, detectProperties, javaHome, remoteWorkspacePath, remoteToolsDirectory);
+
+            final VirtualChannel caller = node.getChannel();
+            final DetectResponse detectResponse = caller.call(detectRemoteRunner);
+
+            if (detectResponse.getExitCode() > 0) {
+                logger.error("Detect failed with exit code: " + detectResponse.getExitCode());
+                build.setResult(Result.FAILURE);
+            } else if (null != detectResponse.getException()) {
+                throw new DetectJenkinsException("Detect encountered an exception", detectResponse.getException());
+            }
+        } catch (final Exception e) {
+            setBuildStatusFromException(logger, e, build::setResult);
+        }
         return true;
     }
 
-    // Pipeline
-    @Override
-    public void perform(@Nonnull final Run<?, ?> run, @Nonnull final FilePath workspace, @Nonnull final Launcher launcher, @Nonnull final TaskListener listener) throws InterruptedException, IOException {
-        final ExecuteDetectStep executeDetectStep = new ExecuteDetectStep(workspace.toComputer().getNode(), listener, workspace, run.getEnvironment(listener), run, null);
-        executeDetectStep.executeDetect(detectProperties);
-    }
-
-    private String getJavaHome(final AbstractBuild<?, ?> build, final BuildListener listener) throws IOException, InterruptedException {
-        JDK jdk = build.getProject().getJDK();
+    private String getJavaHome(final AbstractBuild<?, ?> build, final Node node, final BuildListener listener) throws IOException, InterruptedException {
+        final JDK jdk = build.getProject().getJDK();
         if (jdk == null) {
             return null;
         }
-        jdk = build.getProject().getJDK().forNode(build.getBuiltOn(), listener);
+        final JDK nodeJdk = jdk.forNode(node, listener);
 
-        return jdk.getHome();
+        return nodeJdk.getHome();
     }
 
-    @Symbol(PIPELINE_NAME)
+    private void setBuildStatusFromException(final JenkinsDetectLogger logger, final Exception exception, final Consumer<Result> resultConsumer) {
+        if (exception instanceof InterruptedException) {
+            logger.error("Detect thread was interrupted", exception);
+            resultConsumer.accept(Result.ABORTED);
+            Thread.currentThread().interrupt();
+        } else if (exception instanceof IntegrationException) {
+            logger.error(exception.getMessage());
+            logger.debug(exception.getMessage(), exception);
+            resultConsumer.accept(Result.UNSTABLE);
+        } else {
+            logger.error(exception.getMessage(), exception);
+            resultConsumer.accept(Result.UNSTABLE);
+        }
+    }
+
     @Extension
     public static final class DescriptorImpl extends BuildStepDescriptor<Publisher> implements Serializable {
         private static final long serialVersionUID = 9059602791947799261L;

@@ -22,6 +22,8 @@
  */
 package com.synopsys.integration.jenkins.detect.steps;
 
+import java.util.HashMap;
+
 import org.apache.commons.lang3.StringUtils;
 
 import com.synopsys.integration.jenkins.detect.JenkinsDetectLogger;
@@ -31,10 +33,10 @@ import com.synopsys.integration.jenkins.detect.steps.remote.DetectRemoteRunner;
 import com.synopsys.integration.jenkins.detect.steps.remote.DetectRemoteScriptRunner;
 import com.synopsys.integration.util.IntEnvironmentVariables;
 
-public class ExecuteDetectStep {
+public class CreateDetectRunnerStep {
     private final JenkinsDetectLogger logger;
 
-    public ExecuteDetectStep(final JenkinsDetectLogger logger) {
+    public CreateDetectRunnerStep(final JenkinsDetectLogger logger) {
         this.logger = logger;
     }
 
@@ -47,10 +49,12 @@ public class ExecuteDetectStep {
         final String jenkinsVersion = PluginHelper.getJenkinsVersion();
         final String pluginVersion = PluginHelper.getPluginVersion();
 
+        final HashMap<String, String> environmentVariables = (HashMap<String, String>) intEnvironmentVariables.getVariables();
+
         if (StringUtils.isNotBlank(pathToDetectJar)) {
-            detectRunner = new DetectRemoteJarRunner(logger, intEnvironmentVariables, remoteWorkspacePath, jenkinsVersion, pluginVersion, remoteJavaHome, pathToDetectJar, detectProperties);
+            detectRunner = new DetectRemoteJarRunner(logger, environmentVariables, remoteWorkspacePath, jenkinsVersion, pluginVersion, remoteJavaHome, pathToDetectJar, detectProperties);
         } else {
-            detectRunner = new DetectRemoteScriptRunner(logger, remoteToolsDirectory, remoteWorkspacePath, intEnvironmentVariables, jenkinsVersion, pluginVersion, detectProperties);
+            detectRunner = new DetectRemoteScriptRunner(logger, environmentVariables, remoteToolsDirectory, remoteWorkspacePath, jenkinsVersion, pluginVersion, detectProperties);
         }
 
         return detectRunner;

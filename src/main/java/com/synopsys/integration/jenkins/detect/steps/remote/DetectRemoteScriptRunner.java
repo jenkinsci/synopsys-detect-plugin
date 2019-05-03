@@ -24,6 +24,7 @@ package com.synopsys.integration.jenkins.detect.steps.remote;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.function.Function;
 
@@ -34,7 +35,6 @@ import com.synopsys.integration.exception.IntegrationException;
 import com.synopsys.integration.jenkins.detect.JenkinsDetectLogger;
 import com.synopsys.integration.jenkins.detect.tools.DetectDownloadManager;
 
-import hudson.EnvVars;
 import hudson.Platform;
 
 public class DetectRemoteScriptRunner extends DetectRemoteRunner {
@@ -42,8 +42,9 @@ public class DetectRemoteScriptRunner extends DetectRemoteRunner {
     private final String toolsDirectory;
     private String detectScriptPath;
 
-    public DetectRemoteScriptRunner(final JenkinsDetectLogger logger, final String toolsDirectory, final String workspacePath, final EnvVars envVars, final String jenkinsVersion, final String pluginVersion, final String detectProperties) {
-        super(logger, detectProperties, envVars, workspacePath, jenkinsVersion, pluginVersion);
+    public DetectRemoteScriptRunner(final JenkinsDetectLogger logger, final HashMap<String, String> environmentVariables, final String toolsDirectory, final String workspacePath, final String jenkinsVersion, final String pluginVersion,
+        final String detectProperties) {
+        super(logger, detectProperties, environmentVariables, workspacePath, jenkinsVersion, pluginVersion);
         this.toolsDirectory = toolsDirectory;
     }
 
