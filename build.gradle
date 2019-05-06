@@ -48,9 +48,10 @@ jenkinsPlugin {
 }
 
 dependencies {
-    compile 'com.blackducksoftware.integration:blackduck-common:42.5.2'
-    compile 'com.synopsys.integration:polaris-common:0.12.0'
-    compile 'org.jvnet.localizer:localizer:1.24'
+    implementation 'com.blackducksoftware.integration:blackduck-common:42.5.2'
+    implementation 'com.blackducksoftware.integration:integration-common:17.0.2'
+    implementation 'com.synopsys.integration:polaris-common:0.12.0'
+    implementation 'org.jvnet.localizer:localizer:1.24'
 
     jenkinsPlugins 'org.jenkins-ci.plugins:credentials:2.1.10'
     jenkinsPlugins 'org.jenkins-ci.plugins:plain-credentials:1.0'
@@ -76,7 +77,7 @@ task generateJelly(type: GenerateJelly) {
     pathToExtensionResourcesPackage = 'src/main/resources/com/synopsys/integration/jenkins/detect/extensions/'
     pathToJellyJson = 'src/main/resources/templates/detect/jelly/'
     outputPathToJson = ['postbuild/DetectPostBuildStep': 'postBuild.json',
-                        'pipeline/DetectPipelineStep'  : 'postBuild.json',
+                        'pipeline/DetectPipelineStep'  : 'pipeline.json',
                         'global/DetectGlobalConfig'    : 'globalConfig.json',]
 }
 
@@ -84,7 +85,7 @@ task generateHelp(type: GenerateHtml) {
     pathToExtensionResourcesPackage = 'src/main/resources/com/synopsys/integration/jenkins/detect/extensions/'
     pathToHelpJson = 'src/main/resources/templates/detect/help/'
     outputPathToJson = ['postbuild/DetectPostBuildStep': 'postBuild.json',
-                        'pipeline/DetectPipelineStep'  : 'postBuild.json',
+                        'pipeline/DetectPipelineStep'  : 'pipeline.json',
                         'global/DetectGlobalConfig'    : 'globalConfig.json',]
 }
 

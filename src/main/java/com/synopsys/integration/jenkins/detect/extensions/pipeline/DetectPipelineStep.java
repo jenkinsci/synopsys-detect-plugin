@@ -36,6 +36,7 @@ import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
 import org.jenkinsci.plugins.workflow.steps.StepExecution;
 import org.jenkinsci.plugins.workflow.steps.SynchronousNonBlockingStepExecution;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
 
 import com.synopsys.integration.jenkins.detect.JenkinsDetectLogger;
 import com.synopsys.integration.jenkins.detect.exception.DetectJenkinsException;
@@ -60,6 +61,7 @@ public class DetectPipelineStep extends Step implements Serializable {
     public static final String PIPELINE_NAME = "synopsys_detect";
     private static final long serialVersionUID = 8126672300843832671L;
     private final String detectProperties;
+    private boolean returnStatus = false;
 
     @DataBoundConstructor
     public DetectPipelineStep(final String detectProperties) {
@@ -68,6 +70,15 @@ public class DetectPipelineStep extends Step implements Serializable {
 
     public String getDetectProperties() {
         return detectProperties;
+    }
+
+    public boolean getReturnStatus() {
+        return returnStatus;
+    }
+
+    @DataBoundSetter
+    public void setReturnStatus(final boolean returnStatus) {
+        this.returnStatus = returnStatus;
     }
 
     @Override
@@ -125,18 +136,14 @@ public class DetectPipelineStep extends Step implements Serializable {
             final VirtualChannel caller = node.getChannel();
             final DetectResponse detectResponse = caller.call(detectRemoteRunner);
 
-            if (detectResponse.getExitCode() > 0) {
+            if (detectResponse.getExitCode() > 0 && returnStatus) {
                 logger.error("Detect failed with exit code: " + detectResponse.getExitCode());
+            } else if (detectResponse.getExitCode() > 0) {
+                throw new DetectJenkinsException("Detect failed with exit code: " + detectResponse.getExitCode());
             } else if (null != detectResponse.getException()) {
                 throw new DetectJenkinsException("Detect encountered an exception", detectResponse.getException());
             }
             return detectResponse.getExitCode();
-        }
-
-        @Override
-        public void stop(@Nonnull final Throwable cause) throws Exception {
-            getContext().onFailure(cause);
-            // Interrupt process?
         }
 
     }
