@@ -20,7 +20,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package com.synopsys.integration.jenkins.detect;
+package com.synopsys.integration.jenkins;
 
 import java.net.MalformedURLException;
 import java.net.URL;

@@ -20,7 +20,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package com.synopsys.integration.jenkins.detect.steps;
+package com.synopsys.integration.jenkins.detect.substeps;
 
 import java.util.Map;
 import java.util.function.BiConsumer;
@@ -28,19 +28,21 @@ import java.util.function.BiConsumer;
 import org.apache.commons.lang3.StringUtils;
 
 import com.synopsys.integration.blackduck.configuration.BlackDuckServerConfigBuilder;
-import com.synopsys.integration.jenkins.detect.JenkinsDetectLogger;
+import com.synopsys.integration.jenkins.detect.DetectJenkinsLogger;
 import com.synopsys.integration.jenkins.detect.PluginHelper;
 import com.synopsys.integration.polaris.common.configuration.PolarisServerConfigBuilder;
 import com.synopsys.integration.util.IntEnvironmentVariables;
 
-public class CreateDetectEnvironmentStep {
-    private final JenkinsDetectLogger logger;
+public class CreateDetectEnvironment {
+    private final DetectJenkinsLogger logger;
+    private final Map<String, String> environmentVariables;
 
-    public CreateDetectEnvironmentStep(final JenkinsDetectLogger logger) {
+    public CreateDetectEnvironment(final DetectJenkinsLogger logger, final Map<String, String> environmentVariables) {
         this.logger = logger;
+        this.environmentVariables = environmentVariables;
     }
 
-    public IntEnvironmentVariables setDetectEnvironment(final Map<String, String> environmentVariables) {
+    public IntEnvironmentVariables createDetectEnvironment() {
         final IntEnvironmentVariables intEnvironmentVariables = new IntEnvironmentVariables();
         intEnvironmentVariables.putAll(environmentVariables);
         logger.setLogLevel(intEnvironmentVariables);

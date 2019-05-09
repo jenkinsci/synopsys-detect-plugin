@@ -60,7 +60,7 @@ import com.synopsys.integration.blackduck.configuration.BlackDuckServerConfig;
 import com.synopsys.integration.blackduck.configuration.BlackDuckServerConfigBuilder;
 import com.synopsys.integration.builder.Buildable;
 import com.synopsys.integration.builder.IntegrationBuilder;
-import com.synopsys.integration.jenkins.detect.JenkinsProxyHelper;
+import com.synopsys.integration.jenkins.JenkinsProxyHelper;
 import com.synopsys.integration.jenkins.detect.SynopsysCredentialsHelper;
 import com.synopsys.integration.log.LogLevel;
 import com.synopsys.integration.log.PrintStreamIntLogger;

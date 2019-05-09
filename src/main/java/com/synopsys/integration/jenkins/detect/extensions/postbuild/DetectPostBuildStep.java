@@ -24,23 +24,19 @@ package com.synopsys.integration.jenkins.detect.extensions.postbuild;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.function.Consumer;
 
 import javax.annotation.Nonnull;
 
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import com.synopsys.integration.exception.IntegrationException;
-import com.synopsys.integration.jenkins.detect.JenkinsDetectLogger;
+import com.synopsys.integration.jenkins.detect.DetectJenkinsLogger;
 import com.synopsys.integration.jenkins.detect.exception.DetectJenkinsException;
-import com.synopsys.integration.jenkins.detect.steps.CreateDetectEnvironmentStep;
-import com.synopsys.integration.jenkins.detect.steps.CreateDetectRunnerStep;
-import com.synopsys.integration.jenkins.detect.steps.remote.DetectRemoteRunner;
-import com.synopsys.integration.jenkins.detect.steps.remote.DetectResponse;
-import com.synopsys.integration.jenkins.detect.tools.DummyToolInstaller;
-import com.synopsys.integration.util.IntEnvironmentVariables;
+import com.synopsys.integration.jenkins.detect.substeps.DetectJenkinsSubStepCoordinator;
 
+import hudson.EnvVars;
 import hudson.Extension;
+import hudson.FilePath;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
@@ -48,7 +44,6 @@ import hudson.model.BuildListener;
 import hudson.model.JDK;
 import hudson.model.Node;
 import hudson.model.Result;
-import hudson.remoting.VirtualChannel;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Publisher;
@@ -80,30 +75,37 @@ public class DetectPostBuildStep extends Recorder {
     // Freestyle
     @Override
     public boolean perform(final AbstractBuild<?, ?> build, final Launcher launcher, final BuildListener listener) throws InterruptedException, IOException {
-        final JenkinsDetectLogger logger = new JenkinsDetectLogger(listener);
+        final DetectJenkinsLogger logger = new DetectJenkinsLogger(listener);
 
         try {
-            final CreateDetectEnvironmentStep createDetectEnvironmentStep = new CreateDetectEnvironmentStep(logger);
-            final IntEnvironmentVariables intEnvironmentVariables = createDetectEnvironmentStep.setDetectEnvironment(build.getEnvironment(listener));
+            final FilePath workspace = build.getWorkspace();
+            if (workspace == null) {
+                throw new DetectJenkinsException("Detect cannot be executed when the workspace is null");
+            }
 
-            final CreateDetectRunnerStep createDetectRunnerStep = new CreateDetectRunnerStep(logger);
             final Node node = build.getBuiltOn();
-            final String javaHome = getJavaHome(build, node, listener);
-            final String remoteWorkspacePath = build.getWorkspace().getRemote();
-            final String remoteToolsDirectory = new DummyToolInstaller().getToolDir(node).getRemote();
-            final DetectRemoteRunner detectRemoteRunner = createDetectRunnerStep.createAppropriateDetectRemoteRunner(intEnvironmentVariables, detectProperties, javaHome, remoteWorkspacePath, remoteToolsDirectory);
+            final EnvVars envVars = build.getEnvironment(listener);
 
-            final VirtualChannel caller = node.getChannel();
-            final DetectResponse detectResponse = caller.call(detectRemoteRunner);
+            final DetectJenkinsSubStepCoordinator detectJenkinsSubStepCoordinator = new DetectJenkinsSubStepCoordinator(logger, workspace, envVars, getJavaHome(build, node, listener), launcher, listener, detectProperties);
+            final int exitCode = detectJenkinsSubStepCoordinator.runDetect();
 
-            if (detectResponse.getExitCode() > 0) {
-                logger.error("Detect failed with exit code: " + detectResponse.getExitCode());
+            if (exitCode > 0) {
+                logger.error("Detect failed with exit code " + exitCode);
                 build.setResult(Result.FAILURE);
-            } else if (null != detectResponse.getException()) {
-                throw new DetectJenkinsException("Detect encountered an exception", detectResponse.getException());
             }
         } catch (final Exception e) {
-            setBuildStatusFromException(logger, e, build::setResult);
+            if (e instanceof InterruptedException) {
+                logger.error("Detect thread was interrupted", e);
+                build.setResult(Result.ABORTED);
+                Thread.currentThread().interrupt();
+            } else if (e instanceof IntegrationException) {
+                logger.error(e.getMessage());
+                logger.debug(e.getMessage(), e);
+                build.setResult(Result.UNSTABLE);
+            } else {
+                logger.error(e.getMessage(), e);
+                build.setResult(Result.UNSTABLE);
+            }
         }
         return true;
     }
@@ -116,21 +118,6 @@ public class DetectPostBuildStep extends Recorder {
         final JDK nodeJdk = jdk.forNode(node, listener);
 
         return nodeJdk.getHome();
-    }
-
-    private void setBuildStatusFromException(final JenkinsDetectLogger logger, final Exception exception, final Consumer<Result> resultConsumer) {
-        if (exception instanceof InterruptedException) {
-            logger.error("Detect thread was interrupted", exception);
-            resultConsumer.accept(Result.ABORTED);
-            Thread.currentThread().interrupt();
-        } else if (exception instanceof IntegrationException) {
-            logger.error(exception.getMessage());
-            logger.debug(exception.getMessage(), exception);
-            resultConsumer.accept(Result.UNSTABLE);
-        } else {
-            logger.error(exception.getMessage(), exception);
-            resultConsumer.accept(Result.UNSTABLE);
-        }
     }
 
     @Extension

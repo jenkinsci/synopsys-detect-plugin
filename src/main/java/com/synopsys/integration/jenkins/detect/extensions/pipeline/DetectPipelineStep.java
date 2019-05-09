@@ -38,23 +38,17 @@ import org.jenkinsci.plugins.workflow.steps.SynchronousNonBlockingStepExecution;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
-import com.synopsys.integration.jenkins.detect.JenkinsDetectLogger;
+import com.synopsys.integration.jenkins.detect.DetectJenkinsLogger;
 import com.synopsys.integration.jenkins.detect.exception.DetectJenkinsException;
-import com.synopsys.integration.jenkins.detect.steps.CreateDetectEnvironmentStep;
-import com.synopsys.integration.jenkins.detect.steps.CreateDetectRunnerStep;
-import com.synopsys.integration.jenkins.detect.steps.remote.DetectRemoteRunner;
-import com.synopsys.integration.jenkins.detect.steps.remote.DetectResponse;
-import com.synopsys.integration.jenkins.detect.tools.DummyToolInstaller;
-import com.synopsys.integration.util.IntEnvironmentVariables;
+import com.synopsys.integration.jenkins.detect.substeps.DetectJenkinsSubStepCoordinator;
 
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
+import hudson.Launcher;
 import hudson.model.Computer;
-import hudson.model.Node;
 import hudson.model.Run;
 import hudson.model.TaskListener;
-import hudson.remoting.VirtualChannel;
 
 public class DetectPipelineStep extends Step implements Serializable {
     public static final String DISPLAY_NAME = "Synopsys Detect";
@@ -110,40 +104,34 @@ public class DetectPipelineStep extends Step implements Serializable {
         private static final long serialVersionUID = -5807577350749324767L;
         private transient TaskListener listener;
         private transient EnvVars envVars;
-        private transient Computer computer;
         private transient FilePath workspace;
+        private transient Launcher launcher;
 
         protected Execution(@Nonnull final StepContext context) throws InterruptedException, IOException {
             super(context);
             listener = context.get(TaskListener.class);
             envVars = context.get(EnvVars.class);
-            computer = context.get(Computer.class);
             workspace = context.get(FilePath.class);
+            launcher = context.get(Launcher.class);
         }
 
         @Override
         protected Integer run() throws Exception {
-            final JenkinsDetectLogger logger = new JenkinsDetectLogger(listener);
-            final CreateDetectEnvironmentStep createDetectEnvironmentStep = new CreateDetectEnvironmentStep(logger);
-            final IntEnvironmentVariables intEnvironmentVariables = createDetectEnvironmentStep.setDetectEnvironment(envVars);
+            final DetectJenkinsLogger logger = new DetectJenkinsLogger(listener);
 
-            final CreateDetectRunnerStep createDetectRunnerStep = new CreateDetectRunnerStep(logger);
-            final Node node = computer.getNode();
-            final String remoteWorkspacePath = workspace.getRemote();
-            final String remoteToolsDirectory = new DummyToolInstaller().getToolDir(node).getRemote();
-            final DetectRemoteRunner detectRemoteRunner = createDetectRunnerStep.createAppropriateDetectRemoteRunner(intEnvironmentVariables, detectProperties, null, remoteWorkspacePath, remoteToolsDirectory);
+            final DetectJenkinsSubStepCoordinator detectJenkinsSubStepCoordinator = new DetectJenkinsSubStepCoordinator(logger, workspace, envVars, null, launcher, listener, detectProperties);
+            final int exitCode = detectJenkinsSubStepCoordinator.runDetect();
 
-            final VirtualChannel caller = node.getChannel();
-            final DetectResponse detectResponse = caller.call(detectRemoteRunner);
-
-            if (detectResponse.getExitCode() > 0 && returnStatus) {
-                logger.error("Detect failed with exit code: " + detectResponse.getExitCode());
-            } else if (detectResponse.getExitCode() > 0) {
-                throw new DetectJenkinsException("Detect failed with exit code: " + detectResponse.getExitCode());
-            } else if (null != detectResponse.getException()) {
-                throw new DetectJenkinsException("Detect encountered an exception", detectResponse.getException());
+            if (exitCode > 0) {
+                final String errorMsg = "Detect failed with exit code " + exitCode;
+                if (returnStatus) {
+                    logger.error(errorMsg);
+                } else {
+                    throw new DetectJenkinsException(errorMsg);
+                }
             }
-            return detectResponse.getExitCode();
+
+            return exitCode;
         }
 
     }
