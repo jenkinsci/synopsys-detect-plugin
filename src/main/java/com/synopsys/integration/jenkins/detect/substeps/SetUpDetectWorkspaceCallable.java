@@ -23,7 +23,6 @@
 package com.synopsys.integration.jenkins.detect.substeps;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
@@ -97,14 +96,9 @@ public class SetUpDetectWorkspaceCallable implements Callable<DetectSetupRespons
         javaExecutableManager.logJavaVersion();
 
         final Path detectJar = Paths.get(pathToDetectJar);
-        final Path workspaceDetectJar = Paths.get(workspaceTempPath).resolve(detectJar.getFileName());
 
-        if (Files.notExists(workspaceDetectJar)) {
-            Files.move(detectJar, workspaceDetectJar);
-        }
-
-        logger.info("Running Detect: " + workspaceDetectJar.getFileName());
-        return new DetectSetupResponse(DetectSetupResponse.ExecutionStrategy.JAR, workspaceDetectJar.toString(), javaExecutablePath);
+        logger.info("Running Detect: " + detectJar.getFileName());
+        return new DetectSetupResponse(DetectSetupResponse.ExecutionStrategy.JAR, javaExecutablePath, pathToDetectJar);
     }
 
     private DetectSetupResponse setUpForScriptExecution(final DetectSetupResponse.ExecutionStrategy executionStrategy) throws IOException, IntegrationException {
