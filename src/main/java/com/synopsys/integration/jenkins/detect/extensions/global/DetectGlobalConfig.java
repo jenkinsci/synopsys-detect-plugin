@@ -58,7 +58,9 @@ import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.cloudbees.plugins.credentials.impl.BaseStandardCredentials;
 import com.synopsys.integration.blackduck.configuration.BlackDuckServerConfig;
 import com.synopsys.integration.blackduck.configuration.BlackDuckServerConfigBuilder;
-import com.synopsys.integration.jenkins.detect.JenkinsProxyHelper;
+import com.synopsys.integration.builder.Buildable;
+import com.synopsys.integration.builder.IntegrationBuilder;
+import com.synopsys.integration.jenkins.JenkinsProxyHelper;
 import com.synopsys.integration.jenkins.detect.SynopsysCredentialsHelper;
 import com.synopsys.integration.log.LogLevel;
 import com.synopsys.integration.log.PrintStreamIntLogger;
@@ -67,8 +69,6 @@ import com.synopsys.integration.polaris.common.configuration.PolarisServerConfig
 import com.synopsys.integration.rest.client.AuthenticatingIntHttpClient;
 import com.synopsys.integration.rest.client.ConnectionResult;
 import com.synopsys.integration.rest.proxy.ProxyInfo;
-import com.synopsys.integration.util.Buildable;
-import com.synopsys.integration.util.IntegrationBuilder;
 
 import hudson.Extension;
 import hudson.Functions;
@@ -331,43 +331,30 @@ public class DetectGlobalConfig extends GlobalConfiguration implements Serializa
     }
 
     private BlackDuckServerConfigBuilder createBlackDuckServerConfigBuilder(final String blackDuckUrl, final String credentialsId, final boolean trustCertificates, final int timeout) {
+        final ProxyInfo proxyInfo = JenkinsProxyHelper.getProxyInfoFromJenkins(blackDuckUrl);
+
         final BlackDuckServerConfigBuilder builder = BlackDuckServerConfig.newBuilder()
                                                          .setUrl(blackDuckUrl)
                                                          .setTrustCert(trustCertificates)
-                                                         .setTimeout(timeout);
+                                                         .setTimeoutInSeconds(timeout)
+                                                         .setProxyInfo(proxyInfo);
 
         SynopsysCredentialsHelper.getUsernameFromCredentials(credentialsId).ifPresent(builder::setUsername);
         SynopsysCredentialsHelper.getPasswordFromCredentials(credentialsId).ifPresent(builder::setPassword);
         SynopsysCredentialsHelper.getApiTokenFromCredentials(credentialsId).ifPresent(builder::setApiToken);
 
-        final ProxyInfo proxyInfo = JenkinsProxyHelper.getProxyInfoFromJenkins(blackDuckUrl);
-
-        //TODO: Just set the proxyInfo with the next version of Black Duck common
-
-        proxyInfo.getHost().ifPresent(builder::setProxyHost);
-
-        if (proxyInfo.getPort() != 0) {
-            builder.setProxyPort(proxyInfo.getPort());
-        }
-
-        proxyInfo.getUsername().ifPresent(builder::setProxyUsername);
-        proxyInfo.getPassword().ifPresent(builder::setProxyPassword);
-        proxyInfo.getNtlmDomain().ifPresent(builder::setProxyNtlmDomain);
-        proxyInfo.getNtlmWorkstation().ifPresent(builder::setProxyNtlmWorkstation);
-
         return builder;
     }
 
     private PolarisServerConfigBuilder createPolarisServerConfigBuilder(final String polarisUrl, final String credentialsId, final boolean trustCertificates, final int timeout) {
-        final PolarisServerConfigBuilder builder = PolarisServerConfig.newBuilder();
-        builder.setPolarisUrl(polarisUrl);
-        builder.setTrustCert(trustCertificates);
-        builder.setTimeoutSeconds(timeout);
+        final PolarisServerConfigBuilder builder = PolarisServerConfig.newBuilder()
+                                                       .setUrl(polarisUrl)
+                                                       .setTrustCert(trustCertificates)
+                                                       .setTimeoutInSeconds(timeout);
+
         SynopsysCredentialsHelper.getApiTokenFromCredentials(credentialsId).ifPresent(builder::setAccessToken);
 
         final ProxyInfo proxyInfo = JenkinsProxyHelper.getProxyInfoFromJenkins(polarisUrl);
-
-        //TODO: Just set the proxyInfo with the next version of Black Duck common
 
         proxyInfo.getHost().ifPresent(builder::setProxyHost);
 

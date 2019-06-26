@@ -20,7 +20,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package com.synopsys.integration.jenkins.detect.tools;
+package com.synopsys.integration.jenkins.detect;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -30,7 +30,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import com.synopsys.integration.exception.IntegrationException;
-import com.synopsys.integration.jenkins.detect.JenkinsProxyHelper;
+import com.synopsys.integration.jenkins.JenkinsProxyHelper;
 import com.synopsys.integration.log.IntLogger;
 import com.synopsys.integration.rest.client.IntHttpClient;
 import com.synopsys.integration.rest.request.Request;
@@ -82,6 +82,7 @@ public class DetectDownloadManager {
 
     private void downloadScriptTo(final String url, final File file) throws IntegrationException, IOException {
         final IntHttpClient intHttpClient = new IntHttpClient(logger, 120, true, JenkinsProxyHelper.getProxyInfoFromJenkins(url));
+        file.createNewFile();
 
         final Request request = new Request.Builder().uri(url).build();
         try (final Response response = intHttpClient.execute(request); final FileOutputStream fileOutputStream = new FileOutputStream(file)) {

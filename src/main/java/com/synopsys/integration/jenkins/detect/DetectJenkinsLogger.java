@@ -31,14 +31,14 @@ import com.synopsys.integration.log.LogLevel;
 
 import hudson.model.TaskListener;
 
-public class JenkinsDetectLogger extends IntLogger implements Serializable {
+public class DetectJenkinsLogger extends IntLogger implements Serializable {
     private static final long serialVersionUID = -685871863395350470L;
 
     private final TaskListener jenkinsLogger;
 
     private LogLevel level = LogLevel.INFO;
 
-    public JenkinsDetectLogger(final TaskListener jenkinsLogger) {
+    public DetectJenkinsLogger(final TaskListener jenkinsLogger) {
         this.jenkinsLogger = jenkinsLogger;
     }
 

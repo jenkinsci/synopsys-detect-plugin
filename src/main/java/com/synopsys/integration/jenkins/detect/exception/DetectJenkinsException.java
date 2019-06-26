@@ -22,7 +22,9 @@
  */
 package com.synopsys.integration.jenkins.detect.exception;
 
-public class DetectJenkinsException extends Exception {
+import com.synopsys.integration.exception.IntegrationException;
+
+public class DetectJenkinsException extends IntegrationException {
     private static final long serialVersionUID = -1172941819259598247L;
 
     public DetectJenkinsException() {

@@ -20,57 +20,28 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package com.synopsys.integration.jenkins.detect.steps.remote;
+package com.synopsys.integration.jenkins.detect;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.List;
-import java.util.function.Function;
+import java.util.Map;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.SystemUtils;
 
-import com.synopsys.integration.jenkins.detect.JenkinsDetectLogger;
 import com.synopsys.integration.log.LogLevel;
 
-import hudson.EnvVars;
+public class JavaExecutableManager {
+    private final DetectJenkinsLogger logger;
+    private final Map<String, String> environmentVariables;
 
-public class DetectRemoteJarRunner extends DetectRemoteRunner {
-    private static final long serialVersionUID = -3893076074803560801L;
-    private final String javaHome;
-    private final String pathToDetectJar;
-    private String javaExecutablePath;
-
-    public DetectRemoteJarRunner(final JenkinsDetectLogger logger, final EnvVars envVars, final String workspacePath, final String jenkinsVersion, final String pluginVersion, final String javaHome,
-        final String pathToDetectJar, final String detectProperties) {
-        super(logger, detectProperties, envVars, workspacePath, jenkinsVersion, pluginVersion);
-        this.javaHome = javaHome;
-        this.pathToDetectJar = pathToDetectJar;
+    public JavaExecutableManager(final DetectJenkinsLogger logger, final Map<String, String> environmentVariables) {
+        this.logger = logger;
+        this.environmentVariables = environmentVariables;
     }
 
-    @Override
-    protected void setUp() throws IOException {
-        javaExecutablePath = calculateJavaExecutablePath(javaHome);
-        logger.info("Running with JAVA: " + javaExecutablePath);
-        logger.info("Detect configured: " + pathToDetectJar);
-        logJavaVersion();
-    }
-
-    @Override
-    protected List<String> getInvocationParameters() throws IOException {
-        final File detectJar = new File(pathToDetectJar);
-        logger.info("Running Detect: " + detectJar.getName());
-
-        return Arrays.asList(javaExecutablePath, "-jar", detectJar.getCanonicalPath());
-    }
-
-    @Override
-    protected Function<String, String> getEscapingFunction() {
-        return Function.identity();
-    }
-
-    private String calculateJavaExecutablePath(final String javaHome) throws IOException {
+    public String calculateJavaExecutablePath(final String javaHome) throws IOException {
         String javaExecutablePath = "java";
         if (javaHome != null) {
             File java = new File(javaHome);
@@ -85,13 +56,13 @@ public class DetectRemoteJarRunner extends DetectRemoteRunner {
         return javaExecutablePath;
     }
 
-    private void logJavaVersion() {
-        logger.debug("PATH: " + envVars.get("PATH"));
+    public void logJavaVersion() {
+        logger.debug("PATH: " + environmentVariables.get("PATH"));
         if (LogLevel.DEBUG == logger.getLogLevel()) {
             try {
                 logger.info("Java version: ");
                 final ProcessBuilder processBuilder = new ProcessBuilder(Arrays.asList("java", "-version"));
-                processBuilder.environment().putAll(envVars);
+                processBuilder.environment().putAll(environmentVariables);
                 final Process process = processBuilder.start();
                 process.waitFor();
                 IOUtils.copy(process.getErrorStream(), logger.getJenkinsListener().getLogger());
@@ -101,5 +72,4 @@ public class DetectRemoteJarRunner extends DetectRemoteRunner {
             }
         }
     }
-
 }

@@ -27,11 +27,14 @@ import java.io.Serializable;
 
 import javax.annotation.Nonnull;
 
-import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 
-import com.synopsys.integration.jenkins.detect.steps.ExecuteDetectStep;
+import com.synopsys.integration.exception.IntegrationException;
+import com.synopsys.integration.jenkins.detect.DetectJenkinsLogger;
+import com.synopsys.integration.jenkins.detect.exception.DetectJenkinsException;
+import com.synopsys.integration.jenkins.detect.substeps.DetectJenkinsSubStepCoordinator;
 
+import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
@@ -39,17 +42,15 @@ import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
 import hudson.model.JDK;
-import hudson.model.Run;
-import hudson.model.TaskListener;
+import hudson.model.Node;
+import hudson.model.Result;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Publisher;
 import hudson.tasks.Recorder;
-import jenkins.tasks.SimpleBuildStep;
 
-public class DetectPostBuildStep extends Recorder implements SimpleBuildStep {
+public class DetectPostBuildStep extends Recorder {
     public static final String DISPLAY_NAME = "Synopsys Detect";
-    public static final String PIPELINE_NAME = "synopsys_detect";
     private final String detectProperties;
 
     @DataBoundConstructor
@@ -74,30 +75,51 @@ public class DetectPostBuildStep extends Recorder implements SimpleBuildStep {
     // Freestyle
     @Override
     public boolean perform(final AbstractBuild<?, ?> build, final Launcher launcher, final BuildListener listener) throws InterruptedException, IOException {
-        final String javaHome = getJavaHome(build, listener);
-        final ExecuteDetectStep executeDetectStep = new ExecuteDetectStep(build.getBuiltOn(), listener, build.getWorkspace(), build.getEnvironment(listener), build, javaHome);
-        executeDetectStep.executeDetect(detectProperties);
+        final DetectJenkinsLogger logger = new DetectJenkinsLogger(listener);
+
+        try {
+            final FilePath workspace = build.getWorkspace();
+            if (workspace == null) {
+                throw new DetectJenkinsException("Detect cannot be executed when the workspace is null");
+            }
+
+            final Node node = build.getBuiltOn();
+            final EnvVars envVars = build.getEnvironment(listener);
+
+            final DetectJenkinsSubStepCoordinator detectJenkinsSubStepCoordinator = new DetectJenkinsSubStepCoordinator(logger, workspace, envVars, getJavaHome(build, node, listener), launcher, listener, detectProperties);
+            final int exitCode = detectJenkinsSubStepCoordinator.runDetect();
+
+            if (exitCode > 0) {
+                logger.error("Detect failed with exit code " + exitCode);
+                build.setResult(Result.FAILURE);
+            }
+        } catch (final Exception e) {
+            if (e instanceof InterruptedException) {
+                logger.error("Detect thread was interrupted", e);
+                build.setResult(Result.ABORTED);
+                Thread.currentThread().interrupt();
+            } else if (e instanceof IntegrationException) {
+                logger.error(e.getMessage());
+                logger.debug(e.getMessage(), e);
+                build.setResult(Result.UNSTABLE);
+            } else {
+                logger.error(e.getMessage(), e);
+                build.setResult(Result.UNSTABLE);
+            }
+        }
         return true;
     }
 
-    // Pipeline
-    @Override
-    public void perform(@Nonnull final Run<?, ?> run, @Nonnull final FilePath workspace, @Nonnull final Launcher launcher, @Nonnull final TaskListener listener) throws InterruptedException, IOException {
-        final ExecuteDetectStep executeDetectStep = new ExecuteDetectStep(workspace.toComputer().getNode(), listener, workspace, run.getEnvironment(listener), run, null);
-        executeDetectStep.executeDetect(detectProperties);
-    }
-
-    private String getJavaHome(final AbstractBuild<?, ?> build, final BuildListener listener) throws IOException, InterruptedException {
-        JDK jdk = build.getProject().getJDK();
+    private String getJavaHome(final AbstractBuild<?, ?> build, final Node node, final BuildListener listener) throws IOException, InterruptedException {
+        final JDK jdk = build.getProject().getJDK();
         if (jdk == null) {
             return null;
         }
-        jdk = build.getProject().getJDK().forNode(build.getBuiltOn(), listener);
+        final JDK nodeJdk = jdk.forNode(node, listener);
 
-        return jdk.getHome();
+        return nodeJdk.getHome();
     }
 
-    @Symbol(PIPELINE_NAME)
     @Extension
     public static final class DescriptorImpl extends BuildStepDescriptor<Publisher> implements Serializable {
         private static final long serialVersionUID = 9059602791947799261L;
