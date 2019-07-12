@@ -5,16 +5,21 @@ install: true
 jdk:
   - openjdk8
 
+addons:
+  sonarcloud:
+    organization: "black-duck-software"
+    token:
+      secure: "wrv7j2OfabmjWwn4w6mc0O5ed1e1yDX3KPskkkzn0Qpq9VLsvUgo2fU7w11CvkU63E+p5V1WRRgGza2fp05gBPxoRzm2jrRPgzay1NaPl4Cz3h2JVgabhamGQMpm5rHCrin1DK2U9KZqfPQynpkMYrgUOlyCR2kG7dou+A09xhagszPeH6tUMVO/mhdUYFPFB1L+Pjioxlxb2rpd2lM50vlQcRX8CJLu90HxJ3om04fqr//2Aboy2HIAgQhwt57YCp2ggKf2csx8Dhfsc2SKnK3VY/D3jXZyw67fj2ahQR8bsAqNd/3I9d7qwL5ZX8n4PffzWCkDz5MTdsKH6H3UvbZowMLjNBQcHDNc9RkEQXEzDDxBeryksKKPGts61A1SxqZq/JoR8HEIzgMZj3Jcj63LxLWv7hco9mfzKmGOd+xoIyDdZcQ/xaoEFpAqASX3Gc9nocat3gIFy1Cc3LpIbGlfR4/X9dnvWvG3n90Pm8tyCOYG1BhjfugDLveqtJmt3mYwP3hN7jIi5T1vg3z7z1CCyipLTXyLsWMXwN+JMRbvDDAzNUDqHVXNJj1fuwNHAvuPAWOoHbM6oKEAZlaZ51X/n9kXmjx1lM685BrJTHtGUu6O+7lH2sO+Q0sSPn8CNLE/gFye0TlAx3SUoHkRYpTDgI7bvpWAYG7Ye6vnfl8="
+
 notifications:
   email:
     recipients:
       - rotte@synopsys.com
 
 script:
-  - "./gradlew clean build jpi"
+  - "./gradlew clean build jpi jacocoTestReport coveralls sonarqube"
 
 after_success:
-  - "./gradlew test jacocoTestReport coveralls"
   - bash <(curl -s https://copilot.blackducksoftware.com/ci/travis/scripts/upload)
 
 cache:
