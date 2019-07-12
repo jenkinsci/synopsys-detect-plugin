@@ -17,7 +17,7 @@ notifications:
       - rotte@synopsys.com
 
 script:
-  - "./gradlew clean build jpi jacocoTestReport coveralls sonarqube"
+  - "./gradlew clean build jpi jacocoTestReport coveralls sonarqube -Dsonar.projectName='Synopsys Detect for Jenkins'"
 
 after_success:
   - bash <(curl -s https://copilot.blackducksoftware.com/ci/travis/scripts/upload)
