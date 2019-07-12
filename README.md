@@ -1,5 +1,5 @@
 # Overview
-Synopsys Detect Plugin for Jenkins. This plugin allows you to run Detect in your Jenkins build.
+Synopsys Detect Plugin for Jenkins. This plugin simplifies running Synopsys Detect in your Jenkins build.
 
 # Build
 [![Build Status](https://travis-ci.org/jenkinsci/synopsys-detect-plugin.svg?branch=master)](https://travis-ci.org/jenkinsci/synopsys-detect-plugin)
@@ -9,5 +9,7 @@ Synopsys Detect Plugin for Jenkins. This plugin allows you to run Detect in your
 You can download the latest artifact from releases: https://updates.jenkins-ci.org/download/plugins/blackduck-detect/
 
 # Documentation
-All documentation can be found on the wiki: https://wiki.jenkins.io/display/JENKINS/Synopsys+Detect+Plugin
+Documentation can be found on the Synopsys Confluence page: https://synopsys.atlassian.net/wiki/x/ewE9B
 
+# Synopsys Detect
+More information on Synopsys Detect is available on the Synopsys Confluence page: https://synopsys.atlassian.net/wiki/x/SYC4Aw
