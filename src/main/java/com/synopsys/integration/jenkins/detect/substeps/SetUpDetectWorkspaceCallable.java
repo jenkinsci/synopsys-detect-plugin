@@ -66,6 +66,9 @@ public class SetUpDetectWorkspaceCallable implements Callable<DetectSetupRespons
                 return setUpForScriptExecution(executionStrategy);
             }
         } catch (final Exception e) {
+            if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
             throw new DetectJenkinsException("Could not set up Detect environment", e);
         }
     }
@@ -87,7 +90,7 @@ public class SetUpDetectWorkspaceCallable implements Callable<DetectSetupRespons
         }
     }
 
-    private DetectSetupResponse setUpForJarExecution(final String pathToDetectJar, final String javaHome) throws IOException {
+    private DetectSetupResponse setUpForJarExecution(final String pathToDetectJar, final String javaHome) throws IOException, InterruptedException {
         final JavaExecutableManager javaExecutableManager = new JavaExecutableManager(logger, environmentVariables);
 
         final String javaExecutablePath = javaExecutableManager.calculateJavaExecutablePath(javaHome);
@@ -112,7 +115,7 @@ public class SetUpDetectWorkspaceCallable implements Callable<DetectSetupRespons
         }
         final DetectDownloadManager detectDownloadManager = new DetectDownloadManager(logger, workspaceTempPath);
 
-        detectRemotePath = detectDownloadManager.downloadScript(scriptUrl).getCanonicalPath();
+        detectRemotePath = detectDownloadManager.downloadScript(scriptUrl).toRealPath().toString();
 
         if (StringUtils.isBlank(detectRemotePath)) {
             throw new IntegrationException("[ERROR] The Detect script was not downloaded successfully.");

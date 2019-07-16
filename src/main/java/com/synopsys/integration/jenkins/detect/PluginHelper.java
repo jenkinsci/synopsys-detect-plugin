@@ -26,6 +26,7 @@ import com.synopsys.integration.jenkins.detect.extensions.global.DetectGlobalCon
 
 import hudson.Plugin;
 import hudson.PluginWrapper;
+import hudson.util.VersionNumber;
 import jenkins.model.GlobalConfiguration;
 import jenkins.model.Jenkins;
 
@@ -34,7 +35,11 @@ public class PluginHelper {
 
     public static String getJenkinsVersion() {
         try {
-            return Jenkins.getVersion().toString();
+            final VersionNumber versionNumber = Jenkins.getVersion();
+            if (versionNumber == null) {
+                return UNKNOWN_VERSION;
+            }
+            return versionNumber.toString();
         } catch (final Exception e) {
             return UNKNOWN_VERSION;
         }

@@ -56,7 +56,7 @@ public class JavaExecutableManager {
         return javaExecutablePath;
     }
 
-    public void logJavaVersion() {
+    public void logJavaVersion() throws InterruptedException {
         logger.debug("PATH: " + environmentVariables.get("PATH"));
         if (LogLevel.DEBUG == logger.getLogLevel()) {
             try {
@@ -67,7 +67,7 @@ public class JavaExecutableManager {
                 process.waitFor();
                 IOUtils.copy(process.getErrorStream(), logger.getJenkinsListener().getLogger());
                 IOUtils.copy(process.getInputStream(), logger.getJenkinsListener().getLogger());
-            } catch (final InterruptedException | IOException e) {
+            } catch (final IOException e) {
                 logger.debug("Error printing the JAVA version: " + e.getMessage(), e);
             }
         }

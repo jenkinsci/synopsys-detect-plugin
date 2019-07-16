@@ -22,11 +22,11 @@
  */
 package com.synopsys.integration.jenkins.detect;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import com.synopsys.integration.exception.IntegrationException;
@@ -49,44 +49,43 @@ public class DetectDownloadManager {
         this.toolsDirectory = toolsDirectory;
     }
 
-    public File downloadScript(final String scriptDownloadUrl) throws IntegrationException, IOException {
+    public Path downloadScript(final String scriptDownloadUrl) throws IntegrationException, IOException {
         final String scriptFileName = scriptDownloadUrl.substring(scriptDownloadUrl.lastIndexOf("/") + 1).trim();
-        final File scriptDownloadDirectory = prepareScriptDownloadDirectory();
-        final File localScriptFile = new File(scriptDownloadDirectory, scriptFileName);
+        final Path scriptDownloadDirectory = prepareScriptDownloadDirectory();
+        final Path localScriptFile = scriptDownloadDirectory.resolve(scriptFileName);
 
         if (shouldDownloadScript(scriptDownloadUrl, localScriptFile)) {
-            logger.info("Downloading Detect script from " + scriptDownloadUrl + " to " + localScriptFile.getAbsolutePath());
+            logger.info("Downloading Detect script from " + scriptDownloadUrl + " to " + localScriptFile);
             downloadScriptTo(scriptDownloadUrl, localScriptFile);
         } else {
-            logger.info("Running already installed Detect script " + localScriptFile.getAbsolutePath());
+            logger.info("Running already installed Detect script " + localScriptFile);
         }
 
         return localScriptFile;
     }
 
-    private boolean shouldDownloadScript(final String scriptDownloadUrl, final File localScriptFile) {
-        return !localScriptFile.exists() && StringUtils.isNotBlank(scriptDownloadUrl);
+    private boolean shouldDownloadScript(final String scriptDownloadUrl, final Path localScriptFile) {
+        return Files.notExists(localScriptFile) && StringUtils.isNotBlank(scriptDownloadUrl);
     }
 
-    private File prepareScriptDownloadDirectory() throws IntegrationException {
-        final File installationDirectory = new File(toolsDirectory, DETECT_INSTALL_DIRECTORY);
+    private Path prepareScriptDownloadDirectory() throws IntegrationException {
+        final Path installationDirectory = Paths.get(toolsDirectory, DETECT_INSTALL_DIRECTORY);
 
         try {
-            installationDirectory.mkdirs();
+            Files.createDirectories(installationDirectory);
         } catch (final Exception e) {
-            throw new IntegrationException("Could not create the Detect installation directory: " + installationDirectory.getAbsolutePath(), e);
+            throw new IntegrationException("Could not create the Detect installation directory: " + installationDirectory, e);
         }
 
         return installationDirectory;
     }
 
-    private void downloadScriptTo(final String url, final File file) throws IntegrationException, IOException {
+    private void downloadScriptTo(final String url, final Path path) throws IntegrationException, IOException {
         final IntHttpClient intHttpClient = new IntHttpClient(logger, 120, true, JenkinsProxyHelper.getProxyInfoFromJenkins(url));
-        file.createNewFile();
 
         final Request request = new Request.Builder().uri(url).build();
-        try (final Response response = intHttpClient.execute(request); final FileOutputStream fileOutputStream = new FileOutputStream(file)) {
-            IOUtils.copy(response.getContent(), fileOutputStream);
+        try (final Response response = intHttpClient.execute(request)) {
+            Files.copy(response.getContent(), path);
         }
     }
 
