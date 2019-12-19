@@ -59,6 +59,8 @@ dependencies {
     optionalJenkinsPlugins 'org.jenkins-ci.plugins.workflow:workflow-job:2.9'
     optionalJenkinsPlugins 'org.jenkins-ci.plugins.workflow:workflow-cps:2.23'
     optionalJenkinsPlugins 'org.jenkins-ci.plugins.workflow:workflow-step-api:2.10'
+
+    testCompile group: 'org.jenkins-ci.main', name: 'jenkins-test-harness', version: '2.31'
 }
 
 task renameFile {
