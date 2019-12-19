@@ -92,3 +92,4 @@ task generateHelp(type: GenerateHtml) {
 
 compileJava.dependsOn generateHelp, generateJelly
 jpi.finalizedBy renameFile
+test.dependsOn jpi
