@@ -11,7 +11,7 @@ buildscript {
 }
 
 plugins {
-    id 'org.jenkins-ci.jpi' version '0.31.0'
+    id 'org.jenkins-ci.jpi' version '0.36.2'
 }
 
 group = 'com.blackducksoftware.integration'
@@ -38,7 +38,7 @@ project.afterEvaluate {
 }
 
 jenkinsPlugin {
-    coreVersion = '2.60.1'
+    coreVersion = '2.138.4'
     displayName = 'Synopsys Detect'
     compatibleSinceVersion = '2.0.0'
     url = 'https://wiki.jenkins.io/display/JENKINS/Synopsys+Detect+Plugin'
@@ -60,7 +60,12 @@ dependencies {
     optionalJenkinsPlugins 'org.jenkins-ci.plugins.workflow:workflow-cps:2.23'
     optionalJenkinsPlugins 'org.jenkins-ci.plugins.workflow:workflow-step-api:2.10'
 
-    testCompile group: 'org.jenkins-ci.main', name: 'jenkins-test-harness', version: '2.31'
+    testCompile group: 'org.jenkins-ci.main', name: 'jenkins-test-harness', version: '2.58'
+    testCompile group: 'org.powermock', name: 'powermock-core', version: '2.0.2'
+    testCompile group: 'org.powermock', name: 'powermock-reflect', version: '2.0.2'
+    testCompile group: 'org.powermock', name: 'powermock-api-mockito2', version: '2.0.2'
+    testCompile group: 'org.powermock', name: 'powermock-module-junit4', version: '2.0.2'
+    testCompile group: 'org.mockito', name: 'mockito-core', version: '2.23.4'
 }
 
 task renameFile {
@@ -92,4 +97,4 @@ task generateHelp(type: GenerateHtml) {
 
 compileJava.dependsOn generateHelp, generateJelly
 jpi.finalizedBy renameFile
-test.dependsOn jpi
+test.jvmArgs '-Djava.net.preferIPv4Stack=true'
