@@ -6,7 +6,6 @@ import static org.junit.Assert.assertTrue;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.PrintStream;
-import java.util.Arrays;
 import java.util.List;
 
 import org.junit.Ignore;
@@ -43,7 +42,7 @@ import hudson.remoting.VirtualChannel;
 @RunWith(PowerMockRunner.class)
 @PrepareForTest({AbstractBuild.class, JDK.class, Launcher.class, Launcher.ProcStarter.class})
 public class DetectPostBuildStepTest {
-    private static final String DETECT_PROPERTY_INPUT = "--detect.docker.passthrough.service.timeout=240000 --detect.cleanup=false";
+    private static final String DETECT_PROPERTY_INPUT = "--detect.docker.passthrough.service.timeout=240000 --detect.cleanup=false --detect.source.path=$JAVA_HOME";
     private static final String WORKSPACE_REL_PATH = "out/test/DetectPostBuildStepTest/testPerform/workspace";
     private static final String WORKSPACE_TEMP_DIR_REL_PATH = WORKSPACE_REL_PATH + "/tmp";
 
@@ -138,6 +137,9 @@ public class DetectPostBuildStepTest {
         Mockito.verify(build, Mockito.never()).setResult(Result.ABORTED);
         Mockito.verify(build, Mockito.never()).setResult(Result.UNSTABLE);
 
+        final String javaHomePath = System.getenv("JAVA_HOME");
+        System.out.printf("javaHomePath: %s\n", javaHomePath);
+
         ArgumentCaptor<List<String>> cmdsArgCapture = ArgumentCaptor.forClass(List.class);
         Mockito.verify(procStarter).cmds(cmdsArgCapture.capture());
         final List<String> actualCmds = cmdsArgCapture.getValue();
@@ -148,6 +150,7 @@ public class DetectPostBuildStepTest {
         assertEquals("/tmp/detect.jar", actualCmds.get(i++));
         assertEquals("--detect.docker.passthrough.service.timeout=240000", actualCmds.get(i++));
         assertEquals("--detect.cleanup=false", actualCmds.get(i++));
+        assertEquals("--detect.source.path=" + javaHomePath, actualCmds.get(i++));
         assertEquals("--logging.level.com.synopsys.integration=INFO", actualCmds.get(i++));
         assertTrue(actualCmds.get(i++).startsWith("--detect.phone.home.passthrough.jenkins.version="));
         assertTrue(actualCmds.get(i++).startsWith("--detect.phone.home.passthrough.jenkins.plugin.version="));
