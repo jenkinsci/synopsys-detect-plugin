@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -29,7 +28,6 @@ import com.synopsys.integration.jenkins.detect.substeps.SetUpDetectWorkspaceCall
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Launcher;
-import hudson.PluginManager;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
 import hudson.model.FreeStyleBuild;
@@ -51,22 +49,9 @@ public class DetectPostBuildStepTest {
     @Rule
     public JenkinsRule jenkinsRule = new JenkinsRule();
 
-    @Ignore
-    @Test
-    public void testGetProperties() throws Exception {
-        System.out.println("Starting testGetProperties()!");
-        final DetectPostBuildStep detectPostBuildStep = new DetectPostBuildStep(DETECT_PROPERTY_INPUT);
-//        final String displayName = detectPostBuildStep.getDescriptor().getDisplayName();
-//        System.out.printf("displayName: %s\n", displayName);
-
-        System.out.printf("read back properties: %s\n", detectPostBuildStep.getDetectProperties());
-        assertEquals(DETECT_PROPERTY_INPUT, detectPostBuildStep.getDetectProperties());
-        System.out.println("Done!!");
-    }
-
     @Test
     public void testPerform() throws Exception {
-        System.out.println("Starting testPerform()!");
+        System.out.println("Starting testPerform. Errors logged about missing Black Duck or Polaris values are benign.");
         final DetectPostBuildStep detectPostBuildStep = new DetectPostBuildStep(DETECT_PROPERTY_INPUT);
         final AbstractBuild<FreeStyleProject, FreeStyleBuild> build = PowerMockito.mock(AbstractBuild.class);
         final Launcher launcher = PowerMockito.mock(Launcher.class);
@@ -103,7 +88,7 @@ public class DetectPostBuildStepTest {
         Mockito.when(detectSetupResponse.getExecutionStrategy()).thenReturn(DetectSetupResponse.ExecutionStrategy.JAR);
         Mockito.when(detectSetupResponse.getDetectRemotePath()).thenReturn("/tmp/detect.jar");
 
-        // This getHome() method actually returns the path to the java exe
+        // This getHome() method actually actually returns the path to the java exe
         Mockito.when(detectSetupResponse.getRemoteJavaHome()).thenReturn("/tmp/jdk/bin/java");
 
         final Launcher.ProcStarter procStarter = PowerMockito.mock(Launcher.ProcStarter.class);
@@ -115,6 +100,7 @@ public class DetectPostBuildStepTest {
         Mockito.when(procStarter.quiet(Mockito.anyBoolean())).thenReturn(procStarter);
         Mockito.when(procStarter.join()).thenReturn(0);
 
+        // run the method we're testing
         final boolean succeeded = detectPostBuildStep.perform(build, launcher, buildListener);
 
         assertTrue(succeeded);
