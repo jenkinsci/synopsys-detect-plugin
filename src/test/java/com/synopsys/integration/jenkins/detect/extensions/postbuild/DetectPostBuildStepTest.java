@@ -7,7 +7,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.PrintStream;
 import java.util.List;
+import java.util.Map;
 
+import org.apache.commons.lang3.StringUtils;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -51,24 +53,6 @@ public class DetectPostBuildStepTest {
 
     @Ignore
     @Test
-    public void test() throws Exception {
-        System.out.println("Starting test()!");
-        for (final PluginManager.FailedPlugin failedPlugin : jenkinsRule.getPluginManager().getFailedPlugins()) {
-            System.out.printf("Failed plugin: %s: %s\n",
-                failedPlugin.name, failedPlugin.cause.getMessage());
-        }
-        //jenkinsRule.configRoundtrip();
-        System.out.println("Done!");
-    }
-
-    @Ignore
-    @Test
-    public void testNull() {
-        System.out.println("Done!!");
-    }
-
-    @Ignore
-    @Test
     public void testGetProperties() throws Exception {
         System.out.println("Starting testGetProperties()!");
         final DetectPostBuildStep detectPostBuildStep = new DetectPostBuildStep(DETECT_PROPERTY_INPUT);
@@ -87,10 +71,10 @@ public class DetectPostBuildStepTest {
         final AbstractBuild<FreeStyleProject, FreeStyleBuild> build = PowerMockito.mock(AbstractBuild.class);
         final Launcher launcher = PowerMockito.mock(Launcher.class);
 
-        final BuildListener listener = PowerMockito.mock(BuildListener.class);
+        final BuildListener buildListener = PowerMockito.mock(BuildListener.class);
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();
         final PrintStream printStream = new PrintStream(baos, true, "UTF-8");
-        Mockito.when(listener.getLogger()).thenReturn(printStream);
+        Mockito.when(buildListener.getLogger()).thenReturn(printStream);
 
         final File workspace = new File(WORKSPACE_REL_PATH);
         final File workspaceTempDir = new File(WORKSPACE_TEMP_DIR_REL_PATH);
@@ -103,7 +87,7 @@ public class DetectPostBuildStepTest {
         Mockito.when(build.getBuiltOn()).thenReturn(node);
 
         final EnvVars envVars = Mockito.mock(EnvVars.class);
-        Mockito.when(build.getEnvironment(listener)).thenReturn(envVars);
+        Mockito.when(build.getEnvironment(buildListener)).thenReturn(envVars);
 
         final FreeStyleProject project = PowerMockito.mock(FreeStyleProject.class);
         Mockito.when(build.getProject()).thenReturn(project);
@@ -131,7 +115,7 @@ public class DetectPostBuildStepTest {
         Mockito.when(procStarter.quiet(Mockito.anyBoolean())).thenReturn(procStarter);
         Mockito.when(procStarter.join()).thenReturn(0);
 
-        final boolean succeeded = detectPostBuildStep.perform(build, launcher, listener);
+        final boolean succeeded = detectPostBuildStep.perform(build, launcher, buildListener);
 
         assertTrue(succeeded);
         Mockito.verify(build, Mockito.never()).setResult(Result.ABORTED);
@@ -140,6 +124,7 @@ public class DetectPostBuildStepTest {
         final String javaHomePath = System.getenv("JAVA_HOME");
         System.out.printf("javaHomePath: %s\n", javaHomePath);
 
+        // verify Detect command line
         ArgumentCaptor<List<String>> cmdsArgCapture = ArgumentCaptor.forClass(List.class);
         Mockito.verify(procStarter).cmds(cmdsArgCapture.capture());
         final List<String> actualCmds = cmdsArgCapture.getValue();
@@ -155,6 +140,26 @@ public class DetectPostBuildStepTest {
         assertTrue(actualCmds.get(i++).startsWith("--detect.phone.home.passthrough.jenkins.version="));
         assertTrue(actualCmds.get(i++).startsWith("--detect.phone.home.passthrough.jenkins.plugin.version="));
 
-        System.out.println("Done!!");
+        // verify that JAVA_HOME from env makes it into procStarter.env() [DetectJenkinsSubStepCoordinator]
+        if (StringUtils.isNotBlank(javaHomePath)) {
+            ArgumentCaptor<Map<String, String>> detectEnvCapture = ArgumentCaptor.forClass(Map.class);
+            Mockito.verify(procStarter).envs(detectEnvCapture.capture());
+            final Map<String, String> actualDetectEnv = detectEnvCapture.getValue();
+            assertEquals(javaHomePath, actualDetectEnv.get("JAVA_HOME"));
+        }
+
+        // verify workspace -> procStarter.pwd() [DetectJenkinsSubStepCoordinator]
+        ArgumentCaptor<FilePath> detectPwdCapture = ArgumentCaptor.forClass(FilePath.class);
+        Mockito.verify(procStarter).pwd(detectPwdCapture.capture());
+        final FilePath actualDetectPwd = detectPwdCapture.getValue();
+        assertEquals(WORKSPACE_REL_PATH, actualDetectPwd.getRemote());
+
+        // verify buildListener -> procStarter.stdout() [DetectJenkinsSubStepCoordinator]
+        ArgumentCaptor<BuildListener> detectStdoutCapture = ArgumentCaptor.forClass(BuildListener.class);
+        Mockito.verify(procStarter).stdout(detectStdoutCapture.capture());
+        final BuildListener actualDetectStdout = detectStdoutCapture.getValue();
+        assertEquals(buildListener, actualDetectStdout);
+
+        System.out.println("Done.");
     }
 }
