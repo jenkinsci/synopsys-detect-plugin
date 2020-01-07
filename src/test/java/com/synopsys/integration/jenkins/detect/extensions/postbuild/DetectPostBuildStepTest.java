@@ -42,7 +42,7 @@ import hudson.remoting.VirtualChannel;
 @RunWith(PowerMockRunner.class)
 @PrepareForTest({AbstractBuild.class, JDK.class, Launcher.class, Launcher.ProcStarter.class})
 public class DetectPostBuildStepTest {
-    private static final String DETECT_PROPERTY_INPUT = "--detect.docker.passthrough.service.timeout=240000 --detect.cleanup=false --detect.source.path=$JAVA_HOME";
+    private static final String DETECT_PROPERTY_INPUT = "--detect.docker.passthrough.service.timeout=240000 --detect.cleanup=false --detect.source.path=$JAVA_HOME --detect.project.name=\"Test Project'\"";
     private static final String WORKSPACE_REL_PATH = "out/test/DetectPostBuildStepTest/testPerform/workspace";
     private static final String javaHomePath = System.getenv("JAVA_HOME");
 
@@ -62,6 +62,7 @@ public class DetectPostBuildStepTest {
         assertEquals("--detect.docker.passthrough.service.timeout=240000", actualCmd.get(i++));
         assertEquals("--detect.cleanup=false", actualCmd.get(i++));
         assertEquals("--detect.source.path=" + javaHomePath, actualCmd.get(i++));
+        assertEquals("--detect.project.name=Test Project'", actualCmd.get(i++));
         assertEquals("--logging.level.com.synopsys.integration=INFO", actualCmd.get(i++));
         assertTrue(actualCmd.get(i++).startsWith("--detect.phone.home.passthrough.jenkins.version="));
         assertTrue(actualCmd.get(i++).startsWith("--detect.phone.home.passthrough.jenkins.plugin.version="));
@@ -79,6 +80,7 @@ public class DetectPostBuildStepTest {
         assertEquals("--detect.docker.passthrough.service.timeout\\=240000", actualCmd.get(i++));
         assertEquals("--detect.cleanup\\=false", actualCmd.get(i++));
         assertEquals("--detect.source.path\\=" + javaHomePath, actualCmd.get(i++));
+        assertEquals("--detect.project.name\\=Test\\ Project\\'", actualCmd.get(i++));
         assertEquals("--logging.level.com.synopsys.integration=INFO", actualCmd.get(i++));
         assertTrue(actualCmd.get(i++).startsWith("--detect.phone.home.passthrough.jenkins.version="));
         assertTrue(actualCmd.get(i++).startsWith("--detect.phone.home.passthrough.jenkins.plugin.version="));
@@ -96,6 +98,7 @@ public class DetectPostBuildStepTest {
         assertEquals("--detect.docker.passthrough.service.timeout`=240000", actualCmd.get(i++));
         assertEquals("--detect.cleanup`=false", actualCmd.get(i++));
         assertEquals("--detect.source.path`=" + javaHomePath, actualCmd.get(i++));
+        assertEquals("--detect.project.name`=Test` Project`'", actualCmd.get(i++));
         assertEquals("--logging.level.com.synopsys.integration=INFO", actualCmd.get(i++));
         assertTrue(actualCmd.get(i++).startsWith("--detect.phone.home.passthrough.jenkins.version="));
         assertTrue(actualCmd.get(i++).startsWith("--detect.phone.home.passthrough.jenkins.plugin.version="));
