@@ -44,12 +44,64 @@ import hudson.remoting.VirtualChannel;
 public class DetectPostBuildStepTest {
     private static final String DETECT_PROPERTY_INPUT = "--detect.docker.passthrough.service.timeout=240000 --detect.cleanup=false --detect.source.path=$JAVA_HOME";
     private static final String WORKSPACE_REL_PATH = "out/test/DetectPostBuildStepTest/testPerform/workspace";
+    private static final String javaHomePath = System.getenv("JAVA_HOME");
 
     @Rule
     public JenkinsRule jenkinsRule = new JenkinsRule();
 
     @Test
-    public void testPerform() throws Exception {
+    public void testPerformJar() throws Exception {
+        final String detectPath = "/tmp/detect.jar";
+
+        final List<String> actualCmd = doTest(DetectSetupResponse.ExecutionStrategy.JAR, detectPath, javaHomePath);
+
+        int i=0;
+        assertEquals("/tmp/jdk/bin/java", actualCmd.get(i++));
+        assertEquals("-jar", actualCmd.get(i++));
+        assertEquals(detectPath, actualCmd.get(i++));
+        assertEquals("--detect.docker.passthrough.service.timeout=240000", actualCmd.get(i++));
+        assertEquals("--detect.cleanup=false", actualCmd.get(i++));
+        assertEquals("--detect.source.path=" + javaHomePath, actualCmd.get(i++));
+        assertEquals("--logging.level.com.synopsys.integration=INFO", actualCmd.get(i++));
+        assertTrue(actualCmd.get(i++).startsWith("--detect.phone.home.passthrough.jenkins.version="));
+        assertTrue(actualCmd.get(i++).startsWith("--detect.phone.home.passthrough.jenkins.plugin.version="));
+    }
+
+    @Test
+    public void testPerformShell() throws Exception {
+        final String detectPath = "/tmp/detect.sh";
+
+        final List<String> actualCmd = doTest(DetectSetupResponse.ExecutionStrategy.SHELL_SCRIPT, detectPath, javaHomePath);
+
+        int i=0;
+        assertEquals("bash", actualCmd.get(i++));
+        assertEquals(detectPath, actualCmd.get(i++));
+        assertEquals("--detect.docker.passthrough.service.timeout\\=240000", actualCmd.get(i++));
+        assertEquals("--detect.cleanup\\=false", actualCmd.get(i++));
+        assertEquals("--detect.source.path\\=" + javaHomePath, actualCmd.get(i++));
+        assertEquals("--logging.level.com.synopsys.integration=INFO", actualCmd.get(i++));
+        assertTrue(actualCmd.get(i++).startsWith("--detect.phone.home.passthrough.jenkins.version="));
+        assertTrue(actualCmd.get(i++).startsWith("--detect.phone.home.passthrough.jenkins.plugin.version="));
+    }
+
+    @Test
+    public void testPerformPowerShell() throws Exception {
+        final String detectPath = "/tmp/detect.ps1";
+
+        final List<String> actualCmd = doTest(DetectSetupResponse.ExecutionStrategy.POWERSHELL_SCRIPT, detectPath, javaHomePath);
+
+        int i=0;
+        assertEquals("powershell", actualCmd.get(i++));
+        assertEquals("\"Import-Module " + detectPath + "; detect\"", actualCmd.get(i++));
+        assertEquals("--detect.docker.passthrough.service.timeout`=240000", actualCmd.get(i++));
+        assertEquals("--detect.cleanup`=false", actualCmd.get(i++));
+        assertEquals("--detect.source.path`=" + javaHomePath, actualCmd.get(i++));
+        assertEquals("--logging.level.com.synopsys.integration=INFO", actualCmd.get(i++));
+        assertTrue(actualCmd.get(i++).startsWith("--detect.phone.home.passthrough.jenkins.version="));
+        assertTrue(actualCmd.get(i++).startsWith("--detect.phone.home.passthrough.jenkins.plugin.version="));
+    }
+
+    private List<String> doTest(final DetectSetupResponse.ExecutionStrategy executionStrategy, final String detectPath, final String javaHomePath) throws Exception {
         System.out.println("Starting testPerform. Errors logged about missing Black Duck or Polaris values are benign.");
         final DetectPostBuildStep detectPostBuildStep = new DetectPostBuildStep(DETECT_PROPERTY_INPUT);
         final AbstractBuild<FreeStyleProject, FreeStyleBuild> build = PowerMockito.mock(AbstractBuild.class);
@@ -80,8 +132,8 @@ public class DetectPostBuildStepTest {
         final DetectSetupResponse detectSetupResponse = PowerMockito.mock(DetectSetupResponse.class);
         Mockito.when(launcher.getChannel()).thenReturn(channel);
         Mockito.when(channel.call(Mockito.any(SetUpDetectWorkspaceCallable.class))).thenReturn(detectSetupResponse);
-        Mockito.when(detectSetupResponse.getExecutionStrategy()).thenReturn(DetectSetupResponse.ExecutionStrategy.JAR);
-        Mockito.when(detectSetupResponse.getDetectRemotePath()).thenReturn("/tmp/detect.jar");
+        Mockito.when(detectSetupResponse.getExecutionStrategy()).thenReturn(executionStrategy);
+        Mockito.when(detectSetupResponse.getDetectRemotePath()).thenReturn(detectPath);
 
         // This getHome() method returns the path to the java exe
         Mockito.when(detectSetupResponse.getRemoteJavaHome()).thenReturn("/tmp/jdk/bin/java");
@@ -103,21 +155,10 @@ public class DetectPostBuildStepTest {
         Mockito.verify(build, Mockito.never()).setResult(Result.ABORTED);
         Mockito.verify(build, Mockito.never()).setResult(Result.UNSTABLE);
 
-        // verify the Detect command line that was constructed
-        final String javaHomePath = System.getenv("JAVA_HOME");
+        // get the Detect command line that was constructed to return to calling test for validation
         ArgumentCaptor<List<String>> cmdsArgCapture = ArgumentCaptor.forClass(List.class);
         Mockito.verify(procStarter).cmds(cmdsArgCapture.capture());
-        final List<String> actualCmds = cmdsArgCapture.getValue();
-        int i=0;
-        assertEquals("/tmp/jdk/bin/java", actualCmds.get(i++));
-        assertEquals("-jar", actualCmds.get(i++));
-        assertEquals("/tmp/detect.jar", actualCmds.get(i++));
-        assertEquals("--detect.docker.passthrough.service.timeout=240000", actualCmds.get(i++));
-        assertEquals("--detect.cleanup=false", actualCmds.get(i++));
-        assertEquals("--detect.source.path=" + javaHomePath, actualCmds.get(i++));
-        assertEquals("--logging.level.com.synopsys.integration=INFO", actualCmds.get(i++));
-        assertTrue(actualCmds.get(i++).startsWith("--detect.phone.home.passthrough.jenkins.version="));
-        assertTrue(actualCmds.get(i++).startsWith("--detect.phone.home.passthrough.jenkins.plugin.version="));
+        final List<String> actualCmd = cmdsArgCapture.getValue();
 
         // verify that at least one value (JAVA_HOME, if set) from env makes it into procStarter.env() [DetectJenkinsSubStepCoordinator]
         if (StringUtils.isNotBlank(javaHomePath)) {
@@ -138,5 +179,7 @@ public class DetectPostBuildStepTest {
         Mockito.verify(procStarter).stdout(detectStdoutCapture.capture());
         final BuildListener actualDetectStdout = detectStdoutCapture.getValue();
         assertEquals(buildListener, actualDetectStdout);
+
+        return actualCmd;
     }
 }
