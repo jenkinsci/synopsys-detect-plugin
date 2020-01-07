@@ -11,7 +11,7 @@ buildscript {
 }
 
 plugins {
-    id 'org.jenkins-ci.jpi' version '0.36.2'
+    id 'org.jenkins-ci.jpi' version '0.31.0'
 }
 
 group = 'com.blackducksoftware.integration'
@@ -38,7 +38,7 @@ project.afterEvaluate {
 }
 
 jenkinsPlugin {
-    coreVersion = '2.138.4'
+    coreVersion = '2.60.1'
     displayName = 'Synopsys Detect'
     compatibleSinceVersion = '2.0.0'
     url = 'https://wiki.jenkins.io/display/JENKINS/Synopsys+Detect+Plugin'
@@ -97,4 +97,3 @@ task generateHelp(type: GenerateHtml) {
 
 compileJava.dependsOn generateHelp, generateJelly
 jpi.finalizedBy renameFile
-test.jvmArgs '-Djava.net.preferIPv4Stack=true'
