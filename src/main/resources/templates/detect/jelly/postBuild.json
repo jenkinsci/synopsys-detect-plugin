@@ -1,7 +1,0 @@
-{
-  "template": "postBuild.tpl",
-  "model": {
-    "detectPropertiesField": "detectProperties",
-    "detectPropertiesTitle": "Detect Properties"
-  }
-}

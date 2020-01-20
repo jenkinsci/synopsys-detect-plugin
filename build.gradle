@@ -1,24 +1,21 @@
-import com.synopsys.integration.jenkins.detect.GenerateHtml
-import com.synopsys.integration.jenkins.detect.GenerateJelly
-
 buildscript {
     repositories {
         jcenter()
         mavenCentral()
         maven { url 'https://plugins.gradle.org/m2/' }
     }
-    dependencies { classpath 'com.blackducksoftware.integration:common-gradle-plugin:0.0.+' }
+    dependencies { classpath 'com.synopsys.integration:common-gradle-plugin:1.0.0' }
 }
 
 plugins {
-    id 'org.jenkins-ci.jpi' version '0.31.0'
+    id 'org.jenkins-ci.jpi' version '0.36.2'
 }
 
 group = 'com.blackducksoftware.integration'
 version = '2.1.1-SNAPSHOT'
 description = 'Synopsys Detect Plugin for Jenkins'
 
-apply plugin: 'com.blackducksoftware.integration.solution'
+apply plugin: 'com.synopsys.integration.solution'
 
 def jcenterRepo = project.repositories.findByName('BintrayJCenter')
 project.repositories.remove(jcenterRepo)
@@ -48,8 +45,11 @@ jenkinsPlugin {
 }
 
 dependencies {
+    annotationProcessor 'com.synopsys.integration:jenkins-annotation-processor:0.0.1'
+
     implementation 'com.blackducksoftware.integration:blackduck-common:42.6.0'
     implementation 'com.synopsys.integration:polaris-common:0.12.0'
+    implementation 'com.synopsys.integration:jenkins-common:0.1.4'
     implementation 'org.jvnet.localizer:localizer:1.24'
 
     jenkinsPlugins 'org.jenkins-ci.plugins:credentials:2.1.10'
@@ -72,21 +72,4 @@ task renameFile {
     }
 }
 
-task generateJelly(type: GenerateJelly) {
-    pathToExtensionResourcesPackage = 'src/main/resources/com/synopsys/integration/jenkins/detect/extensions/'
-    pathToJellyJson = 'src/main/resources/templates/detect/jelly/'
-    outputPathToJson = ['postbuild/DetectPostBuildStep': 'postBuild.json',
-                        'pipeline/DetectPipelineStep'  : 'pipeline.json',
-                        'global/DetectGlobalConfig'    : 'globalConfig.json',]
-}
-
-task generateHelp(type: GenerateHtml) {
-    pathToExtensionResourcesPackage = 'src/main/resources/com/synopsys/integration/jenkins/detect/extensions/'
-    pathToHelpJson = 'src/main/resources/templates/detect/help/'
-    outputPathToJson = ['postbuild/DetectPostBuildStep': 'postBuild.json',
-                        'pipeline/DetectPipelineStep'  : 'pipeline.json',
-                        'global/DetectGlobalConfig'    : 'globalConfig.json',]
-}
-
-compileJava.dependsOn generateHelp, generateJelly
 jpi.finalizedBy renameFile

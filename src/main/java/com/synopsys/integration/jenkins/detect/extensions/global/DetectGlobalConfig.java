@@ -1,7 +1,7 @@
 /**
  * blackduck-detect
  *
- * Copyright (c) 2019 Synopsys, Inc.
+ * Copyright (c) 2020 Synopsys, Inc.
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements. See the NOTICE file
@@ -61,7 +61,8 @@ import com.synopsys.integration.blackduck.configuration.BlackDuckServerConfigBui
 import com.synopsys.integration.builder.Buildable;
 import com.synopsys.integration.builder.IntegrationBuilder;
 import com.synopsys.integration.jenkins.JenkinsProxyHelper;
-import com.synopsys.integration.jenkins.detect.SynopsysCredentialsHelper;
+import com.synopsys.integration.jenkins.SynopsysCredentialsHelper;
+import com.synopsys.integration.jenkins.annotations.HelpMarkdown;
 import com.synopsys.integration.log.LogLevel;
 import com.synopsys.integration.log.PrintStreamIntLogger;
 import com.synopsys.integration.polaris.common.configuration.PolarisServerConfig;
@@ -85,13 +86,27 @@ public class DetectGlobalConfig extends GlobalConfiguration implements Serializa
     private static final long serialVersionUID = -7629542889827231313L;
     private transient final Logger logger = Logger.getLogger(DetectGlobalConfig.class.getName());
 
+    @HelpMarkdown("Provide the URL that lets you access your Black Duck server.")
     private String blackDuckUrl;
+
+    @HelpMarkdown("Choose the Username and Password from the list to authenticate to the Black Duck server.  \r\n" +
+                      "Alternatively, choose the Api Token from the list to authenticate to the Black Duck server.  \r\n" +
+                      "If the credentials you are looking for are not in the list then you can add them with the Add button.")
     private String blackDuckCredentialsId;
     private int blackDuckTimeout = 120;
+
+    @HelpMarkdown("If selected, Detect will automatically trust certificates when communicating with your Black Duck server.")
     private boolean trustBlackDuckCertificates;
+
+    @HelpMarkdown("Provide the URL that lets you access your Polaris server.")
     private String polarisUrl;
+
+    @HelpMarkdown("Choose the Access Token from the list to authenticate to the Polaris server.  \r\n" +
+                      "If the credentials you are looking for are not in the list then you can add them with the Add button.")
     private String polarisCredentialsId;
     private int polarisTimeout = 120;
+
+    @HelpMarkdown("If selected, Detect will automatically trust certificates when communicating with your Polaris server.")
     private boolean trustPolarisCertificates;
 
     @DataBoundConstructor
@@ -180,7 +195,7 @@ public class DetectGlobalConfig extends GlobalConfiguration implements Serializa
     }
 
     public Optional<String> getPolarisApiToken(@QueryParameter("polarisCredentialsId") final String polarisCredentialsId) {
-        return SynopsysCredentialsHelper.getApiTokenFromCredentials(polarisCredentialsId);
+        return SynopsysCredentialsHelper.getApiTokenByCredentialsId(polarisCredentialsId);
     }
 
     public BlackDuckServerConfig getBlackDuckServerConfig() throws IllegalArgumentException {
@@ -339,9 +354,9 @@ public class DetectGlobalConfig extends GlobalConfiguration implements Serializa
                                                          .setTimeoutInSeconds(timeout)
                                                          .setProxyInfo(proxyInfo);
 
-        SynopsysCredentialsHelper.getUsernameFromCredentials(credentialsId).ifPresent(builder::setUsername);
-        SynopsysCredentialsHelper.getPasswordFromCredentials(credentialsId).ifPresent(builder::setPassword);
-        SynopsysCredentialsHelper.getApiTokenFromCredentials(credentialsId).ifPresent(builder::setApiToken);
+        SynopsysCredentialsHelper.getUsernameCredentialsId(credentialsId).ifPresent(builder::setUsername);
+        SynopsysCredentialsHelper.getPasswordCredentialsId(credentialsId).ifPresent(builder::setPassword);
+        SynopsysCredentialsHelper.getApiTokenByCredentialsId(credentialsId).ifPresent(builder::setApiToken);
 
         return builder;
     }
@@ -352,7 +367,7 @@ public class DetectGlobalConfig extends GlobalConfiguration implements Serializa
                                                        .setTrustCert(trustCertificates)
                                                        .setTimeoutInSeconds(timeout);
 
-        SynopsysCredentialsHelper.getApiTokenFromCredentials(credentialsId).ifPresent(builder::setAccessToken);
+        SynopsysCredentialsHelper.getApiTokenByCredentialsId(credentialsId).ifPresent(builder::setAccessToken);
 
         final ProxyInfo proxyInfo = JenkinsProxyHelper.getProxyInfoFromJenkins(polarisUrl);
 

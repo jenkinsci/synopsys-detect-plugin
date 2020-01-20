@@ -1,7 +1,7 @@
 /**
  * blackduck-detect
  *
- * Copyright (c) 2019 Synopsys, Inc.
+ * Copyright (c) 2020 Synopsys, Inc.
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements. See the NOTICE file
@@ -26,7 +26,7 @@ import java.io.IOException;
 import java.util.List;
 
 import com.synopsys.integration.exception.IntegrationException;
-import com.synopsys.integration.jenkins.detect.DetectJenkinsLogger;
+import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
 import com.synopsys.integration.util.IntEnvironmentVariables;
 
 import hudson.EnvVars;
@@ -36,7 +36,7 @@ import hudson.model.TaskListener;
 import hudson.slaves.WorkspaceList;
 
 public class DetectJenkinsSubStepCoordinator {
-    private final DetectJenkinsLogger logger;
+    private final JenkinsIntLogger logger;
     private final FilePath workspace;
     private final EnvVars envVars;
     private final String remoteJavaHome;
@@ -44,7 +44,7 @@ public class DetectJenkinsSubStepCoordinator {
     private final TaskListener listener;
     private final String detectProperties;
 
-    public DetectJenkinsSubStepCoordinator(final DetectJenkinsLogger logger, final FilePath workspace, final EnvVars envVars, final String remoteJavaHome, final Launcher launcher, final TaskListener listener,
+    public DetectJenkinsSubStepCoordinator(final JenkinsIntLogger logger, final FilePath workspace, final EnvVars envVars, final String remoteJavaHome, final Launcher launcher, final TaskListener listener,
         final String detectProperties) {
         this.logger = logger;
         this.workspace = workspace;
