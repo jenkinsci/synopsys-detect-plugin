@@ -46,7 +46,7 @@ public class CreateDetectEnvironment {
     }
 
     public IntEnvironmentVariables createDetectEnvironment() {
-        final IntEnvironmentVariables intEnvironmentVariables = new IntEnvironmentVariables();
+        final IntEnvironmentVariables intEnvironmentVariables = new IntEnvironmentVariables(false);
         intEnvironmentVariables.putAll(environmentVariables);
         logger.setLogLevel(intEnvironmentVariables);
 

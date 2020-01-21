@@ -27,6 +27,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tools.ant.types.Commandline;
@@ -74,16 +75,16 @@ public class ParseDetectArguments {
         }
 
         if (detectArguments.stream().noneMatch(argument -> argument.contains(LOGGING_LEVEL_KEY))) {
-            detectArguments.add(formatAsCommandLineParameter(LOGGING_LEVEL_KEY, logger.getLogLevel().toString()));
+            detectArguments.add(formatAsPropertyAndEscapedValue(argumentEscaper, LOGGING_LEVEL_KEY, logger.getLogLevel().toString()));
         }
 
         logger.info("Running Detect command: " + StringUtils.join(detectArguments, " "));
 
         // Phone Home arguments that we do not want logged:
         final String jenkinsVersion = JenkinsVersionHelper.getJenkinsVersion();
-        detectArguments.add(formatAsCommandLineParameter("detect.phone.home.passthrough.jenkins.version", jenkinsVersion));
+        detectArguments.add(formatAsPropertyAndEscapedValue(argumentEscaper, "detect.phone.home.passthrough.jenkins.version", jenkinsVersion));
         final String pluginVersion = JenkinsVersionHelper.getPluginVersion("blackduck-detect");
-        detectArguments.add(formatAsCommandLineParameter("detect.phone.home.passthrough.jenkins.plugin.version", pluginVersion));
+        detectArguments.add(formatAsPropertyAndEscapedValue(argumentEscaper, "detect.phone.home.passthrough.jenkins.plugin.version", pluginVersion));
 
         return detectArguments;
     }
@@ -123,8 +124,14 @@ public class ParseDetectArguments {
         return null;
     }
 
-    private String formatAsCommandLineParameter(final String detectProperty, final String value) {
-        return String.format("--%s=%s", detectProperty, value);
+    private String formatAsPropertyAndEscapedValue(final Function<String, String> argumentEscaper, final String detectProperty, final String value) {
+        final String escapedValue = Arrays.stream(Commandline.translateCommandline(value))
+                                        .filter(StringUtils::isNotBlank)
+                                        .map(this::handleVariableReplacement)
+                                        .map(argumentEscaper)
+                                        .collect(Collectors.joining());
+
+        return String.format("--%s=%s", detectProperty, escapedValue);
     }
 
 }
