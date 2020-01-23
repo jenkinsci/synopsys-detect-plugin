@@ -1,3 +1,5 @@
+import java.nio.file.Paths
+
 buildscript {
     repositories {
         jcenter()
@@ -22,6 +24,10 @@ project.repositories.remove(jcenterRepo)
 def mavenRepo = project.repositories.findByName('maven')
 project.repositories.remove(mavenRepo)
 
+def libsDirectory = Paths.get("$project.buildDir").resolve('libs')
+def releaseBinary = file(libsDirectory.resolve("${project.getName()}.hpi"))
+def snapshotBinary = file(libsDirectory.resolve("${project.getName()}-${project.version}.hpi"))
+
 project.afterEvaluate {
     // MavenLocal is added by the gradle-jpi-plugin and the common-gradle-plugin so we have to remove it after the plugins are evaluated
     List<String> repoNames = new ArrayList()
@@ -31,6 +37,24 @@ project.afterEvaluate {
             def repoToRemove = project.repositories.findByName(repoName)
             project.repositories.remove(repoToRemove)
         }
+    }
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            if (project.version.toString().contains("SNAPSHOT")) {
+                artifact(snapshotBinary)
+            } else {
+                artifact(releaseBinary)
+            }
+        }
+    }
+}
+
+artifactory {
+    publish {
+        defaults { publications('mavenJava') }
     }
 }
 
@@ -64,10 +88,7 @@ dependencies {
 task renameFile {
     doLast {
         if (project.version.toString().contains("SNAPSHOT")) {
-            File libsDirectory = new File(project.buildDir, "libs")
-            File originalFile = new File(libsDirectory, "${project.getName()}.hpi")
-            File newFile = new File(libsDirectory, "${project.getName()}-${project.version}.hpi")
-            originalFile.renameTo newFile
+            releaseBinary.renameTo snapshotBinary
         }
     }
 }
