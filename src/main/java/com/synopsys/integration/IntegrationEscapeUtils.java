@@ -58,6 +58,7 @@ public class IntegrationEscapeUtils extends StringEscapeUtils {
         escapePowershellMap.put("~", "`~");
         escapePowershellMap.put("=", "`=");
         escapePowershellMap.put("%", "`%");
+        escapePowershellMap.put(",", "`,");
         ESCAPE_POWERSHELL = new LookupTranslator(
             Collections.unmodifiableMap(escapePowershellMap)
         );

@@ -57,10 +57,7 @@ public class ParseDetectArguments {
         final DetectSetupResponse.ExecutionStrategy executionStrategy = detectSetupResponse.getExecutionStrategy();
         final Function<String, String> argumentEscaper = getArgumentEscaper(executionStrategy);
 
-        String detectRemotePath = detectSetupResponse.getDetectRemotePath();
-        if (detectSetupResponse.getExecutionStrategy().equals(DetectSetupResponse.ExecutionStrategy.POWERSHELL_SCRIPT)) {
-            detectRemotePath = argumentEscaper.apply(detectRemotePath);
-        }
+        final String detectRemotePath = detectSetupResponse.getDetectRemotePath();
         final String remoteJavaPath = detectSetupResponse.getRemoteJavaHome();
         final List<String> detectArguments = new ArrayList<>(getInvocationParameters(executionStrategy, detectRemotePath, remoteJavaPath));
 
@@ -100,14 +97,14 @@ public class ParseDetectArguments {
         }
     }
 
-    private List<String> getInvocationParameters(final DetectSetupResponse.ExecutionStrategy executionStrategy, final String escapedRemoteDetectPath, final String remoteJavaPath) {
+    private List<String> getInvocationParameters(final DetectSetupResponse.ExecutionStrategy executionStrategy, final String remoteDetectPath, final String remoteJavaPath) {
         switch (executionStrategy) {
             case JAR:
-                return Arrays.asList(remoteJavaPath, "-jar", escapedRemoteDetectPath);
+                return Arrays.asList(remoteJavaPath, "-jar", remoteDetectPath);
             case POWERSHELL_SCRIPT:
-                return Arrays.asList("powershell", String.format("\"Import-Module %s; detect\"", escapedRemoteDetectPath));
+                return Arrays.asList("powershell", String.format("\"Import-Module '%s'; detect\"", remoteDetectPath));
             case SHELL_SCRIPT:
-                return Arrays.asList("bash", escapedRemoteDetectPath);
+                return Arrays.asList("bash", remoteDetectPath);
             default:
                 return Collections.emptyList();
         }
