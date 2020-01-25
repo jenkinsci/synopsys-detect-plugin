@@ -1,7 +1,7 @@
 /**
  * blackduck-detect
  *
- * Copyright (c) 2019 Synopsys, Inc.
+ * Copyright (c) 2020 Synopsys, Inc.
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements. See the NOTICE file
@@ -30,13 +30,14 @@ import java.util.Map;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.SystemUtils;
 
+import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
 import com.synopsys.integration.log.LogLevel;
 
 public class JavaExecutableManager {
-    private final DetectJenkinsLogger logger;
+    private final JenkinsIntLogger logger;
     private final Map<String, String> environmentVariables;
 
-    public JavaExecutableManager(final DetectJenkinsLogger logger, final Map<String, String> environmentVariables) {
+    public JavaExecutableManager(final JenkinsIntLogger logger, final Map<String, String> environmentVariables) {
         this.logger = logger;
         this.environmentVariables = environmentVariables;
     }
@@ -65,8 +66,8 @@ public class JavaExecutableManager {
                 processBuilder.environment().putAll(environmentVariables);
                 final Process process = processBuilder.start();
                 process.waitFor();
-                IOUtils.copy(process.getErrorStream(), logger.getJenkinsListener().getLogger());
-                IOUtils.copy(process.getInputStream(), logger.getJenkinsListener().getLogger());
+                IOUtils.copy(process.getErrorStream(), logger.getTaskListener().getLogger());
+                IOUtils.copy(process.getInputStream(), logger.getTaskListener().getLogger());
             } catch (final IOException e) {
                 logger.debug("Error printing the JAVA version: " + e.getMessage(), e);
             }

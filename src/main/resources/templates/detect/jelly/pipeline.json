@@ -1,9 +1,0 @@
-{
-  "template": "pipeline.tpl",
-  "model": {
-    "detectPropertiesField": "detectProperties",
-    "detectPropertiesTitle": "Detect Properties",
-    "returnStatusField": "returnStatus",
-    "returnStatusTitle": "Return status code"
-  }
-}

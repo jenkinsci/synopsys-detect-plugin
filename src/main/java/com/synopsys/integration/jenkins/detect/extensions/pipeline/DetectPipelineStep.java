@@ -1,7 +1,7 @@
 /**
  * blackduck-detect
  *
- * Copyright (c) 2019 Synopsys, Inc.
+ * Copyright (c) 2020 Synopsys, Inc.
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements. See the NOTICE file
@@ -38,9 +38,10 @@ import org.jenkinsci.plugins.workflow.steps.SynchronousNonBlockingStepExecution;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
-import com.synopsys.integration.jenkins.detect.DetectJenkinsLogger;
+import com.synopsys.integration.jenkins.annotations.HelpMarkdown;
 import com.synopsys.integration.jenkins.detect.exception.DetectJenkinsException;
 import com.synopsys.integration.jenkins.detect.substeps.DetectJenkinsSubStepCoordinator;
+import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
 
 import hudson.EnvVars;
 import hudson.Extension;
@@ -54,7 +55,11 @@ public class DetectPipelineStep extends Step implements Serializable {
     public static final String DISPLAY_NAME = "Synopsys Detect";
     public static final String PIPELINE_NAME = "synopsys_detect";
     private static final long serialVersionUID = 8126672300843832671L;
+
+    @HelpMarkdown("The command line options to pass to Synopsys Detect")
     private final String detectProperties;
+
+    @HelpMarkdown("If true (checked), returns the status code of the Detect run instead of throwing an exception")
     private boolean returnStatus = false;
 
     @DataBoundConstructor
@@ -117,7 +122,7 @@ public class DetectPipelineStep extends Step implements Serializable {
 
         @Override
         protected Integer run() throws Exception {
-            final DetectJenkinsLogger logger = new DetectJenkinsLogger(listener);
+            final JenkinsIntLogger logger = new JenkinsIntLogger(listener);
 
             final DetectJenkinsSubStepCoordinator detectJenkinsSubStepCoordinator = new DetectJenkinsSubStepCoordinator(logger, workspace, envVars, null, launcher, listener, detectProperties);
             final int exitCode = detectJenkinsSubStepCoordinator.runDetect();

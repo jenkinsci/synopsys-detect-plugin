@@ -1,7 +1,7 @@
 /**
  * blackduck-detect
  *
- * Copyright (c) 2019 Synopsys, Inc.
+ * Copyright (c) 2020 Synopsys, Inc.
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements. See the NOTICE file
@@ -30,9 +30,10 @@ import javax.annotation.Nonnull;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import com.synopsys.integration.exception.IntegrationException;
-import com.synopsys.integration.jenkins.detect.DetectJenkinsLogger;
+import com.synopsys.integration.jenkins.annotations.HelpMarkdown;
 import com.synopsys.integration.jenkins.detect.exception.DetectJenkinsException;
 import com.synopsys.integration.jenkins.detect.substeps.DetectJenkinsSubStepCoordinator;
+import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
 
 import hudson.EnvVars;
 import hudson.Extension;
@@ -51,6 +52,8 @@ import hudson.tasks.Recorder;
 
 public class DetectPostBuildStep extends Recorder {
     public static final String DISPLAY_NAME = "Synopsys Detect";
+
+    @HelpMarkdown("The command line options to pass to Synopsys Detect")
     private final String detectProperties;
 
     @DataBoundConstructor
@@ -75,7 +78,7 @@ public class DetectPostBuildStep extends Recorder {
     // Freestyle
     @Override
     public boolean perform(final AbstractBuild<?, ?> build, final Launcher launcher, final BuildListener listener) throws InterruptedException, IOException {
-        final DetectJenkinsLogger logger = new DetectJenkinsLogger(listener);
+        final JenkinsIntLogger logger = new JenkinsIntLogger(listener);
 
         try {
             final FilePath workspace = build.getWorkspace();

@@ -1,7 +1,7 @@
 /**
  * blackduck-detect
  *
- * Copyright (c) 2019 Synopsys, Inc.
+ * Copyright (c) 2020 Synopsys, Inc.
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements. See the NOTICE file
@@ -27,25 +27,26 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tools.ant.types.Commandline;
 
 import com.synopsys.integration.IntegrationEscapeUtils;
-import com.synopsys.integration.jenkins.detect.DetectJenkinsLogger;
-import com.synopsys.integration.jenkins.detect.PluginHelper;
+import com.synopsys.integration.jenkins.JenkinsVersionHelper;
+import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
 import com.synopsys.integration.util.IntEnvironmentVariables;
 
 import hudson.Util;
 
 public class ParseDetectArguments {
     private static final String LOGGING_LEVEL_KEY = "logging.level.com.synopsys.integration";
-    private final DetectJenkinsLogger logger;
+    private final JenkinsIntLogger logger;
     private final IntEnvironmentVariables intEnvironmentVariables;
     private final DetectSetupResponse detectSetupResponse;
     private final String detectProperties;
 
-    public ParseDetectArguments(final DetectJenkinsLogger logger, final IntEnvironmentVariables intEnvironmentVariables, final DetectSetupResponse detectSetupResponse, final String detectProperties) {
+    public ParseDetectArguments(final JenkinsIntLogger logger, final IntEnvironmentVariables intEnvironmentVariables, final DetectSetupResponse detectSetupResponse, final String detectProperties) {
         this.logger = logger;
         this.intEnvironmentVariables = intEnvironmentVariables;
         this.detectSetupResponse = detectSetupResponse;
@@ -57,9 +58,8 @@ public class ParseDetectArguments {
         final Function<String, String> argumentEscaper = getArgumentEscaper(executionStrategy);
 
         final String detectRemotePath = detectSetupResponse.getDetectRemotePath();
-        final String escapedDetectRemotePath = argumentEscaper.apply(detectRemotePath);
         final String remoteJavaPath = detectSetupResponse.getRemoteJavaHome();
-        final List<String> detectArguments = new ArrayList<>(getInvocationParameters(executionStrategy, escapedDetectRemotePath, remoteJavaPath));
+        final List<String> detectArguments = new ArrayList<>(getInvocationParameters(executionStrategy, detectRemotePath, remoteJavaPath));
 
         if (StringUtils.isNotBlank(detectProperties)) {
             Arrays.stream(Commandline.translateCommandline(detectProperties))
@@ -72,16 +72,16 @@ public class ParseDetectArguments {
         }
 
         if (detectArguments.stream().noneMatch(argument -> argument.contains(LOGGING_LEVEL_KEY))) {
-            detectArguments.add(formatAsCommandLineParameter(LOGGING_LEVEL_KEY, logger.getLogLevel().toString()));
+            detectArguments.add(formatAsPropertyAndEscapedValue(argumentEscaper, LOGGING_LEVEL_KEY, logger.getLogLevel().toString()));
         }
 
         logger.info("Running Detect command: " + StringUtils.join(detectArguments, " "));
 
         // Phone Home arguments that we do not want logged:
-        final String jenkinsVersion = PluginHelper.getJenkinsVersion();
-        detectArguments.add(formatAsCommandLineParameter("detect.phone.home.passthrough.jenkins.version", jenkinsVersion));
-        final String pluginVersion = PluginHelper.getPluginVersion();
-        detectArguments.add(formatAsCommandLineParameter("detect.phone.home.passthrough.jenkins.plugin.version", pluginVersion));
+        final String jenkinsVersion = JenkinsVersionHelper.getJenkinsVersion();
+        detectArguments.add(formatAsPropertyAndEscapedValue(argumentEscaper, "detect.phone.home.passthrough.jenkins.version", jenkinsVersion));
+        final String pluginVersion = JenkinsVersionHelper.getPluginVersion("blackduck-detect");
+        detectArguments.add(formatAsPropertyAndEscapedValue(argumentEscaper, "detect.phone.home.passthrough.jenkins.plugin.version", pluginVersion));
 
         return detectArguments;
     }
@@ -97,14 +97,14 @@ public class ParseDetectArguments {
         }
     }
 
-    private List<String> getInvocationParameters(final DetectSetupResponse.ExecutionStrategy executionStrategy, final String escapedRemoteDetectPath, final String remoteJavaPath) {
+    private List<String> getInvocationParameters(final DetectSetupResponse.ExecutionStrategy executionStrategy, final String remoteDetectPath, final String remoteJavaPath) {
         switch (executionStrategy) {
             case JAR:
-                return Arrays.asList(remoteJavaPath, "-jar", escapedRemoteDetectPath);
+                return Arrays.asList(remoteJavaPath, "-jar", remoteDetectPath);
             case POWERSHELL_SCRIPT:
-                return Arrays.asList("powershell", String.format("\"Import-Module %s; detect\"", escapedRemoteDetectPath));
+                return Arrays.asList("powershell", String.format("\"Import-Module '%s'; detect\"", remoteDetectPath));
             case SHELL_SCRIPT:
-                return Arrays.asList("bash", escapedRemoteDetectPath);
+                return Arrays.asList("bash", remoteDetectPath);
             default:
                 return Collections.emptyList();
         }
@@ -121,8 +121,14 @@ public class ParseDetectArguments {
         return null;
     }
 
-    private String formatAsCommandLineParameter(final String detectProperty, final String value) {
-        return String.format("--%s=%s", detectProperty, value);
+    private String formatAsPropertyAndEscapedValue(final Function<String, String> argumentEscaper, final String detectProperty, final String value) {
+        final String escapedValue = Arrays.stream(Commandline.translateCommandline(value))
+                                        .filter(StringUtils::isNotBlank)
+                                        .map(this::handleVariableReplacement)
+                                        .map(argumentEscaper)
+                                        .collect(Collectors.joining());
+
+        return String.format("--%s=%s", detectProperty, escapedValue);
     }
 
 }

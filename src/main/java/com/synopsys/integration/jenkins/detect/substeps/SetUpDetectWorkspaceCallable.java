@@ -1,7 +1,7 @@
 /**
  * blackduck-detect
  *
- * Copyright (c) 2019 Synopsys, Inc.
+ * Copyright (c) 2020 Synopsys, Inc.
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements. See the NOTICE file
@@ -34,21 +34,21 @@ import org.jenkinsci.remoting.RoleChecker;
 
 import com.synopsys.integration.exception.IntegrationException;
 import com.synopsys.integration.jenkins.detect.DetectDownloadManager;
-import com.synopsys.integration.jenkins.detect.DetectJenkinsLogger;
 import com.synopsys.integration.jenkins.detect.JavaExecutableManager;
 import com.synopsys.integration.jenkins.detect.exception.DetectJenkinsException;
+import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
 
 import hudson.Platform;
 import hudson.remoting.Callable;
 
 public class SetUpDetectWorkspaceCallable implements Callable<DetectSetupResponse, IntegrationException> {
     private static final long serialVersionUID = -4754831395795794586L;
-    private final DetectJenkinsLogger logger;
+    private final JenkinsIntLogger logger;
     private final HashMap<String, String> environmentVariables;
     private final String workspaceTempPath;
     private final String remoteJavaHome;
 
-    public SetUpDetectWorkspaceCallable(final DetectJenkinsLogger logger, final Map<String, String> environmentVariables, final String workspaceTempPath, final String remoteJavaHome) {
+    public SetUpDetectWorkspaceCallable(final JenkinsIntLogger logger, final Map<String, String> environmentVariables, final String workspaceTempPath, final String remoteJavaHome) {
         this.logger = logger;
         this.environmentVariables = new HashMap<>(environmentVariables);
         this.workspaceTempPath = workspaceTempPath;

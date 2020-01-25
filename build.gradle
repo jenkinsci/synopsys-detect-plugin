@@ -1,5 +1,4 @@
-import com.synopsys.integration.jenkins.detect.GenerateHtml
-import com.synopsys.integration.jenkins.detect.GenerateJelly
+import java.nio.file.Paths
 
 buildscript {
     repositories {
@@ -7,23 +6,27 @@ buildscript {
         mavenCentral()
         maven { url 'https://plugins.gradle.org/m2/' }
     }
-    dependencies { classpath 'com.blackducksoftware.integration:common-gradle-plugin:0.0.+' }
+    dependencies { classpath 'com.synopsys.integration:common-gradle-plugin:1.0.0' }
 }
 
 plugins {
-    id 'org.jenkins-ci.jpi' version '0.31.0'
+    id 'org.jenkins-ci.jpi' version '0.37.1'
 }
 
 group = 'com.blackducksoftware.integration'
 version = '2.1.1-SNAPSHOT'
 description = 'Synopsys Detect Plugin for Jenkins'
 
-apply plugin: 'com.blackducksoftware.integration.solution'
+apply plugin: 'com.synopsys.integration.solution'
 
 def jcenterRepo = project.repositories.findByName('BintrayJCenter')
 project.repositories.remove(jcenterRepo)
 def mavenRepo = project.repositories.findByName('maven')
 project.repositories.remove(mavenRepo)
+
+def libsDirectory = Paths.get("$project.buildDir").resolve('libs')
+def releaseBinary = file(libsDirectory.resolve("${project.getName()}.hpi"))
+def snapshotBinary = file(libsDirectory.resolve("${project.getName()}-${project.version}.hpi"))
 
 project.afterEvaluate {
     // MavenLocal is added by the gradle-jpi-plugin and the common-gradle-plugin so we have to remove it after the plugins are evaluated
@@ -34,6 +37,24 @@ project.afterEvaluate {
             def repoToRemove = project.repositories.findByName(repoName)
             project.repositories.remove(repoToRemove)
         }
+    }
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            if (project.version.toString().contains("SNAPSHOT")) {
+                artifact(snapshotBinary)
+            } else {
+                artifact(releaseBinary)
+            }
+        }
+    }
+}
+
+artifactory {
+    publish {
+        defaults { publications('mavenJava') }
     }
 }
 
@@ -48,8 +69,11 @@ jenkinsPlugin {
 }
 
 dependencies {
+    annotationProcessor 'com.synopsys.integration:jenkins-annotation-processor:0.0.1'
+
     implementation 'com.blackducksoftware.integration:blackduck-common:42.6.0'
     implementation 'com.synopsys.integration:polaris-common:0.12.0'
+    implementation 'com.synopsys.integration:jenkins-common:0.1.4'
     implementation 'org.jvnet.localizer:localizer:1.24'
 
     jenkinsPlugins 'org.jenkins-ci.plugins:credentials:2.1.10'
@@ -71,29 +95,10 @@ dependencies {
 task renameFile {
     doLast {
         if (project.version.toString().contains("SNAPSHOT")) {
-            File libsDirectory = new File(project.buildDir, "libs")
-            File originalFile = new File(libsDirectory, "${project.getName()}.hpi")
-            File newFile = new File(libsDirectory, "${project.getName()}-${project.version}.hpi")
-            originalFile.renameTo newFile
+            releaseBinary.renameTo snapshotBinary
         }
     }
 }
 
-task generateJelly(type: GenerateJelly) {
-    pathToExtensionResourcesPackage = 'src/main/resources/com/synopsys/integration/jenkins/detect/extensions/'
-    pathToJellyJson = 'src/main/resources/templates/detect/jelly/'
-    outputPathToJson = ['postbuild/DetectPostBuildStep': 'postBuild.json',
-                        'pipeline/DetectPipelineStep'  : 'pipeline.json',
-                        'global/DetectGlobalConfig'    : 'globalConfig.json',]
-}
-
-task generateHelp(type: GenerateHtml) {
-    pathToExtensionResourcesPackage = 'src/main/resources/com/synopsys/integration/jenkins/detect/extensions/'
-    pathToHelpJson = 'src/main/resources/templates/detect/help/'
-    outputPathToJson = ['postbuild/DetectPostBuildStep': 'postBuild.json',
-                        'pipeline/DetectPipelineStep'  : 'pipeline.json',
-                        'global/DetectGlobalConfig'    : 'globalConfig.json',]
-}
-
-compileJava.dependsOn generateHelp, generateJelly
 jpi.finalizedBy renameFile
+

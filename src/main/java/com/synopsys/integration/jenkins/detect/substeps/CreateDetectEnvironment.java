@@ -1,7 +1,7 @@
 /**
  * blackduck-detect
  *
- * Copyright (c) 2019 Synopsys, Inc.
+ * Copyright (c) 2020 Synopsys, Inc.
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements. See the NOTICE file
@@ -28,43 +28,56 @@ import java.util.function.BiConsumer;
 import org.apache.commons.lang3.StringUtils;
 
 import com.synopsys.integration.blackduck.configuration.BlackDuckServerConfigBuilder;
-import com.synopsys.integration.jenkins.detect.DetectJenkinsLogger;
-import com.synopsys.integration.jenkins.detect.PluginHelper;
+import com.synopsys.integration.jenkins.JenkinsVersionHelper;
+import com.synopsys.integration.jenkins.detect.extensions.global.DetectGlobalConfig;
+import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
 import com.synopsys.integration.polaris.common.configuration.PolarisServerConfigBuilder;
 import com.synopsys.integration.util.IntEnvironmentVariables;
 
+import jenkins.model.GlobalConfiguration;
+
 public class CreateDetectEnvironment {
-    private final DetectJenkinsLogger logger;
+    private final JenkinsIntLogger logger;
     private final Map<String, String> environmentVariables;
 
-    public CreateDetectEnvironment(final DetectJenkinsLogger logger, final Map<String, String> environmentVariables) {
+    public CreateDetectEnvironment(final JenkinsIntLogger logger, final Map<String, String> environmentVariables) {
         this.logger = logger;
         this.environmentVariables = environmentVariables;
     }
 
     public IntEnvironmentVariables createDetectEnvironment() {
-        final IntEnvironmentVariables intEnvironmentVariables = new IntEnvironmentVariables();
+        final IntEnvironmentVariables intEnvironmentVariables = new IntEnvironmentVariables(false);
         intEnvironmentVariables.putAll(environmentVariables);
         logger.setLogLevel(intEnvironmentVariables);
 
         populateAllBlackDuckEnvironmentVariables(intEnvironmentVariables::put);
         populateAllPolarisEnvironmentVariables(intEnvironmentVariables::put);
 
-        final String pluginVersion = PluginHelper.getPluginVersion();
+        final String pluginVersion = JenkinsVersionHelper.getPluginVersion("blackduck-detect");
         logger.info("Running Detect jenkins plugin version: " + pluginVersion);
 
         return intEnvironmentVariables;
     }
 
     private void populateAllBlackDuckEnvironmentVariables(final BiConsumer<String, String> environmentPutter) {
-        final BlackDuckServerConfigBuilder blackDuckServerConfigBuilder = PluginHelper.getDetectGlobalConfig().getBlackDuckServerConfigBuilder();
+        final DetectGlobalConfig detectGlobalConfig = GlobalConfiguration.all().get(DetectGlobalConfig.class);
+        if (detectGlobalConfig == null) {
+            return;
+        }
+
+        final BlackDuckServerConfigBuilder blackDuckServerConfigBuilder = detectGlobalConfig.getBlackDuckServerConfigBuilder();
 
         blackDuckServerConfigBuilder.getProperties()
             .forEach((builderPropertyKey, propertyValue) -> acceptIfNotNull(environmentPutter, builderPropertyKey.getKey(), propertyValue));
     }
 
     private void populateAllPolarisEnvironmentVariables(final BiConsumer<String, String> environmentPutter) {
-        final PolarisServerConfigBuilder polarisServerConfigBuilder = PluginHelper.getDetectGlobalConfig().getPolarisServerConfigBuilder();
+        final DetectGlobalConfig detectGlobalConfig = GlobalConfiguration.all().get(DetectGlobalConfig.class);
+        if (detectGlobalConfig == null) {
+            return;
+        }
+
+        final PolarisServerConfigBuilder polarisServerConfigBuilder = detectGlobalConfig.getPolarisServerConfigBuilder();
 
         polarisServerConfigBuilder.getProperties()
             .forEach((builderPropertyKey, propertyValue) -> acceptIfNotNull(environmentPutter, builderPropertyKey.getKey(), propertyValue));
