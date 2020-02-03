@@ -83,6 +83,13 @@ dependencies {
     optionalJenkinsPlugins 'org.jenkins-ci.plugins.workflow:workflow-job:2.9'
     optionalJenkinsPlugins 'org.jenkins-ci.plugins.workflow:workflow-cps:2.23'
     optionalJenkinsPlugins 'org.jenkins-ci.plugins.workflow:workflow-step-api:2.10'
+
+    testCompile group: 'org.jenkins-ci.main', name: 'jenkins-test-harness', version: '2.58'
+    testCompile group: 'org.powermock', name: 'powermock-core', version: '2.0.2'
+    testCompile group: 'org.powermock', name: 'powermock-reflect', version: '2.0.2'
+    testCompile group: 'org.powermock', name: 'powermock-api-mockito2', version: '2.0.2'
+    testCompile group: 'org.powermock', name: 'powermock-module-junit4', version: '2.0.2'
+    testCompile group: 'org.mockito', name: 'mockito-core', version: '2.23.4'
 }
 
 task renameFile {
@@ -94,3 +101,4 @@ task renameFile {
 }
 
 jpi.finalizedBy renameFile
+
