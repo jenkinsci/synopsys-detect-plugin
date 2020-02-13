@@ -33,10 +33,12 @@ import org.jenkinsci.remoting.Role;
 import org.jenkinsci.remoting.RoleChecker;
 
 import com.synopsys.integration.exception.IntegrationException;
+import com.synopsys.integration.jenkins.JenkinsProxyHelper;
 import com.synopsys.integration.jenkins.detect.DetectDownloadManager;
 import com.synopsys.integration.jenkins.detect.JavaExecutableManager;
 import com.synopsys.integration.jenkins.detect.exception.DetectJenkinsException;
 import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
+import com.synopsys.integration.rest.proxy.ProxyInfo;
 
 import hudson.Platform;
 import hudson.remoting.Callable;
@@ -47,12 +49,16 @@ public class SetUpDetectWorkspaceCallable implements Callable<DetectSetupRespons
     private final HashMap<String, String> environmentVariables;
     private final String workspaceTempPath;
     private final String remoteJavaHome;
+    private final ProxyInfo proxyInfoPowershell;
+    private final ProxyInfo proxyInfoShell;
 
     public SetUpDetectWorkspaceCallable(final JenkinsIntLogger logger, final Map<String, String> environmentVariables, final String workspaceTempPath, final String remoteJavaHome) {
         this.logger = logger;
         this.environmentVariables = new HashMap<>(environmentVariables);
         this.workspaceTempPath = workspaceTempPath;
         this.remoteJavaHome = remoteJavaHome;
+        this.proxyInfoPowershell = JenkinsProxyHelper.getProxyInfoFromJenkins(DetectDownloadManager.LATEST_POWERSHELL_SCRIPT_URL);
+        this.proxyInfoShell = JenkinsProxyHelper.getProxyInfoFromJenkins(DetectDownloadManager.LATEST_SHELL_SCRIPT_URL);
     }
 
     @Override
@@ -108,14 +114,17 @@ public class SetUpDetectWorkspaceCallable implements Callable<DetectSetupRespons
         final String detectRemotePath;
 
         final String scriptUrl;
+        final ProxyInfo proxyInfo;
         if (executionStrategy == DetectSetupResponse.ExecutionStrategy.POWERSHELL_SCRIPT) {
             scriptUrl = DetectDownloadManager.LATEST_POWERSHELL_SCRIPT_URL;
+            proxyInfo = this.proxyInfoPowershell;
         } else {
             scriptUrl = DetectDownloadManager.LATEST_SHELL_SCRIPT_URL;
+            proxyInfo = this.proxyInfoShell;
         }
         final DetectDownloadManager detectDownloadManager = new DetectDownloadManager(logger, workspaceTempPath);
 
-        detectRemotePath = detectDownloadManager.downloadScript(scriptUrl).toRealPath().toString();
+        detectRemotePath = detectDownloadManager.downloadScript(scriptUrl, proxyInfo).toRealPath().toString();
 
         if (StringUtils.isBlank(detectRemotePath)) {
             throw new IntegrationException("[ERROR] The Detect script was not downloaded successfully.");

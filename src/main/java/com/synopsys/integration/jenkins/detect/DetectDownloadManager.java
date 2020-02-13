@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Optional;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -35,6 +36,7 @@ import com.synopsys.integration.log.IntLogger;
 import com.synopsys.integration.rest.client.IntHttpClient;
 import com.synopsys.integration.rest.request.Request;
 import com.synopsys.integration.rest.request.Response;
+import com.synopsys.integration.rest.proxy.ProxyInfo;
 
 public class DetectDownloadManager {
     public static final String DETECT_INSTALL_DIRECTORY = "Detect_Installation";
@@ -50,13 +52,17 @@ public class DetectDownloadManager {
     }
 
     public Path downloadScript(final String scriptDownloadUrl) throws IntegrationException, IOException {
+    	return downloadScript(scriptDownloadUrl, null);
+    }
+
+    public Path downloadScript(final String scriptDownloadUrl, final ProxyInfo proxyInfo) throws IntegrationException, IOException {
         final String scriptFileName = scriptDownloadUrl.substring(scriptDownloadUrl.lastIndexOf("/") + 1).trim();
         final Path scriptDownloadDirectory = prepareScriptDownloadDirectory();
         final Path localScriptFile = scriptDownloadDirectory.resolve(scriptFileName);
 
         if (shouldDownloadScript(scriptDownloadUrl, localScriptFile)) {
             logger.info("Downloading Detect script from " + scriptDownloadUrl + " to " + localScriptFile);
-            downloadScriptTo(scriptDownloadUrl, localScriptFile);
+            downloadScriptTo(scriptDownloadUrl, localScriptFile, Optional.ofNullable(proxyInfo));
         } else {
             logger.info("Running already installed Detect script " + localScriptFile);
         }
@@ -80,8 +86,8 @@ public class DetectDownloadManager {
         return installationDirectory;
     }
 
-    private void downloadScriptTo(final String url, final Path path) throws IntegrationException, IOException {
-        final IntHttpClient intHttpClient = new IntHttpClient(logger, 120, true, JenkinsProxyHelper.getProxyInfoFromJenkins(url));
+    private void downloadScriptTo(final String url, final Path path, final Optional<ProxyInfo> proxyInfo) throws IntegrationException, IOException {
+        final IntHttpClient intHttpClient = new IntHttpClient(logger, 120, true, proxyInfo.orElse(JenkinsProxyHelper.getProxyInfoFromJenkins(url)));
 
         final Request request = new Request.Builder().uri(url).build();
         try (final Response response = intHttpClient.execute(request)) {
