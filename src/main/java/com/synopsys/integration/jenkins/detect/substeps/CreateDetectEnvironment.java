@@ -23,12 +23,15 @@
 package com.synopsys.integration.jenkins.detect.substeps;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.BiConsumer;
 
 import org.apache.commons.lang3.StringUtils;
 
 import com.synopsys.integration.blackduck.configuration.BlackDuckServerConfigBuilder;
+import com.synopsys.integration.jenkins.JenkinsProxyHelper;
 import com.synopsys.integration.jenkins.JenkinsVersionHelper;
+import com.synopsys.integration.jenkins.SynopsysCredentialsHelper;
 import com.synopsys.integration.jenkins.detect.extensions.global.DetectGlobalConfig;
 import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
 import com.synopsys.integration.polaris.common.configuration.PolarisServerConfigBuilder;
@@ -38,58 +41,68 @@ import jenkins.model.GlobalConfiguration;
 
 public class CreateDetectEnvironment {
     private final JenkinsIntLogger logger;
+    private final JenkinsProxyHelper jenkinsProxyHelper;
+    private final JenkinsVersionHelper jenkinsVersionHelper;
+    private final SynopsysCredentialsHelper synopsysCredentialsHelper;
     private final Map<String, String> environmentVariables;
 
-    public CreateDetectEnvironment(final JenkinsIntLogger logger, final Map<String, String> environmentVariables) {
+    public CreateDetectEnvironment(JenkinsIntLogger logger, JenkinsProxyHelper jenkinsProxyHelper, JenkinsVersionHelper jenkinsVersionHelper, SynopsysCredentialsHelper synopsysCredentialsHelper, Map<String, String> environmentVariables) {
         this.logger = logger;
+        this.jenkinsProxyHelper = jenkinsProxyHelper;
+        this.jenkinsVersionHelper = jenkinsVersionHelper;
+        this.synopsysCredentialsHelper = synopsysCredentialsHelper;
         this.environmentVariables = environmentVariables;
     }
 
     public IntEnvironmentVariables createDetectEnvironment() {
-        final IntEnvironmentVariables intEnvironmentVariables = new IntEnvironmentVariables(false);
+        IntEnvironmentVariables intEnvironmentVariables = new IntEnvironmentVariables(false);
         intEnvironmentVariables.putAll(environmentVariables);
         logger.setLogLevel(intEnvironmentVariables);
 
         populateAllBlackDuckEnvironmentVariables(intEnvironmentVariables::put);
         populateAllPolarisEnvironmentVariables(intEnvironmentVariables::put);
 
-        final String pluginVersion = JenkinsVersionHelper.getPluginVersion("blackduck-detect");
-        logger.info("Running Detect jenkins plugin version: " + pluginVersion);
+        Optional<String> pluginVersion = jenkinsVersionHelper.getPluginVersion("blackduck-detect");
+        if (pluginVersion.isPresent()) {
+            logger.info("Running Synopsys Detect for Jenkins version: " + pluginVersion.get());
+        } else {
+            logger.info("Running Synopsys Detect for Jenkins");
+        }
 
         return intEnvironmentVariables;
     }
 
-    private void populateAllBlackDuckEnvironmentVariables(final BiConsumer<String, String> environmentPutter) {
-        final DetectGlobalConfig detectGlobalConfig = GlobalConfiguration.all().get(DetectGlobalConfig.class);
+    private void populateAllBlackDuckEnvironmentVariables(BiConsumer<String, String> environmentPutter) {
+        DetectGlobalConfig detectGlobalConfig = GlobalConfiguration.all().get(DetectGlobalConfig.class);
         if (detectGlobalConfig == null) {
             return;
         }
 
-        final BlackDuckServerConfigBuilder blackDuckServerConfigBuilder = detectGlobalConfig.getBlackDuckServerConfigBuilder();
+        BlackDuckServerConfigBuilder blackDuckServerConfigBuilder = detectGlobalConfig.getBlackDuckServerConfigBuilder(jenkinsProxyHelper, synopsysCredentialsHelper);
 
         blackDuckServerConfigBuilder.getProperties()
             .forEach((builderPropertyKey, propertyValue) -> acceptIfNotNull(environmentPutter, builderPropertyKey.getKey(), propertyValue));
     }
 
-    private void populateAllPolarisEnvironmentVariables(final BiConsumer<String, String> environmentPutter) {
-        final DetectGlobalConfig detectGlobalConfig = GlobalConfiguration.all().get(DetectGlobalConfig.class);
+    private void populateAllPolarisEnvironmentVariables(BiConsumer<String, String> environmentPutter) {
+        DetectGlobalConfig detectGlobalConfig = GlobalConfiguration.all().get(DetectGlobalConfig.class);
         if (detectGlobalConfig == null) {
             return;
         }
 
-        final PolarisServerConfigBuilder polarisServerConfigBuilder = detectGlobalConfig.getPolarisServerConfigBuilder();
+        PolarisServerConfigBuilder polarisServerConfigBuilder = detectGlobalConfig.getPolarisServerConfigBuilder(jenkinsProxyHelper, synopsysCredentialsHelper);
 
         polarisServerConfigBuilder.getProperties()
             .forEach((builderPropertyKey, propertyValue) -> acceptIfNotNull(environmentPutter, builderPropertyKey.getKey(), propertyValue));
 
         try {
             polarisServerConfigBuilder.build().populateEnvironmentVariables(environmentPutter);
-        } catch (final Exception ignored) {
+        } catch (Exception ignored) {
             // If this doesn't work, Detect will throw an exception later on.
         }
     }
 
-    private void acceptIfNotNull(final BiConsumer<String, String> environmentPutter, final String key, final String value) {
+    private void acceptIfNotNull(BiConsumer<String, String> environmentPutter, String key, String value) {
         if (StringUtils.isNoneBlank(key, value)) {
             environmentPutter.accept(key, value);
         }

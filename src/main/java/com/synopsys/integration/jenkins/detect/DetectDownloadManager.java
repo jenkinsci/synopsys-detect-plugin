@@ -30,9 +30,9 @@ import java.nio.file.Paths;
 import org.apache.commons.lang3.StringUtils;
 
 import com.synopsys.integration.exception.IntegrationException;
-import com.synopsys.integration.jenkins.JenkinsProxyHelper;
 import com.synopsys.integration.log.IntLogger;
 import com.synopsys.integration.rest.client.IntHttpClient;
+import com.synopsys.integration.rest.proxy.ProxyInfo;
 import com.synopsys.integration.rest.request.Request;
 import com.synopsys.integration.rest.request.Response;
 
@@ -42,17 +42,19 @@ public class DetectDownloadManager {
     public static final String LATEST_POWERSHELL_SCRIPT_URL = "https://detect.synopsys.com/detect.ps1";
 
     private final IntLogger logger;
+    private final ProxyInfo proxyInfo;
     private final String toolsDirectory;
 
-    public DetectDownloadManager(final IntLogger logger, final String toolsDirectory) {
+    public DetectDownloadManager(IntLogger logger, ProxyInfo proxyInfo, String toolsDirectory) {
         this.logger = logger;
+        this.proxyInfo = proxyInfo;
         this.toolsDirectory = toolsDirectory;
     }
 
-    public Path downloadScript(final String scriptDownloadUrl) throws IntegrationException, IOException {
-        final String scriptFileName = scriptDownloadUrl.substring(scriptDownloadUrl.lastIndexOf("/") + 1).trim();
-        final Path scriptDownloadDirectory = prepareScriptDownloadDirectory();
-        final Path localScriptFile = scriptDownloadDirectory.resolve(scriptFileName);
+    public Path downloadScript(String scriptDownloadUrl) throws IntegrationException, IOException {
+        String scriptFileName = scriptDownloadUrl.substring(scriptDownloadUrl.lastIndexOf("/") + 1).trim();
+        Path scriptDownloadDirectory = prepareScriptDownloadDirectory();
+        Path localScriptFile = scriptDownloadDirectory.resolve(scriptFileName);
 
         if (shouldDownloadScript(scriptDownloadUrl, localScriptFile)) {
             logger.info("Downloading Detect script from " + scriptDownloadUrl + " to " + localScriptFile);
@@ -64,27 +66,27 @@ public class DetectDownloadManager {
         return localScriptFile;
     }
 
-    private boolean shouldDownloadScript(final String scriptDownloadUrl, final Path localScriptFile) {
+    private boolean shouldDownloadScript(String scriptDownloadUrl, Path localScriptFile) {
         return Files.notExists(localScriptFile) && StringUtils.isNotBlank(scriptDownloadUrl);
     }
 
     private Path prepareScriptDownloadDirectory() throws IntegrationException {
-        final Path installationDirectory = Paths.get(toolsDirectory, DETECT_INSTALL_DIRECTORY);
+        Path installationDirectory = Paths.get(toolsDirectory, DETECT_INSTALL_DIRECTORY);
 
         try {
             Files.createDirectories(installationDirectory);
-        } catch (final Exception e) {
+        } catch (Exception e) {
             throw new IntegrationException("Could not create the Detect installation directory: " + installationDirectory, e);
         }
 
         return installationDirectory;
     }
 
-    private void downloadScriptTo(final String url, final Path path) throws IntegrationException, IOException {
-        final IntHttpClient intHttpClient = new IntHttpClient(logger, 120, true, JenkinsProxyHelper.getProxyInfoFromJenkins(url));
+    private void downloadScriptTo(String url, Path path) throws IntegrationException, IOException {
+        IntHttpClient intHttpClient = new IntHttpClient(logger, 120, true, proxyInfo);
 
-        final Request request = new Request.Builder().uri(url).build();
-        try (final Response response = intHttpClient.execute(request)) {
+        Request request = new Request.Builder().uri(url).build();
+        try (Response response = intHttpClient.execute(request)) {
             Files.copy(response.getContent(), path);
         }
     }

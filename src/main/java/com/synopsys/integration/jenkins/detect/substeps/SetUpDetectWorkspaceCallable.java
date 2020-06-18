@@ -33,13 +33,16 @@ import org.jenkinsci.remoting.Role;
 import org.jenkinsci.remoting.RoleChecker;
 
 import com.synopsys.integration.exception.IntegrationException;
+import com.synopsys.integration.jenkins.JenkinsProxyHelper;
 import com.synopsys.integration.jenkins.detect.DetectDownloadManager;
 import com.synopsys.integration.jenkins.detect.JavaExecutableManager;
 import com.synopsys.integration.jenkins.detect.exception.DetectJenkinsException;
 import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
+import com.synopsys.integration.rest.proxy.ProxyInfo;
 
 import hudson.Platform;
 import hudson.remoting.Callable;
+import jenkins.model.Jenkins;
 
 public class SetUpDetectWorkspaceCallable implements Callable<DetectSetupResponse, IntegrationException> {
     private static final long serialVersionUID = -4754831395795794586L;
@@ -48,7 +51,7 @@ public class SetUpDetectWorkspaceCallable implements Callable<DetectSetupRespons
     private final String workspaceTempPath;
     private final String remoteJavaHome;
 
-    public SetUpDetectWorkspaceCallable(final JenkinsIntLogger logger, final Map<String, String> environmentVariables, final String workspaceTempPath, final String remoteJavaHome) {
+    public SetUpDetectWorkspaceCallable(JenkinsIntLogger logger, Map<String, String> environmentVariables, String workspaceTempPath, String remoteJavaHome) {
         this.logger = logger;
         this.environmentVariables = new HashMap<>(environmentVariables);
         this.workspaceTempPath = workspaceTempPath;
@@ -58,14 +61,14 @@ public class SetUpDetectWorkspaceCallable implements Callable<DetectSetupRespons
     @Override
     public DetectSetupResponse call() throws IntegrationException {
         try {
-            final String pathToDetectJar = environmentVariables.get("DETECT_JAR");
-            final DetectSetupResponse.ExecutionStrategy executionStrategy = determineExecutionStrategy(pathToDetectJar);
+            String pathToDetectJar = environmentVariables.get("DETECT_JAR");
+            DetectSetupResponse.ExecutionStrategy executionStrategy = determineExecutionStrategy(pathToDetectJar);
             if (executionStrategy == DetectSetupResponse.ExecutionStrategy.JAR) {
                 return setUpForJarExecution(pathToDetectJar, remoteJavaHome);
             } else {
                 return setUpForScriptExecution(executionStrategy);
             }
-        } catch (final Exception e) {
+        } catch (Exception e) {
             if (e instanceof InterruptedException) {
                 Thread.currentThread().interrupt();
             }
@@ -74,11 +77,11 @@ public class SetUpDetectWorkspaceCallable implements Callable<DetectSetupRespons
     }
 
     @Override
-    public void checkRoles(final RoleChecker checker) throws SecurityException {
+    public void checkRoles(RoleChecker checker) throws SecurityException {
         checker.check(this, new Role(this.getClass()));
     }
 
-    private DetectSetupResponse.ExecutionStrategy determineExecutionStrategy(final String pathToDetectJar) {
+    private DetectSetupResponse.ExecutionStrategy determineExecutionStrategy(String pathToDetectJar) {
         if (StringUtils.isNotBlank(pathToDetectJar)) {
             return DetectSetupResponse.ExecutionStrategy.JAR;
         } else {
@@ -90,30 +93,34 @@ public class SetUpDetectWorkspaceCallable implements Callable<DetectSetupRespons
         }
     }
 
-    private DetectSetupResponse setUpForJarExecution(final String pathToDetectJar, final String javaHome) throws IOException, InterruptedException {
-        final JavaExecutableManager javaExecutableManager = new JavaExecutableManager(logger, environmentVariables);
+    private DetectSetupResponse setUpForJarExecution(String pathToDetectJar, String javaHome) throws IOException, InterruptedException {
+        JavaExecutableManager javaExecutableManager = new JavaExecutableManager(logger, environmentVariables);
 
-        final String javaExecutablePath = javaExecutableManager.calculateJavaExecutablePath(javaHome);
+        String javaExecutablePath = javaExecutableManager.calculateJavaExecutablePath(javaHome);
         logger.info("Running with JAVA: " + javaExecutablePath);
         logger.info("Detect configured: " + pathToDetectJar);
         javaExecutableManager.logJavaVersion();
 
-        final Path detectJar = Paths.get(pathToDetectJar);
+        Path detectJar = Paths.get(pathToDetectJar);
 
         logger.info("Running Detect: " + detectJar.getFileName());
         return new DetectSetupResponse(DetectSetupResponse.ExecutionStrategy.JAR, javaExecutablePath, pathToDetectJar);
     }
 
-    private DetectSetupResponse setUpForScriptExecution(final DetectSetupResponse.ExecutionStrategy executionStrategy) throws IOException, IntegrationException {
-        final String detectRemotePath;
+    private DetectSetupResponse setUpForScriptExecution(DetectSetupResponse.ExecutionStrategy executionStrategy) throws IOException, IntegrationException {
+        String detectRemotePath;
 
-        final String scriptUrl;
+        String scriptUrl;
         if (executionStrategy == DetectSetupResponse.ExecutionStrategy.POWERSHELL_SCRIPT) {
             scriptUrl = DetectDownloadManager.LATEST_POWERSHELL_SCRIPT_URL;
         } else {
             scriptUrl = DetectDownloadManager.LATEST_SHELL_SCRIPT_URL;
         }
-        final DetectDownloadManager detectDownloadManager = new DetectDownloadManager(logger, workspaceTempPath);
+
+        // TODO: This will always return NO_PROXY_INFO, because Jenkins will always be null. We must fix this for 3.0.0. --rotte JUN 2020
+        JenkinsProxyHelper jenkinsProxyHelper = JenkinsProxyHelper.fromJenkins(Jenkins.getInstanceOrNull());
+        ProxyInfo proxyInfo = jenkinsProxyHelper.getProxyInfo(scriptUrl);
+        DetectDownloadManager detectDownloadManager = new DetectDownloadManager(logger, proxyInfo, workspaceTempPath);
 
         detectRemotePath = detectDownloadManager.downloadScript(scriptUrl).toRealPath().toString();
 

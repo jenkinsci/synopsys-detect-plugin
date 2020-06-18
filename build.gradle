@@ -1,65 +1,29 @@
-import java.nio.file.Paths
-
 buildscript {
-    repositories {
-        jcenter()
-        mavenCentral()
-        maven { url 'https://plugins.gradle.org/m2/' }
-    }
-    dependencies { classpath 'com.synopsys.integration:common-gradle-plugin:1.1.0' }
+    apply from: "https://raw.githubusercontent.com/blackducksoftware/integration-resources/master/gradle_common/buildscript-repositories.gradle", to: buildscript
+    apply from: 'https://raw.githubusercontent.com/blackducksoftware/integration-resources/master/gradle_common/buildscript-dependencies.gradle', to: buildscript
 }
 
 plugins {
-    id 'org.jenkins-ci.jpi' version '0.37.1'
+    id 'org.jenkins-ci.jpi' version '0.38.0'
 }
 
 group = 'com.blackducksoftware.integration'
-version = '2.1.2-SNAPSHOT'
+version = '3.0.0-SNAPSHOT'
 description = 'Synopsys Detect Plugin for Jenkins'
 
 apply plugin: 'com.synopsys.integration.solution'
 
-def jcenterRepo = project.repositories.findByName('BintrayJCenter')
-project.repositories.remove(jcenterRepo)
-def mavenRepo = project.repositories.findByName('maven')
-project.repositories.remove(mavenRepo)
-
-def libsDirectory = Paths.get("$project.buildDir").resolve('libs')
-def releaseBinary = file(libsDirectory.resolve("${project.getName()}.hpi"))
-def snapshotBinary = file(libsDirectory.resolve("${project.getName()}-${project.version}.hpi"))
-
-project.afterEvaluate {
-    // MavenLocal is added by the gradle-jpi-plugin and the common-gradle-plugin so we have to remove it after the plugins are evaluated
-    List<String> repoNames = new ArrayList()
-    repoNames.addAll(project.repositories.getNames())
-    for (String repoName : repoNames) {
-        if (repoName.contains('MavenLocal')) {
-            def repoToRemove = project.repositories.findByName(repoName)
-            project.repositories.remove(repoToRemove)
-        }
-    }
-}
-
 artifactory {
     publish {
-        defaults {
-            mavenJava(MavenPublication) {
-                if (project.version.toString().contains("SNAPSHOT")) {
-                    artifact(snapshotBinary)
-                } else {
-                    artifact(releaseBinary)
-                }
-            }
-        }
+        defaults { publications('mavenJpi') }
     }
 }
+
 
 jenkinsPlugin {
     coreVersion = '2.60.1'
-    displayName = 'Synopsys Detect'
-    // 2.0.2 and 2.1.0 violated SemVer and should technically by 3.0.0 and 3.1.0 respectively, but in the interest of not confusing customers this is a reasonable compromise
-    // -rotte FEB 2020
-    compatibleSinceVersion = '2.0.2'
+    displayName = 'Synopsys Detect plugin'
+    compatibleSinceVersion = '3.0.0'
     url = 'https://wiki.jenkins.io/display/JENKINS/Synopsys+Detect+Plugin'
     gitHubUrl = 'https://github.com/jenkinsci/synopsys-detect-plugin'
 
@@ -69,9 +33,9 @@ jenkinsPlugin {
 dependencies {
     annotationProcessor 'com.synopsys.integration:jenkins-annotation-processor:0.0.1'
 
-    implementation 'com.blackducksoftware.integration:blackduck-common:42.6.0'
+    implementation 'com.synopsys.integration:blackduck-common:48.0.0'
     implementation 'com.synopsys.integration:polaris-common:0.12.0'
-    implementation 'com.synopsys.integration:jenkins-common:0.1.4'
+    implementation 'com.synopsys.integration:jenkins-common:0.2.1'
     implementation 'org.jvnet.localizer:localizer:1.24'
 
     jenkinsPlugins 'org.jenkins-ci.plugins:credentials:2.1.10'
@@ -89,14 +53,4 @@ dependencies {
     testCompile group: 'org.powermock', name: 'powermock-module-junit4', version: '2.0.2'
     testCompile group: 'org.mockito', name: 'mockito-core', version: '2.23.4'
 }
-
-task renameFile {
-    doLast {
-        if (project.version.toString().contains("SNAPSHOT")) {
-            releaseBinary.renameTo snapshotBinary
-        }
-    }
-}
-
-jpi.finalizedBy renameFile
 
