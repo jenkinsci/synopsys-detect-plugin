@@ -21,7 +21,7 @@ public class DetectGlobalConfigTest {
     @Test
     public void testMissingCredentials() {
         DetectGlobalConfig detectGlobalConfig = new DetectGlobalConfig();
-        FormValidation formValidation = detectGlobalConfig.doTestBlackDuckConnection("https://blackduck.domain.com", "123", "30", true);
+        FormValidation formValidation = detectGlobalConfig.doTestBlackDuckConnection("https://blackduck.domain.com", "123", "30");
 
         assertEquals(FormValidation.Kind.ERROR, formValidation.kind);
         assertTrue(formValidation.getMessage().contains("token"));

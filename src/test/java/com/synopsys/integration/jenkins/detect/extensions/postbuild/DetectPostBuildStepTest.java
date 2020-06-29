@@ -26,7 +26,6 @@ import com.synopsys.integration.builder.BuilderPropertyKey;
 import com.synopsys.integration.jenkins.detect.extensions.global.DetectGlobalConfig;
 import com.synopsys.integration.jenkins.detect.substeps.DetectSetupResponse;
 import com.synopsys.integration.jenkins.detect.substeps.SetUpDetectWorkspaceCallable;
-import com.synopsys.integration.polaris.common.configuration.PolarisServerConfigBuilder;
 
 import hudson.EnvVars;
 import hudson.ExtensionList;
@@ -47,7 +46,7 @@ import jenkins.model.GlobalConfiguration;
 @RunWith(PowerMockRunner.class)
 @PrepareForTest({ AbstractBuild.class, JDK.class, Launcher.class, Launcher.ProcStarter.class, GlobalConfiguration.class })
 public class DetectPostBuildStepTest {
-    private static final String DETECT_PROPERTY_INPUT = "--detect.docker.passthrough.service.timeout=$POLARIS_TIMEOUT --detect.cleanup=false --detect.project.name=\"Test Project'\"";
+    private static final String DETECT_PROPERTY_INPUT = "--detect.docker.passthrough.service.timeout=$BLACKDUCK_TIMEOUT --detect.cleanup=false --detect.project.name=\"Test Project'\"";
     private static final String WORKSPACE_REL_PATH = "out/test/DetectPostBuildStepTest/testPerform/workspace";
     private static final String JAVA_HOME_VALUE = System.getenv("JAVA_HOME");
 
@@ -104,7 +103,7 @@ public class DetectPostBuildStepTest {
     }
 
     private List<String> doTest(DetectSetupResponse.ExecutionStrategy executionStrategy, String detectPath, String javaHomePath) throws Exception {
-        System.out.println("Starting testPerform. Errors logged about missing Black Duck or Polaris values are benign.");
+        System.out.println("Starting testPerform. Errors logged about missing Black Duck values are benign.");
         DetectPostBuildStep detectPostBuildStep = new DetectPostBuildStep(DETECT_PROPERTY_INPUT);
         AbstractBuild<FreeStyleProject, FreeStyleBuild> build = PowerMockito.mock(AbstractBuild.class);
         Launcher launcher = PowerMockito.mock(Launcher.class);
@@ -118,15 +117,13 @@ public class DetectPostBuildStepTest {
         PowerMockito.mockStatic(GlobalConfiguration.class);
         Mockito.when(GlobalConfiguration.all()).thenReturn(extensionList);
         DetectGlobalConfig detectGlobalConfig = Mockito.mock(DetectGlobalConfig.class);
-        PolarisServerConfigBuilder polarisServerConfigBuilder = Mockito.mock(PolarisServerConfigBuilder.class);
         BlackDuckServerConfigBuilder blackDuckServerConfigBuilder = Mockito.mock(BlackDuckServerConfigBuilder.class);
 
         Mockito.when(extensionList.get(Mockito.any())).thenReturn(detectGlobalConfig);
-        Mockito.when(detectGlobalConfig.getPolarisServerConfigBuilder(Mockito.any(), Mockito.any())).thenReturn(polarisServerConfigBuilder);
         Mockito.when(detectGlobalConfig.getBlackDuckServerConfigBuilder(Mockito.any(), Mockito.any())).thenReturn(blackDuckServerConfigBuilder);
         Map<BuilderPropertyKey, String> environmentVariables = new HashMap<>();
-        environmentVariables.put(PolarisServerConfigBuilder.TIMEOUT_KEY, String.valueOf(PolarisServerConfigBuilder.DEFAULT_TIMEOUT_SECONDS));
-        Mockito.when(polarisServerConfigBuilder.getProperties()).thenReturn(environmentVariables);
+        environmentVariables.put(BlackDuckServerConfigBuilder.TIMEOUT_KEY, "120");
+        Mockito.when(blackDuckServerConfigBuilder.getProperties()).thenReturn(environmentVariables);
 
         FilePath workspaceFilePath = new FilePath(new File(WORKSPACE_REL_PATH));
         Mockito.when(build.getWorkspace()).thenReturn(workspaceFilePath);

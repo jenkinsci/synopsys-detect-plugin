@@ -34,7 +34,6 @@ import com.synopsys.integration.jenkins.JenkinsVersionHelper;
 import com.synopsys.integration.jenkins.SynopsysCredentialsHelper;
 import com.synopsys.integration.jenkins.detect.extensions.global.DetectGlobalConfig;
 import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
-import com.synopsys.integration.polaris.common.configuration.PolarisServerConfigBuilder;
 import com.synopsys.integration.util.IntEnvironmentVariables;
 
 import jenkins.model.GlobalConfiguration;
@@ -60,7 +59,6 @@ public class CreateDetectEnvironment {
         logger.setLogLevel(intEnvironmentVariables);
 
         populateAllBlackDuckEnvironmentVariables(intEnvironmentVariables::put);
-        populateAllPolarisEnvironmentVariables(intEnvironmentVariables::put);
 
         Optional<String> pluginVersion = jenkinsVersionHelper.getPluginVersion("blackduck-detect");
         if (pluginVersion.isPresent()) {
@@ -82,24 +80,6 @@ public class CreateDetectEnvironment {
 
         blackDuckServerConfigBuilder.getProperties()
             .forEach((builderPropertyKey, propertyValue) -> acceptIfNotNull(environmentPutter, builderPropertyKey.getKey(), propertyValue));
-    }
-
-    private void populateAllPolarisEnvironmentVariables(BiConsumer<String, String> environmentPutter) {
-        DetectGlobalConfig detectGlobalConfig = GlobalConfiguration.all().get(DetectGlobalConfig.class);
-        if (detectGlobalConfig == null) {
-            return;
-        }
-
-        PolarisServerConfigBuilder polarisServerConfigBuilder = detectGlobalConfig.getPolarisServerConfigBuilder(jenkinsProxyHelper, synopsysCredentialsHelper);
-
-        polarisServerConfigBuilder.getProperties()
-            .forEach((builderPropertyKey, propertyValue) -> acceptIfNotNull(environmentPutter, builderPropertyKey.getKey(), propertyValue));
-
-        try {
-            polarisServerConfigBuilder.build().populateEnvironmentVariables(environmentPutter);
-        } catch (Exception ignored) {
-            // If this doesn't work, Detect will throw an exception later on.
-        }
     }
 
     private void acceptIfNotNull(BiConsumer<String, String> environmentPutter, String key, String value) {

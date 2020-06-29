@@ -34,7 +34,6 @@ dependencies {
     annotationProcessor 'com.synopsys.integration:jenkins-annotation-processor:0.0.1'
 
     implementation 'com.synopsys.integration:blackduck-common:48.0.0'
-    implementation 'com.synopsys.integration:polaris-common:0.12.0'
     implementation 'com.synopsys.integration:jenkins-common:0.2.1'
     implementation 'org.jvnet.localizer:localizer:1.24'
 
