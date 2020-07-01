@@ -27,7 +27,7 @@ jenkinsPlugin {
     url = 'https://wiki.jenkins.io/display/JENKINS/Synopsys+Detect+Plugin'
     gitHubUrl = 'https://github.com/jenkinsci/synopsys-detect-plugin'
 
-    pluginFirstClassLoader = true
+    pluginFirstClassLoader = false
 }
 
 dependencies {

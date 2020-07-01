@@ -60,7 +60,6 @@ public class DetectJenkinsSubStepCoordinator {
     }
 
     public int runDetect() throws IOException, InterruptedException, IntegrationException {
-        String remoteTempWorkspacePath = WorkspaceList.tempDir(workspace).getRemote();
         JenkinsVersionHelper jenkinsVersionHelper = new JenkinsVersionHelper(Jenkins.getInstanceOrNull());
         JenkinsProxyHelper jenkinsProxyHelper = JenkinsProxyHelper.fromJenkins(Jenkins.getInstanceOrNull());
         SynopsysCredentialsHelper synopsysCredentialsHelper = new SynopsysCredentialsHelper(Jenkins.getInstanceOrNull());
@@ -68,8 +67,8 @@ public class DetectJenkinsSubStepCoordinator {
         CreateDetectEnvironment createDetectEnvironment = new CreateDetectEnvironment(logger, jenkinsProxyHelper, jenkinsVersionHelper, synopsysCredentialsHelper, envVars);
         IntEnvironmentVariables intEnvironmentVariables = createDetectEnvironment.createDetectEnvironment();
 
-        SetUpDetectWorkspaceCallable setUpDetectWorkspaceCallable = new SetUpDetectWorkspaceCallable(logger, intEnvironmentVariables.getVariables(), remoteTempWorkspacePath, remoteJavaHome);
-        DetectSetupResponse detectSetupResponse = launcher.getChannel().call(setUpDetectWorkspaceCallable);
+        SetUpDetectWorkspace setUpDetectWorkspace = new SetUpDetectWorkspace(logger, launcher.getChannel(), intEnvironmentVariables, remoteJavaHome, WorkspaceList.tempDir(workspace).getRemote());
+        DetectSetupResponse detectSetupResponse = setUpDetectWorkspace.setUpDetectWorkspace();
 
         ParseDetectArguments parseDetectArguments = new ParseDetectArguments(logger, intEnvironmentVariables, jenkinsVersionHelper, detectSetupResponse, detectProperties);
         List<String> detectCmds = parseDetectArguments.parseDetectArguments();
@@ -82,5 +81,4 @@ public class DetectJenkinsSubStepCoordinator {
                    .quiet(true)
                    .join();
     }
-
 }

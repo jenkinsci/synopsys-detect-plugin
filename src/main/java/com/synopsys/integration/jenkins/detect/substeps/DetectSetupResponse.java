@@ -30,13 +30,13 @@ public class DetectSetupResponse implements Serializable {
     private final ExecutionStrategy executionStrategy;
     private final String remoteJavaHome;
 
-    public DetectSetupResponse(final ExecutionStrategy executionStrategy, final String detectRemotePath) {
+    public DetectSetupResponse(ExecutionStrategy executionStrategy, String detectRemotePath) {
         this.detectRemotePath = detectRemotePath;
         this.executionStrategy = executionStrategy;
         this.remoteJavaHome = null;
     }
 
-    public DetectSetupResponse(final ExecutionStrategy executionStrategy, final String remoteJavaHome, final String detectRemotePath) {
+    public DetectSetupResponse(ExecutionStrategy executionStrategy, String remoteJavaHome, String detectRemotePath) {
         this.detectRemotePath = detectRemotePath;
         this.executionStrategy = executionStrategy;
         this.remoteJavaHome = remoteJavaHome;
@@ -57,7 +57,7 @@ public class DetectSetupResponse implements Serializable {
     public enum ExecutionStrategy {
         SHELL_SCRIPT,
         POWERSHELL_SCRIPT,
-        JAR;
+        JAR
     }
 
 }

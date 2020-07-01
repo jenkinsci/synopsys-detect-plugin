@@ -24,8 +24,8 @@ import org.powermock.modules.junit4.PowerMockRunner;
 import com.synopsys.integration.blackduck.configuration.BlackDuckServerConfigBuilder;
 import com.synopsys.integration.builder.BuilderPropertyKey;
 import com.synopsys.integration.jenkins.detect.extensions.global.DetectGlobalConfig;
+import com.synopsys.integration.jenkins.detect.substeps.DetectExecutionManager;
 import com.synopsys.integration.jenkins.detect.substeps.DetectSetupResponse;
-import com.synopsys.integration.jenkins.detect.substeps.SetUpDetectWorkspaceCallable;
 
 import hudson.EnvVars;
 import hudson.ExtensionList;
@@ -144,7 +144,7 @@ public class DetectPostBuildStepTest {
         VirtualChannel channel = PowerMockito.mock(hudson.remoting.VirtualChannel.class);
         DetectSetupResponse detectSetupResponse = PowerMockito.mock(DetectSetupResponse.class);
         Mockito.when(launcher.getChannel()).thenReturn(channel);
-        Mockito.when(channel.call(Mockito.any(SetUpDetectWorkspaceCallable.class))).thenReturn(detectSetupResponse);
+        Mockito.when(channel.call(Mockito.any(DetectExecutionManager.class))).thenReturn(detectSetupResponse);
         Mockito.when(detectSetupResponse.getExecutionStrategy()).thenReturn(executionStrategy);
         Mockito.when(detectSetupResponse.getDetectRemotePath()).thenReturn(detectPath);
 
