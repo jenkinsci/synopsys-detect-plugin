@@ -133,6 +133,7 @@ public class DetectScriptManager extends DetectExecutionManager {
 
         Request request = new Request.Builder().uri(url).build();
         try (Response response = intHttpClient.execute(request)) {
+            // TODO: We can do better. If there's an error downloading, this is just going to swallow it.
             Files.copy(response.getContent(), path);
         }
     }

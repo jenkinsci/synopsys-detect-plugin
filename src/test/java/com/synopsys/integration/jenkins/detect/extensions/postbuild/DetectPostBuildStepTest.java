@@ -42,7 +42,7 @@ import hudson.model.TaskListener;
 import hudson.remoting.VirtualChannel;
 import jenkins.model.GlobalConfiguration;
 
-@PowerMockIgnore({ "javax.crypto.*" })
+@PowerMockIgnore({ "javax.crypto.*", "javax.xml.*" })
 @RunWith(PowerMockRunner.class)
 @PrepareForTest({ AbstractBuild.class, JDK.class, Launcher.class, Launcher.ProcStarter.class, GlobalConfiguration.class })
 public class DetectPostBuildStepTest {

@@ -12,7 +12,7 @@ import org.powermock.modules.junit4.PowerMockRunner;
 
 import hudson.util.FormValidation;
 
-@PowerMockIgnore({ "javax.crypto.*", "javax.net.ssl.*" })
+@PowerMockIgnore({ "javax.crypto.*", "javax.net.ssl.*", "javax.xml.*" })
 @RunWith(PowerMockRunner.class)
 public class DetectGlobalConfigTest {
     @Rule

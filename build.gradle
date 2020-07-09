@@ -19,9 +19,8 @@ artifactory {
     }
 }
 
-
 jenkinsPlugin {
-    coreVersion = '2.60.1'
+    coreVersion = '2.150.3'
     displayName = 'Synopsys Detect plugin'
     compatibleSinceVersion = '3.0.0'
     url = 'https://wiki.jenkins.io/display/JENKINS/Synopsys+Detect+Plugin'
@@ -45,11 +44,10 @@ dependencies {
     optionalJenkinsPlugins 'org.jenkins-ci.plugins.workflow:workflow-cps:2.23'
     optionalJenkinsPlugins 'org.jenkins-ci.plugins.workflow:workflow-step-api:2.10'
 
-    testCompile group: 'org.jenkins-ci.main', name: 'jenkins-test-harness', version: '2.58'
+    testCompile group: 'org.jenkins-ci.main', name: 'jenkins-test-harness', version: '2.65'
     testCompile group: 'org.powermock', name: 'powermock-core', version: '2.0.2'
     testCompile group: 'org.powermock', name: 'powermock-reflect', version: '2.0.2'
     testCompile group: 'org.powermock', name: 'powermock-api-mockito2', version: '2.0.2'
     testCompile group: 'org.powermock', name: 'powermock-module-junit4', version: '2.0.2'
     testCompile group: 'org.mockito', name: 'mockito-core', version: '2.23.4'
 }
-
