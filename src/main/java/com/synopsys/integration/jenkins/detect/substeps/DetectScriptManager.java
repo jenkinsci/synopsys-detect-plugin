@@ -30,6 +30,7 @@ import java.nio.file.Paths;
 import org.apache.commons.lang3.StringUtils;
 
 import com.synopsys.integration.exception.IntegrationException;
+import com.synopsys.integration.jenkins.detect.exception.DetectJenkinsException;
 import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
 import com.synopsys.integration.rest.client.IntHttpClient;
 import com.synopsys.integration.rest.credentials.Credentials;
@@ -133,8 +134,11 @@ public class DetectScriptManager extends DetectExecutionManager {
 
         Request request = new Request.Builder().uri(url).build();
         try (Response response = intHttpClient.execute(request)) {
-            // TODO: We can do better. If there's an error downloading, this is just going to swallow it.
-            Files.copy(response.getContent(), path);
+            if (response.isStatusCodeSuccess()) {
+                Files.copy(response.getContent(), path);
+            } else {
+                throw new DetectJenkinsException("Synopsys Detect for Jenkins could not download the script from " + url + " because " + response.getStatusCode() + ": " + response.getStatusMessage());
+            }
         }
     }
 }

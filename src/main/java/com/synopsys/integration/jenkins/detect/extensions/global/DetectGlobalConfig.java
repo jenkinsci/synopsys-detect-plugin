@@ -89,6 +89,10 @@ public class DetectGlobalConfig extends GlobalConfiguration implements Serializa
                       "Alternatively, choose the Api Token from the list to authenticate to the Black Duck server.  \r\n" +
                       "If the credentials you are looking for are not in the list then you can add them with the Add button.")
     private String blackDuckCredentialsId;
+
+    @HelpMarkdown("If selected, Detect will automatically trust certificates when communicating with your Black Duck server.")
+    private boolean trustBlackDuckCertificates;
+
     private int blackDuckTimeout = 120;
 
     @DataBoundConstructor
@@ -126,12 +130,22 @@ public class DetectGlobalConfig extends GlobalConfiguration implements Serializa
         save();
     }
 
+    public boolean getTrustBlackDuckCertificates() {
+        return trustBlackDuckCertificates;
+    }
+
+    @DataBoundSetter
+    public void setTrustBlackDuckCertificates(boolean trustBlackDuckCertificates) {
+        this.trustBlackDuckCertificates = trustBlackDuckCertificates;
+        save();
+    }
+
     public BlackDuckServerConfig getBlackDuckServerConfig(JenkinsProxyHelper jenkinsProxyHelper, SynopsysCredentialsHelper synopsysCredentialsHelper) throws IllegalArgumentException {
         return getBlackDuckServerConfigBuilder(jenkinsProxyHelper, synopsysCredentialsHelper).build();
     }
 
     public BlackDuckServerConfigBuilder getBlackDuckServerConfigBuilder(JenkinsProxyHelper jenkinsProxyHelper, SynopsysCredentialsHelper synopsysCredentialsHelper) throws IllegalArgumentException {
-        return createBlackDuckServerConfigBuilder(jenkinsProxyHelper, synopsysCredentialsHelper, blackDuckUrl, blackDuckCredentialsId, blackDuckTimeout);
+        return createBlackDuckServerConfigBuilder(jenkinsProxyHelper, synopsysCredentialsHelper, blackDuckUrl, blackDuckCredentialsId, blackDuckTimeout, trustBlackDuckCertificates);
     }
 
     public ListBoxModel doFillBlackDuckCredentialsIdItems() {
@@ -142,12 +156,13 @@ public class DetectGlobalConfig extends GlobalConfiguration implements Serializa
     }
 
     @POST
-    public FormValidation doTestBlackDuckConnection(@QueryParameter("blackDuckUrl") String blackDuckUrl, @QueryParameter("blackDuckCredentialsId") String blackDuckCredentialsId, @QueryParameter("blackDuckTimeout") String blackDuckTimeout) {
+    public FormValidation doTestBlackDuckConnection(@QueryParameter("blackDuckUrl") String blackDuckUrl, @QueryParameter("blackDuckCredentialsId") String blackDuckCredentialsId, @QueryParameter("blackDuckTimeout") String blackDuckTimeout,
+        @QueryParameter("trustBlackDuckCertificates") boolean trustBlackDuckCertificates) {
         SynopsysCredentialsHelper synopsysCredentialsHelper = new SynopsysCredentialsHelper(Jenkins.getInstanceOrNull());
         JenkinsProxyHelper jenkinsProxyHelper = JenkinsProxyHelper.fromJenkins(Jenkins.getInstanceOrNull());
 
         BlackDuckServerConfigBuilder blackDuckServerConfigBuilder = createBlackDuckServerConfigBuilder(jenkinsProxyHelper, synopsysCredentialsHelper, blackDuckUrl, blackDuckCredentialsId,
-            Integer.parseInt(blackDuckTimeout));
+            Integer.parseInt(blackDuckTimeout), trustBlackDuckCertificates);
         return validateConnection(blackDuckServerConfigBuilder, BlackDuckServerConfig::createBlackDuckHttpClient);
     }
 
@@ -185,7 +200,7 @@ public class DetectGlobalConfig extends GlobalConfiguration implements Serializa
     }
 
     private <T extends Buildable> FormValidation validateConnection(IntegrationBuilder<T> configBuilder, BiFunction<T, PrintStreamIntLogger, AuthenticatingIntHttpClient> createHttpClientMethod) {
-        Jenkins.getInstance().checkPermission(Jenkins.ADMINISTER);
+        Jenkins.getInstanceOrNull().checkPermission(Jenkins.ADMINISTER);
         try {
             T config = configBuilder.build();
             ConnectionResult connectionResult = createHttpClientMethod.apply(config, new PrintStreamIntLogger(System.out, LogLevel.DEBUG)).attemptConnection();
@@ -217,10 +232,12 @@ public class DetectGlobalConfig extends GlobalConfiguration implements Serializa
         String blackDuckUrl = getNodeValue(doc, "blackDuckUrl").orElse(StringUtils.EMPTY);
         String blackDuckCredentialsId = getNodeValue(doc, "blackDuckCredentialsId").orElse(StringUtils.EMPTY);
         int blackDuckTimeout = getNodeIntegerValue(doc, "blackDuckTimeout").orElse(120);
+        boolean trustBlackDuckCertificates = getNodeBooleanValue(doc, "trustBlackDuckCertificates").orElse(false);
 
         setBlackDuckUrl(blackDuckUrl);
         setBlackDuckCredentialsId(blackDuckCredentialsId);
         setBlackDuckTimeout(blackDuckTimeout);
+        setTrustBlackDuckCertificates(trustBlackDuckCertificates);
         save();
     }
 
@@ -239,12 +256,18 @@ public class DetectGlobalConfig extends GlobalConfiguration implements Serializa
         }
     }
 
-    private BlackDuckServerConfigBuilder createBlackDuckServerConfigBuilder(JenkinsProxyHelper jenkinsProxyHelper, SynopsysCredentialsHelper synopsysCredentialsHelper, String blackDuckUrl, String credentialsId, int timeout) {
+    private Optional<Boolean> getNodeBooleanValue(Document doc, String tagName) {
+        return getNodeValue(doc, tagName).map(Boolean::valueOf);
+    }
+
+    private BlackDuckServerConfigBuilder createBlackDuckServerConfigBuilder(JenkinsProxyHelper jenkinsProxyHelper, SynopsysCredentialsHelper synopsysCredentialsHelper, String blackDuckUrl, String credentialsId, int timeout,
+        boolean alwaysTrust) {
         ProxyInfo proxyInfo = jenkinsProxyHelper.getProxyInfo(blackDuckUrl);
 
         BlackDuckServerConfigBuilder builder = BlackDuckServerConfig.newBuilder()
                                                    .setUrl(blackDuckUrl)
                                                    .setTimeoutInSeconds(timeout)
+                                                   .setTrustCert(alwaysTrust)
                                                    .setProxyInfo(proxyInfo);
 
         Credentials usernamePasswordCredentials = synopsysCredentialsHelper.getIntegrationCredentialsById(credentialsId);

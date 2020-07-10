@@ -10,7 +10,10 @@
             <f:entry field="blackDuckTimeout" title="Black Duck connection timeout">
                 <f:textbox clazz="required number" checkmethod="post"/>
             </f:entry>
+            <f:entry field="trustBlackDuckCertificates" title="Trust Black Duck certificates">
+                <f:checkbox default="false"/>
+            </f:entry>
         </f:advanced>
-        <f:validateButton method="testBlackDuckConnection" title="Test connection to Black Duck" progress="Testing..." with="blackDuckUrl,blackDuckCredentialsId,blackDuckTimeout"/>
+        <f:validateButton method="testBlackDuckConnection" title="Test connection to Black Duck" progress="Testing..." with="blackDuckUrl,blackDuckCredentialsId,blackDuckTimeout,trustBlackDuckCertificates"/>
     </f:section>
 </j:jelly>
