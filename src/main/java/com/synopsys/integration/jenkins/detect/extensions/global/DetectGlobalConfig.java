@@ -28,7 +28,6 @@ import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.Collections;
 import java.util.Optional;
-import java.util.function.BiFunction;
 
 import javax.servlet.ServletException;
 import javax.xml.parsers.DocumentBuilder;
@@ -56,17 +55,16 @@ import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.cloudbees.plugins.credentials.impl.BaseStandardCredentials;
 import com.synopsys.integration.blackduck.configuration.BlackDuckServerConfig;
 import com.synopsys.integration.blackduck.configuration.BlackDuckServerConfigBuilder;
-import com.synopsys.integration.builder.Buildable;
-import com.synopsys.integration.builder.IntegrationBuilder;
+import com.synopsys.integration.exception.IntegrationException;
 import com.synopsys.integration.jenkins.JenkinsProxyHelper;
 import com.synopsys.integration.jenkins.SynopsysCredentialsHelper;
 import com.synopsys.integration.jenkins.annotations.HelpMarkdown;
 import com.synopsys.integration.log.LogLevel;
 import com.synopsys.integration.log.PrintStreamIntLogger;
 import com.synopsys.integration.rest.client.AuthenticatingIntHttpClient;
-import com.synopsys.integration.rest.client.ConnectionResult;
 import com.synopsys.integration.rest.credentials.Credentials;
 import com.synopsys.integration.rest.proxy.ProxyInfo;
+import com.synopsys.integration.rest.response.Response;
 
 import hudson.Extension;
 import hudson.Functions;
@@ -161,9 +159,18 @@ public class DetectGlobalConfig extends GlobalConfiguration implements Serializa
         SynopsysCredentialsHelper synopsysCredentialsHelper = new SynopsysCredentialsHelper(Jenkins.getInstanceOrNull());
         JenkinsProxyHelper jenkinsProxyHelper = JenkinsProxyHelper.fromJenkins(Jenkins.getInstanceOrNull());
 
-        BlackDuckServerConfigBuilder blackDuckServerConfigBuilder = createBlackDuckServerConfigBuilder(jenkinsProxyHelper, synopsysCredentialsHelper, blackDuckUrl, blackDuckCredentialsId,
-            Integer.parseInt(blackDuckTimeout), trustBlackDuckCertificates);
-        return validateConnection(blackDuckServerConfigBuilder, BlackDuckServerConfig::createBlackDuckHttpClient);
+        Jenkins.getInstanceOrNull().checkPermission(Jenkins.ADMINISTER);
+        try {
+            BlackDuckServerConfigBuilder blackDuckServerConfigBuilder = createBlackDuckServerConfigBuilder(jenkinsProxyHelper, synopsysCredentialsHelper, blackDuckUrl, blackDuckCredentialsId,
+                Integer.parseInt(blackDuckTimeout), trustBlackDuckCertificates);
+            AuthenticatingIntHttpClient authenticatingIntHttpClient = blackDuckServerConfigBuilder.build().createBlackDuckHttpClient(new PrintStreamIntLogger(System.out, LogLevel.DEBUG));
+            Response response = authenticatingIntHttpClient.attemptAuthentication();
+            response.throwExceptionForError();
+        } catch (IllegalArgumentException | IntegrationException e) {
+            return FormValidation.error(e.getMessage());
+        }
+
+        return FormValidation.ok("Connection successful.");
     }
 
     // EX: http://localhost:8080/descriptorByName/com.synopsys.integration.jenkins.detect.extensions.global.DetectGlobalConfig/config.xml
@@ -196,19 +203,6 @@ public class DetectGlobalConfig extends GlobalConfiguration implements Serializa
             if (changed) {
                 Thread.currentThread().setContextClassLoader(originalClassLoader);
             }
-        }
-    }
-
-    private <T extends Buildable> FormValidation validateConnection(IntegrationBuilder<T> configBuilder, BiFunction<T, PrintStreamIntLogger, AuthenticatingIntHttpClient> createHttpClientMethod) {
-        Jenkins.getInstanceOrNull().checkPermission(Jenkins.ADMINISTER);
-        try {
-            T config = configBuilder.build();
-            ConnectionResult connectionResult = createHttpClientMethod.apply(config, new PrintStreamIntLogger(System.out, LogLevel.DEBUG)).attemptConnection();
-            return connectionResult.getFailureMessage()
-                       .map(FormValidation::error)
-                       .orElse(FormValidation.ok("Connection successful"));
-        } catch (IllegalArgumentException e) {
-            return FormValidation.error(e.getMessage());
         }
     }
 
