@@ -27,6 +27,7 @@ import java.io.Serializable;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.Collections;
+import java.util.Locale;
 import java.util.Optional;
 
 import javax.servlet.ServletException;
@@ -39,6 +40,7 @@ import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.http.impl.EnglishReasonPhraseCatalog;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
@@ -55,23 +57,23 @@ import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.cloudbees.plugins.credentials.impl.BaseStandardCredentials;
 import com.synopsys.integration.blackduck.configuration.BlackDuckServerConfig;
 import com.synopsys.integration.blackduck.configuration.BlackDuckServerConfigBuilder;
-import com.synopsys.integration.exception.IntegrationException;
 import com.synopsys.integration.jenkins.JenkinsProxyHelper;
 import com.synopsys.integration.jenkins.SynopsysCredentialsHelper;
 import com.synopsys.integration.jenkins.annotations.HelpMarkdown;
 import com.synopsys.integration.log.LogLevel;
 import com.synopsys.integration.log.PrintStreamIntLogger;
-import com.synopsys.integration.rest.client.AuthenticatingIntHttpClient;
+import com.synopsys.integration.rest.client.ConnectionResult;
 import com.synopsys.integration.rest.credentials.Credentials;
 import com.synopsys.integration.rest.proxy.ProxyInfo;
-import com.synopsys.integration.rest.response.Response;
 
 import hudson.Extension;
 import hudson.Functions;
+import hudson.Util;
 import hudson.security.ACL;
 import hudson.util.FormValidation;
 import hudson.util.IOUtils;
 import hudson.util.ListBoxModel;
+import hudson.util.Messages;
 import jenkins.model.GlobalConfiguration;
 import jenkins.model.Jenkins;
 import jenkins.util.xml.XMLUtils;
@@ -147,10 +149,10 @@ public class DetectGlobalConfig extends GlobalConfiguration implements Serializa
     }
 
     public ListBoxModel doFillBlackDuckCredentialsIdItems() {
-        Jenkins.getInstance().checkPermission(Jenkins.ADMINISTER);
+        Jenkins.getInstanceOrNull().checkPermission(Jenkins.ADMINISTER);
         return new StandardListBoxModel()
                    .includeEmptyValue()
-                   .includeMatchingAs(ACL.SYSTEM, Jenkins.getInstance(), BaseStandardCredentials.class, Collections.emptyList(), SynopsysCredentialsHelper.API_TOKEN_OR_USERNAME_PASSWORD_CREDENTIALS);
+                   .includeMatchingAs(ACL.SYSTEM, Jenkins.getInstanceOrNull(), BaseStandardCredentials.class, Collections.emptyList(), SynopsysCredentialsHelper.API_TOKEN_OR_USERNAME_PASSWORD_CREDENTIALS);
     }
 
     @POST
@@ -161,12 +163,22 @@ public class DetectGlobalConfig extends GlobalConfiguration implements Serializa
 
         Jenkins.getInstanceOrNull().checkPermission(Jenkins.ADMINISTER);
         try {
-            BlackDuckServerConfigBuilder blackDuckServerConfigBuilder = createBlackDuckServerConfigBuilder(jenkinsProxyHelper, synopsysCredentialsHelper, blackDuckUrl, blackDuckCredentialsId,
-                Integer.parseInt(blackDuckTimeout), trustBlackDuckCertificates);
-            AuthenticatingIntHttpClient authenticatingIntHttpClient = blackDuckServerConfigBuilder.build().createBlackDuckHttpClient(new PrintStreamIntLogger(System.out, LogLevel.DEBUG));
-            Response response = authenticatingIntHttpClient.attemptAuthentication();
-            response.throwExceptionForError();
-        } catch (IllegalArgumentException | IntegrationException e) {
+            BlackDuckServerConfig blackDuckServerConfig = createBlackDuckServerConfigBuilder(jenkinsProxyHelper, synopsysCredentialsHelper, blackDuckUrl, blackDuckCredentialsId, Integer.parseInt(blackDuckTimeout),
+                trustBlackDuckCertificates).build();
+            ConnectionResult connectionResult = blackDuckServerConfig.createBlackDuckHttpClient(new PrintStreamIntLogger(System.out, LogLevel.DEBUG)).attemptConnection();
+            if (connectionResult.isFailure()) {
+                int statusCode = connectionResult.getHttpStatusCode();
+                String statusPhrase = EnglishReasonPhraseCatalog.INSTANCE.getReason(statusCode, Locale.ENGLISH);
+
+                // This is how Jenkins constructs an error with an exception stack trace, we're using it here because often a status code and phrase are not enough, but also (especially with proxies) the failure message can be too much.
+                String moreDetailsHtml = connectionResult.getFailureMessage()
+                                             .map(Util::escape)
+                                             .map(msg -> String.format("<a href='#' class='showDetails'>%s</a><pre style='display:none'>%s</pre>", Messages.FormValidation_Error_Details(), msg))
+                                             .orElse(StringUtils.EMPTY);
+
+                return FormValidation.errorWithMarkup(String.format("ERROR: Connection attempt returned %s %s %s", statusCode, statusPhrase, moreDetailsHtml));
+            }
+        } catch (IllegalArgumentException e) {
             return FormValidation.error(e.getMessage());
         }
 
