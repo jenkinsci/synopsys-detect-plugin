@@ -28,6 +28,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import com.synopsys.integration.exception.IntegrationException;
 import com.synopsys.integration.jenkins.JenkinsProxyHelper;
+import com.synopsys.integration.jenkins.detect.DetectJenkinsEnvironmentVariable;
 import com.synopsys.integration.jenkins.detect.exception.DetectJenkinsException;
 import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
 import com.synopsys.integration.rest.proxy.ProxyInfo;
@@ -56,7 +57,7 @@ public class SetUpDetectWorkspace {
     public DetectSetupResponse setUpDetectWorkspace() throws IntegrationException {
         try {
             DetectExecutionManager detectExecutionManager;
-            String detectJarPath = intEnvironmentVariables.getValue("DETECT_JAR");
+            String detectJarPath = intEnvironmentVariables.getValue(DetectJenkinsEnvironmentVariable.USER_PROVIDED_JAR_PATH.stringValue());
 
             if (StringUtils.isNotBlank(detectJarPath)) {
                 detectExecutionManager = new DetectJarManager(logger, remoteJavaHome, intEnvironmentVariables.getVariables(), detectJarPath);

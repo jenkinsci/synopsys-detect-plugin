@@ -34,6 +34,7 @@ import org.apache.tools.ant.types.Commandline;
 
 import com.synopsys.integration.IntegrationEscapeUtils;
 import com.synopsys.integration.jenkins.JenkinsVersionHelper;
+import com.synopsys.integration.jenkins.detect.DetectJenkinsEnvironmentVariable;
 import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
 import com.synopsys.integration.phonehome.request.PhoneHomeRequestBody;
 import com.synopsys.integration.util.IntEnvironmentVariables;
@@ -58,7 +59,13 @@ public class ParseDetectArguments {
 
     public List<String> parseDetectArguments() {
         DetectSetupResponse.ExecutionStrategy executionStrategy = detectSetupResponse.getExecutionStrategy();
-        Function<String, String> argumentEscaper = getArgumentEscaper(executionStrategy);
+        boolean shouldEscape = Boolean.parseBoolean(intEnvironmentVariables.getValue(DetectJenkinsEnvironmentVariable.SHOULD_ESCAPE.stringValue(), "true"));
+        Function<String, String> argumentEscaper;
+        if (shouldEscape) {
+            argumentEscaper = getArgumentEscaper(executionStrategy);
+        } else {
+            argumentEscaper = Function.identity();
+        }
 
         String detectRemotePath = detectSetupResponse.getDetectRemotePath();
         String remoteJavaPath = detectSetupResponse.getRemoteJavaHome();
