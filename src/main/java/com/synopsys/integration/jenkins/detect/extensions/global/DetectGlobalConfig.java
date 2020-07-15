@@ -245,15 +245,15 @@ public class DetectGlobalConfig extends GlobalConfiguration implements Serializa
             throw new IOException("Failed to persist configuration.xml", e);
         }
 
-        String blackDuckUrl = getNodeValue(doc, "blackDuckUrl").orElse(StringUtils.EMPTY);
-        String blackDuckCredentialsId = getNodeValue(doc, "blackDuckCredentialsId").orElse(StringUtils.EMPTY);
-        int blackDuckTimeout = getNodeIntegerValue(doc, "blackDuckTimeout").orElse(120);
-        boolean trustBlackDuckCertificates = getNodeBooleanValue(doc, "trustBlackDuckCertificates").orElse(false);
+        String url = getNodeValue(doc, "blackDuckUrl").orElse(StringUtils.EMPTY);
+        String credentialsId = getNodeValue(doc, "blackDuckCredentialsId").orElse(StringUtils.EMPTY);
+        int timeout = getNodeIntegerValue(doc, "blackDuckTimeout").orElse(120);
+        boolean trustCerts = getNodeBooleanValue(doc, "trustBlackDuckCertificates").orElse(false);
 
-        setBlackDuckUrl(blackDuckUrl);
-        setBlackDuckCredentialsId(blackDuckCredentialsId);
-        setBlackDuckTimeout(blackDuckTimeout);
-        setTrustBlackDuckCertificates(trustBlackDuckCertificates);
+        setBlackDuckUrl(url);
+        setBlackDuckCredentialsId(credentialsId);
+        setBlackDuckTimeout(timeout);
+        setTrustBlackDuckCertificates(trustCerts);
         save();
     }
 

@@ -57,7 +57,7 @@ public class DetectPostBuildStep extends Recorder {
     private final String detectProperties;
 
     @DataBoundConstructor
-    public DetectPostBuildStep(final String detectProperties) {
+    public DetectPostBuildStep(String detectProperties) {
         this.detectProperties = detectProperties;
     }
 
@@ -77,48 +77,46 @@ public class DetectPostBuildStep extends Recorder {
 
     // Freestyle
     @Override
-    public boolean perform(final AbstractBuild<?, ?> build, final Launcher launcher, final BuildListener listener) throws InterruptedException, IOException {
-        final JenkinsIntLogger logger = new JenkinsIntLogger(listener);
+    public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
+        JenkinsIntLogger logger = new JenkinsIntLogger(listener);
 
         try {
-            final FilePath workspace = build.getWorkspace();
+            FilePath workspace = build.getWorkspace();
             if (workspace == null) {
                 throw new DetectJenkinsException("Detect cannot be executed when the workspace is null");
             }
 
-            final Node node = build.getBuiltOn();
-            final EnvVars envVars = build.getEnvironment(listener);
+            Node node = build.getBuiltOn();
+            EnvVars envVars = build.getEnvironment(listener);
 
-            final DetectJenkinsSubStepCoordinator detectJenkinsSubStepCoordinator = new DetectJenkinsSubStepCoordinator(logger, workspace, envVars, getJavaHome(build, node, listener), launcher, listener, detectProperties);
-            final int exitCode = detectJenkinsSubStepCoordinator.runDetect();
+            DetectJenkinsSubStepCoordinator detectJenkinsSubStepCoordinator = new DetectJenkinsSubStepCoordinator(logger, workspace, envVars, getJavaHome(build, node, listener), launcher, listener, detectProperties);
+            int exitCode = detectJenkinsSubStepCoordinator.runDetect();
 
             if (exitCode > 0) {
                 logger.error("Detect failed with exit code " + exitCode);
                 build.setResult(Result.FAILURE);
             }
-        } catch (final Exception e) {
-            if (e instanceof InterruptedException) {
-                logger.error("Detect thread was interrupted", e);
-                build.setResult(Result.ABORTED);
-                Thread.currentThread().interrupt();
-            } else if (e instanceof IntegrationException) {
-                logger.error(e.getMessage());
-                logger.debug(e.getMessage(), e);
-                build.setResult(Result.UNSTABLE);
-            } else {
-                logger.error(e.getMessage(), e);
-                build.setResult(Result.UNSTABLE);
-            }
+        } catch (InterruptedException e) {
+            logger.error("Detect thread was interrupted", e);
+            build.setResult(Result.ABORTED);
+            Thread.currentThread().interrupt();
+        } catch (IntegrationException e) {
+            logger.error(e.getMessage());
+            logger.debug(e.getMessage(), e);
+            build.setResult(Result.UNSTABLE);
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
+            build.setResult(Result.UNSTABLE);
         }
         return true;
     }
 
-    private String getJavaHome(final AbstractBuild<?, ?> build, final Node node, final BuildListener listener) throws IOException, InterruptedException {
-        final JDK jdk = build.getProject().getJDK();
+    private String getJavaHome(AbstractBuild<?, ?> build, Node node, BuildListener listener) throws IOException, InterruptedException {
+        JDK jdk = build.getProject().getJDK();
         if (jdk == null) {
             return null;
         }
-        final JDK nodeJdk = jdk.forNode(node, listener);
+        JDK nodeJdk = jdk.forNode(node, listener);
 
         return nodeJdk.getHome();
     }
@@ -133,7 +131,7 @@ public class DetectPostBuildStep extends Recorder {
         }
 
         @Override
-        public boolean isApplicable(final Class<? extends AbstractProject> jobType) {
+        public boolean isApplicable(Class<? extends AbstractProject> jobType) {
             return true;
         }
 

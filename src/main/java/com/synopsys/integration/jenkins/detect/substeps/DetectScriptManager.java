@@ -99,7 +99,8 @@ public class DetectScriptManager extends DetectExecutionManager {
     }
 
     private boolean shouldDownloadScript(String scriptDownloadUrl, Path localScriptFile) {
-        return Files.notExists(localScriptFile) && StringUtils.isNotBlank(scriptDownloadUrl);
+        // .toFile().exists() is significantly more performant than Files.notExist, so we use that here. --rotte JUL 2020
+        return (localScriptFile == null || !localScriptFile.toFile().exists()) && StringUtils.isNotBlank(scriptDownloadUrl);
     }
 
     private Path prepareScriptDownloadDirectory() throws IntegrationException {

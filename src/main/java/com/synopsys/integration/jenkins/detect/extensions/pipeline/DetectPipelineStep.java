@@ -63,7 +63,7 @@ public class DetectPipelineStep extends Step implements Serializable {
     private boolean returnStatus = false;
 
     @DataBoundConstructor
-    public DetectPipelineStep(final String detectProperties) {
+    public DetectPipelineStep(String detectProperties) {
         this.detectProperties = detectProperties;
     }
 
@@ -76,12 +76,12 @@ public class DetectPipelineStep extends Step implements Serializable {
     }
 
     @DataBoundSetter
-    public void setReturnStatus(final boolean returnStatus) {
+    public void setReturnStatus(boolean returnStatus) {
         this.returnStatus = returnStatus;
     }
 
     @Override
-    public StepExecution start(final StepContext context) throws Exception {
+    public StepExecution start(StepContext context) throws Exception {
         return new Execution(context);
     }
 
@@ -105,14 +105,14 @@ public class DetectPipelineStep extends Step implements Serializable {
 
     }
 
-    public class Execution extends SynchronousNonBlockingStepExecution {
+    public class Execution extends SynchronousNonBlockingStepExecution<Integer> {
         private static final long serialVersionUID = -5807577350749324767L;
-        private transient TaskListener listener;
-        private transient EnvVars envVars;
-        private transient FilePath workspace;
-        private transient Launcher launcher;
+        private final transient TaskListener listener;
+        private final transient EnvVars envVars;
+        private final transient FilePath workspace;
+        private final transient Launcher launcher;
 
-        protected Execution(@Nonnull final StepContext context) throws InterruptedException, IOException {
+        protected Execution(@Nonnull StepContext context) throws InterruptedException, IOException {
             super(context);
             listener = context.get(TaskListener.class);
             envVars = context.get(EnvVars.class);
@@ -122,13 +122,13 @@ public class DetectPipelineStep extends Step implements Serializable {
 
         @Override
         protected Integer run() throws Exception {
-            final JenkinsIntLogger logger = new JenkinsIntLogger(listener);
+            JenkinsIntLogger logger = new JenkinsIntLogger(listener);
 
-            final DetectJenkinsSubStepCoordinator detectJenkinsSubStepCoordinator = new DetectJenkinsSubStepCoordinator(logger, workspace, envVars, null, launcher, listener, detectProperties);
-            final int exitCode = detectJenkinsSubStepCoordinator.runDetect();
+            DetectJenkinsSubStepCoordinator detectJenkinsSubStepCoordinator = new DetectJenkinsSubStepCoordinator(logger, workspace, envVars, null, launcher, listener, detectProperties);
+            int exitCode = detectJenkinsSubStepCoordinator.runDetect();
 
             if (exitCode > 0) {
-                final String errorMsg = "Detect failed with exit code " + exitCode;
+                String errorMsg = "Detect failed with exit code " + exitCode;
                 if (returnStatus) {
                     logger.error(errorMsg);
                 } else {
