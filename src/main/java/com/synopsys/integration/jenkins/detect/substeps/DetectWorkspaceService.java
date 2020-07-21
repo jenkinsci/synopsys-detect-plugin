@@ -39,14 +39,14 @@ import hudson.remoting.VirtualChannel;
 import jenkins.model.Jenkins;
 import jenkins.security.MasterToSlaveCallable;
 
-public class SetUpDetectWorkspace {
+public class DetectWorkspaceService {
     private final JenkinsIntLogger logger;
     private final VirtualChannel virtualChannel;
     private final IntEnvironmentVariables intEnvironmentVariables;
     private final String remoteJavaHome;
     private final String remoteTempWorkspacePath;
 
-    public SetUpDetectWorkspace(JenkinsIntLogger logger, VirtualChannel virtualChannel, IntEnvironmentVariables intEnvironmentVariables, String remoteJavaHome, String remoteTempWorkspacePath) {
+    public DetectWorkspaceService(JenkinsIntLogger logger, VirtualChannel virtualChannel, IntEnvironmentVariables intEnvironmentVariables, String remoteJavaHome, String remoteTempWorkspacePath) {
         this.logger = logger;
         this.virtualChannel = virtualChannel;
         this.intEnvironmentVariables = intEnvironmentVariables;

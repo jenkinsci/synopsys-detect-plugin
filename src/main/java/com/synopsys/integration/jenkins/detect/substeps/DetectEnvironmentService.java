@@ -38,14 +38,14 @@ import com.synopsys.integration.util.IntEnvironmentVariables;
 
 import jenkins.model.GlobalConfiguration;
 
-public class CreateDetectEnvironment {
+public class DetectEnvironmentService {
     private final JenkinsIntLogger logger;
     private final JenkinsProxyHelper jenkinsProxyHelper;
     private final JenkinsVersionHelper jenkinsVersionHelper;
     private final SynopsysCredentialsHelper synopsysCredentialsHelper;
     private final Map<String, String> environmentVariables;
 
-    public CreateDetectEnvironment(JenkinsIntLogger logger, JenkinsProxyHelper jenkinsProxyHelper, JenkinsVersionHelper jenkinsVersionHelper, SynopsysCredentialsHelper synopsysCredentialsHelper, Map<String, String> environmentVariables) {
+    public DetectEnvironmentService(JenkinsIntLogger logger, JenkinsProxyHelper jenkinsProxyHelper, JenkinsVersionHelper jenkinsVersionHelper, SynopsysCredentialsHelper synopsysCredentialsHelper, Map<String, String> environmentVariables) {
         this.logger = logger;
         this.jenkinsProxyHelper = jenkinsProxyHelper;
         this.jenkinsVersionHelper = jenkinsVersionHelper;

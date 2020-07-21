@@ -32,7 +32,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import com.synopsys.integration.exception.IntegrationException;
 import com.synopsys.integration.jenkins.annotations.HelpMarkdown;
 import com.synopsys.integration.jenkins.detect.exception.DetectJenkinsException;
-import com.synopsys.integration.jenkins.detect.substeps.DetectJenkinsSubStepCoordinator;
+import com.synopsys.integration.jenkins.detect.substeps.RunDetectCommand;
 import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
 
 import hudson.EnvVars;
@@ -89,8 +89,8 @@ public class DetectPostBuildStep extends Recorder {
             Node node = build.getBuiltOn();
             EnvVars envVars = build.getEnvironment(listener);
 
-            DetectJenkinsSubStepCoordinator detectJenkinsSubStepCoordinator = new DetectJenkinsSubStepCoordinator(logger, workspace, envVars, getJavaHome(build, node, listener), launcher, listener, detectProperties);
-            int exitCode = detectJenkinsSubStepCoordinator.runDetect();
+            RunDetectCommand runDetectCommand = new RunDetectCommand(logger, workspace, envVars, getJavaHome(build, node, listener), launcher, listener, detectProperties);
+            int exitCode = runDetectCommand.execute();
 
             if (exitCode > 0) {
                 logger.error("Detect failed with exit code " + exitCode);

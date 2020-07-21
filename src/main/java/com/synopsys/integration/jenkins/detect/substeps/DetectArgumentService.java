@@ -41,7 +41,7 @@ import com.synopsys.integration.util.IntEnvironmentVariables;
 
 import hudson.Util;
 
-public class ParseDetectArguments {
+public class DetectArgumentService {
     private static final String LOGGING_LEVEL_KEY = "logging.level.com.synopsys.integration";
     private final JenkinsIntLogger logger;
     private final IntEnvironmentVariables intEnvironmentVariables;
@@ -49,7 +49,7 @@ public class ParseDetectArguments {
     private final DetectSetupResponse detectSetupResponse;
     private final String detectProperties;
 
-    public ParseDetectArguments(JenkinsIntLogger logger, IntEnvironmentVariables intEnvironmentVariables, JenkinsVersionHelper jenkinsVersionHelper, DetectSetupResponse detectSetupResponse, String detectProperties) {
+    public DetectArgumentService(JenkinsIntLogger logger, IntEnvironmentVariables intEnvironmentVariables, JenkinsVersionHelper jenkinsVersionHelper, DetectSetupResponse detectSetupResponse, String detectProperties) {
         this.logger = logger;
         this.intEnvironmentVariables = intEnvironmentVariables;
         this.jenkinsVersionHelper = jenkinsVersionHelper;

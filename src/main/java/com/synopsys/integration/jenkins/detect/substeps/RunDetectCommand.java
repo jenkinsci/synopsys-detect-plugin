@@ -39,7 +39,7 @@ import hudson.model.TaskListener;
 import hudson.slaves.WorkspaceList;
 import jenkins.model.Jenkins;
 
-public class DetectJenkinsSubStepCoordinator {
+public class RunDetectCommand {
     private final JenkinsIntLogger logger;
     private final FilePath workspace;
     private final EnvVars envVars;
@@ -48,8 +48,7 @@ public class DetectJenkinsSubStepCoordinator {
     private final TaskListener listener;
     private final String detectProperties;
 
-    public DetectJenkinsSubStepCoordinator(JenkinsIntLogger logger, FilePath workspace, EnvVars envVars, String remoteJavaHome, Launcher launcher, TaskListener listener,
-        String detectProperties) {
+    public RunDetectCommand(JenkinsIntLogger logger, FilePath workspace, EnvVars envVars, String remoteJavaHome, Launcher launcher, TaskListener listener, String detectProperties) {
         this.logger = logger;
         this.workspace = workspace;
         this.envVars = envVars;
@@ -59,19 +58,19 @@ public class DetectJenkinsSubStepCoordinator {
         this.detectProperties = detectProperties;
     }
 
-    public int runDetect() throws IOException, InterruptedException, IntegrationException {
+    public int execute() throws IOException, InterruptedException, IntegrationException {
         JenkinsVersionHelper jenkinsVersionHelper = new JenkinsVersionHelper(Jenkins.getInstanceOrNull());
         JenkinsProxyHelper jenkinsProxyHelper = JenkinsProxyHelper.fromJenkins(Jenkins.getInstanceOrNull());
         SynopsysCredentialsHelper synopsysCredentialsHelper = new SynopsysCredentialsHelper(Jenkins.getInstanceOrNull());
 
-        CreateDetectEnvironment createDetectEnvironment = new CreateDetectEnvironment(logger, jenkinsProxyHelper, jenkinsVersionHelper, synopsysCredentialsHelper, envVars);
-        IntEnvironmentVariables intEnvironmentVariables = createDetectEnvironment.createDetectEnvironment();
+        DetectEnvironmentService detectEnvironmentService = new DetectEnvironmentService(logger, jenkinsProxyHelper, jenkinsVersionHelper, synopsysCredentialsHelper, envVars);
+        IntEnvironmentVariables intEnvironmentVariables = detectEnvironmentService.createDetectEnvironment();
 
-        SetUpDetectWorkspace setUpDetectWorkspace = new SetUpDetectWorkspace(logger, launcher.getChannel(), intEnvironmentVariables, remoteJavaHome, WorkspaceList.tempDir(workspace).getRemote());
-        DetectSetupResponse detectSetupResponse = setUpDetectWorkspace.setUpDetectWorkspace();
+        DetectWorkspaceService detectWorkspaceService = new DetectWorkspaceService(logger, launcher.getChannel(), intEnvironmentVariables, remoteJavaHome, WorkspaceList.tempDir(workspace).getRemote());
+        DetectSetupResponse detectSetupResponse = detectWorkspaceService.setUpDetectWorkspace();
 
-        ParseDetectArguments parseDetectArguments = new ParseDetectArguments(logger, intEnvironmentVariables, jenkinsVersionHelper, detectSetupResponse, detectProperties);
-        List<String> detectCmds = parseDetectArguments.parseDetectArguments();
+        DetectArgumentService detectArgumentService = new DetectArgumentService(logger, intEnvironmentVariables, jenkinsVersionHelper, detectSetupResponse, detectProperties);
+        List<String> detectCmds = detectArgumentService.parseDetectArguments();
 
         return launcher.launch()
                    .cmds(detectCmds)

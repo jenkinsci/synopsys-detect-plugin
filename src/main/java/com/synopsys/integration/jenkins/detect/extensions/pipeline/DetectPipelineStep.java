@@ -40,7 +40,7 @@ import org.kohsuke.stapler.DataBoundSetter;
 
 import com.synopsys.integration.jenkins.annotations.HelpMarkdown;
 import com.synopsys.integration.jenkins.detect.exception.DetectJenkinsException;
-import com.synopsys.integration.jenkins.detect.substeps.DetectJenkinsSubStepCoordinator;
+import com.synopsys.integration.jenkins.detect.substeps.RunDetectCommand;
 import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
 
 import hudson.EnvVars;
@@ -124,8 +124,8 @@ public class DetectPipelineStep extends Step implements Serializable {
         protected Integer run() throws Exception {
             JenkinsIntLogger logger = new JenkinsIntLogger(listener);
 
-            DetectJenkinsSubStepCoordinator detectJenkinsSubStepCoordinator = new DetectJenkinsSubStepCoordinator(logger, workspace, envVars, null, launcher, listener, detectProperties);
-            int exitCode = detectJenkinsSubStepCoordinator.runDetect();
+            RunDetectCommand runDetectCommand = new RunDetectCommand(logger, workspace, envVars, null, launcher, listener, detectProperties);
+            int exitCode = runDetectCommand.execute();
 
             if (exitCode > 0) {
                 String errorMsg = "Detect failed with exit code " + exitCode;
