@@ -32,8 +32,10 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import com.synopsys.integration.exception.IntegrationException;
 import com.synopsys.integration.jenkins.annotations.HelpMarkdown;
 import com.synopsys.integration.jenkins.detect.exception.DetectJenkinsException;
+import com.synopsys.integration.jenkins.detect.substeps.DetectCommandServicesFactory;
 import com.synopsys.integration.jenkins.detect.substeps.RunDetectCommand;
 import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
+import com.synopsys.integration.jenkins.wrapper.JenkinsWrapper;
 
 import hudson.EnvVars;
 import hudson.Extension;
@@ -42,8 +44,6 @@ import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
-import hudson.model.JDK;
-import hudson.model.Node;
 import hudson.model.Result;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.BuildStepMonitor;
@@ -86,10 +86,11 @@ public class DetectPostBuildStep extends Recorder {
                 throw new DetectJenkinsException("Detect cannot be executed when the workspace is null");
             }
 
-            Node node = build.getBuiltOn();
             EnvVars envVars = build.getEnvironment(listener);
 
-            RunDetectCommand runDetectCommand = new RunDetectCommand(logger, workspace, envVars, getJavaHome(build, node, listener), launcher, listener, detectProperties);
+            DetectCommandServicesFactory detectCommandServicesFactory = new DetectCommandServicesFactory(JenkinsWrapper.initializeFromJenkinsJVM(), listener, envVars, launcher, workspace, build);
+
+            RunDetectCommand runDetectCommand = detectCommandServicesFactory.createRunDetectCommand(detectProperties);
             int exitCode = runDetectCommand.execute();
 
             if (exitCode > 0) {
@@ -109,16 +110,6 @@ public class DetectPostBuildStep extends Recorder {
             build.setResult(Result.UNSTABLE);
         }
         return true;
-    }
-
-    private String getJavaHome(AbstractBuild<?, ?> build, Node node, BuildListener listener) throws IOException, InterruptedException {
-        JDK jdk = build.getProject().getJDK();
-        if (jdk == null) {
-            return null;
-        }
-        JDK nodeJdk = jdk.forNode(node, listener);
-
-        return nodeJdk.getHome();
     }
 
     @Extension

@@ -27,34 +27,33 @@ import java.io.IOException;
 import org.apache.commons.lang3.StringUtils;
 
 import com.synopsys.integration.exception.IntegrationException;
-import com.synopsys.integration.jenkins.JenkinsProxyHelper;
 import com.synopsys.integration.jenkins.detect.DetectJenkinsEnvironmentVariable;
 import com.synopsys.integration.jenkins.detect.exception.DetectJenkinsException;
 import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
+import com.synopsys.integration.jenkins.wrapper.JenkinsProxyHelper;
 import com.synopsys.integration.rest.proxy.ProxyInfo;
 import com.synopsys.integration.util.IntEnvironmentVariables;
 import com.synopsys.integration.util.OperatingSystemType;
 
 import hudson.remoting.VirtualChannel;
-import jenkins.model.Jenkins;
 import jenkins.security.MasterToSlaveCallable;
 
 public class DetectWorkspaceService {
     private final JenkinsIntLogger logger;
     private final VirtualChannel virtualChannel;
-    private final IntEnvironmentVariables intEnvironmentVariables;
     private final String remoteJavaHome;
     private final String remoteTempWorkspacePath;
+    private final JenkinsProxyHelper jenkinsProxyHelper;
 
-    public DetectWorkspaceService(JenkinsIntLogger logger, VirtualChannel virtualChannel, IntEnvironmentVariables intEnvironmentVariables, String remoteJavaHome, String remoteTempWorkspacePath) {
+    public DetectWorkspaceService(JenkinsIntLogger logger, JenkinsProxyHelper jenkinsProxyHelper, VirtualChannel virtualChannel, String remoteJavaHome, String remoteTempWorkspacePath) {
         this.logger = logger;
+        this.jenkinsProxyHelper = jenkinsProxyHelper;
         this.virtualChannel = virtualChannel;
-        this.intEnvironmentVariables = intEnvironmentVariables;
         this.remoteJavaHome = remoteJavaHome;
         this.remoteTempWorkspacePath = remoteTempWorkspacePath;
     }
 
-    public DetectSetupResponse setUpDetectWorkspace() throws IntegrationException {
+    public DetectSetupResponse setUpDetectWorkspace(IntEnvironmentVariables intEnvironmentVariables) throws IntegrationException {
         try {
             DetectExecutionManager detectExecutionManager;
             String detectJarPath = intEnvironmentVariables.getValue(DetectJenkinsEnvironmentVariable.USER_PROVIDED_JAR_PATH.stringValue());
@@ -62,15 +61,7 @@ public class DetectWorkspaceService {
             if (StringUtils.isNotBlank(detectJarPath)) {
                 detectExecutionManager = new DetectJarManager(logger, remoteJavaHome, intEnvironmentVariables.getVariables(), detectJarPath);
             } else {
-                OperatingSystemType operatingSystemType = virtualChannel.call(new GetOperatingSystemTypeCallable());
-                String scriptUrl;
-                if (operatingSystemType == OperatingSystemType.WINDOWS) {
-                    scriptUrl = DetectScriptManager.LATEST_POWERSHELL_SCRIPT_URL;
-                } else {
-                    scriptUrl = DetectScriptManager.LATEST_SHELL_SCRIPT_URL;
-                }
-                ProxyInfo proxyInfo = getProxyInfo(scriptUrl);
-                detectExecutionManager = new DetectScriptManager(logger, scriptUrl, proxyInfo, remoteTempWorkspacePath);
+                detectExecutionManager = createScriptManager();
             }
 
             return virtualChannel.call(detectExecutionManager);
@@ -82,12 +73,15 @@ public class DetectWorkspaceService {
         }
     }
 
-    private ProxyInfo getProxyInfo(String scriptUrl) {
-        if (StringUtils.isBlank(scriptUrl)) {
-            return ProxyInfo.NO_PROXY_INFO;
+    private DetectScriptManager createScriptManager() throws IOException, InterruptedException {
+        OperatingSystemType operatingSystemType = virtualChannel.call(new GetOperatingSystemTypeCallable());
+        String scriptUrl;
+        if (operatingSystemType == OperatingSystemType.WINDOWS) {
+            scriptUrl = DetectScriptManager.LATEST_POWERSHELL_SCRIPT_URL;
+        } else {
+            scriptUrl = DetectScriptManager.LATEST_SHELL_SCRIPT_URL;
         }
 
-        JenkinsProxyHelper jenkinsProxyHelper = JenkinsProxyHelper.fromJenkins(Jenkins.getInstanceOrNull());
         ProxyInfo proxyInfo;
         try {
             proxyInfo = jenkinsProxyHelper.getProxyInfo(scriptUrl);
@@ -98,7 +92,7 @@ public class DetectWorkspaceService {
             proxyInfo = ProxyInfo.NO_PROXY_INFO;
         }
 
-        return proxyInfo;
+        return new DetectScriptManager(logger, scriptUrl, proxyInfo, remoteTempWorkspacePath);
     }
 
     private static class GetOperatingSystemTypeCallable extends MasterToSlaveCallable<OperatingSystemType, RuntimeException> {

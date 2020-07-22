@@ -33,9 +33,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.tools.ant.types.Commandline;
 
 import com.synopsys.integration.IntegrationEscapeUtils;
-import com.synopsys.integration.jenkins.JenkinsVersionHelper;
 import com.synopsys.integration.jenkins.detect.DetectJenkinsEnvironmentVariable;
 import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
+import com.synopsys.integration.jenkins.wrapper.JenkinsVersionHelper;
 import com.synopsys.integration.phonehome.request.PhoneHomeRequestBody;
 import com.synopsys.integration.util.IntEnvironmentVariables;
 
@@ -44,20 +44,14 @@ import hudson.Util;
 public class DetectArgumentService {
     private static final String LOGGING_LEVEL_KEY = "logging.level.com.synopsys.integration";
     private final JenkinsIntLogger logger;
-    private final IntEnvironmentVariables intEnvironmentVariables;
     private final JenkinsVersionHelper jenkinsVersionHelper;
-    private final DetectSetupResponse detectSetupResponse;
-    private final String detectProperties;
 
-    public DetectArgumentService(JenkinsIntLogger logger, IntEnvironmentVariables intEnvironmentVariables, JenkinsVersionHelper jenkinsVersionHelper, DetectSetupResponse detectSetupResponse, String detectProperties) {
+    public DetectArgumentService(JenkinsIntLogger logger, JenkinsVersionHelper jenkinsVersionHelper) {
         this.logger = logger;
-        this.intEnvironmentVariables = intEnvironmentVariables;
         this.jenkinsVersionHelper = jenkinsVersionHelper;
-        this.detectSetupResponse = detectSetupResponse;
-        this.detectProperties = detectProperties;
     }
 
-    public List<String> parseDetectArguments() {
+    public List<String> parseDetectArguments(IntEnvironmentVariables intEnvironmentVariables, DetectSetupResponse detectSetupResponse, String detectArgumentString) {
         DetectSetupResponse.ExecutionStrategy executionStrategy = detectSetupResponse.getExecutionStrategy();
         boolean shouldEscape = Boolean.parseBoolean(intEnvironmentVariables.getValue(DetectJenkinsEnvironmentVariable.SHOULD_ESCAPE.stringValue(), "true"));
         Function<String, String> argumentEscaper;
@@ -71,27 +65,27 @@ public class DetectArgumentService {
         String remoteJavaPath = detectSetupResponse.getRemoteJavaHome();
         List<String> detectArguments = new ArrayList<>(getInvocationParameters(executionStrategy, detectRemotePath, remoteJavaPath));
 
-        if (StringUtils.isNotBlank(detectProperties)) {
-            Arrays.stream(Commandline.translateCommandline(detectProperties))
+        if (StringUtils.isNotBlank(detectArgumentString)) {
+            Arrays.stream(Commandline.translateCommandline(detectArgumentString))
                 .map(argumentBlobString -> argumentBlobString.split("\\r?\\n"))
                 .flatMap(Arrays::stream)
                 .filter(StringUtils::isNotBlank)
-                .map(this::handleVariableReplacement)
+                .map(argument -> this.handleVariableReplacement(intEnvironmentVariables, argument))
                 .map(argumentEscaper)
                 .forEachOrdered(detectArguments::add);
         }
 
         if (detectArguments.stream().noneMatch(argument -> argument.contains(LOGGING_LEVEL_KEY))) {
-            detectArguments.add(formatAsPropertyAndEscapedValue(argumentEscaper, LOGGING_LEVEL_KEY, logger.getLogLevel().toString()));
+            detectArguments.add(formatAsPropertyAndEscapedValue(intEnvironmentVariables, argumentEscaper, LOGGING_LEVEL_KEY, logger.getLogLevel().toString()));
         }
 
         logger.info("Running Detect command: " + StringUtils.join(detectArguments, " "));
 
         // Phone Home arguments that we do not want logged:
         String jenkinsVersion = jenkinsVersionHelper.getJenkinsVersion().orElse(PhoneHomeRequestBody.UNKNOWN_FIELD_VALUE);
-        detectArguments.add(formatAsPropertyAndEscapedValue(argumentEscaper, "detect.phone.home.passthrough.jenkins.version", jenkinsVersion));
+        detectArguments.add(formatAsPropertyAndEscapedValue(intEnvironmentVariables, argumentEscaper, "detect.phone.home.passthrough.jenkins.version", jenkinsVersion));
         String pluginVersion = jenkinsVersionHelper.getPluginVersion("blackduck-detect").orElse(PhoneHomeRequestBody.UNKNOWN_FIELD_VALUE);
-        detectArguments.add(formatAsPropertyAndEscapedValue(argumentEscaper, "detect.phone.home.passthrough.jenkins.plugin.version", pluginVersion));
+        detectArguments.add(formatAsPropertyAndEscapedValue(intEnvironmentVariables, argumentEscaper, "detect.phone.home.passthrough.jenkins.plugin.version", pluginVersion));
 
         return detectArguments;
     }
@@ -120,7 +114,7 @@ public class DetectArgumentService {
         }
     }
 
-    private String handleVariableReplacement(String value) {
+    private String handleVariableReplacement(IntEnvironmentVariables intEnvironmentVariables, String value) {
         if (value != null) {
             String newValue = Util.replaceMacro(value, intEnvironmentVariables.getVariables());
             if (StringUtils.isNotBlank(newValue) && newValue.contains("$")) {
@@ -131,10 +125,10 @@ public class DetectArgumentService {
         return null;
     }
 
-    private String formatAsPropertyAndEscapedValue(Function<String, String> argumentEscaper, String detectProperty, String value) {
+    private String formatAsPropertyAndEscapedValue(IntEnvironmentVariables intEnvironmentVariables, Function<String, String> argumentEscaper, String detectProperty, String value) {
         String escapedValue = Arrays.stream(Commandline.translateCommandline(value))
                                   .filter(StringUtils::isNotBlank)
-                                  .map(this::handleVariableReplacement)
+                                  .map(commandPiece -> this.handleVariableReplacement(intEnvironmentVariables, commandPiece))
                                   .map(argumentEscaper)
                                   .collect(Collectors.joining());
 
