@@ -16,41 +16,46 @@ import com.synopsys.integration.jenkins.detect.exception.DetectJenkinsException;
 
 public class DetectExecutionManagerTest {
 
-    private static DetectJarManager detectJarManager = new DetectJarManager(null, null, null, null);
-    private static DetectJarManager spiedDetectJarManager = Mockito.spy(detectJarManager);
-
     @Test
     public void testCallInterruptedException() {
-        try {
-            Mockito.doThrow(new InterruptedException()).when(spiedDetectJarManager).setUpForExecution();
-        } catch (IOException | InterruptedException e) {
-            fail("Unexpected exception thrown", e);
-        }
+        DetectExecutionManager detectExecutionManager = new DetectExecutionManager() {
+            @Override
+            public DetectSetupResponse setUpForExecution() throws InterruptedException {
+                throw new InterruptedException();
+            }
+        };
 
-        assertFalse(Thread.currentThread().isInterrupted());
-        assertThrows(DetectJenkinsException.class, spiedDetectJarManager::call);
+        assertFalse(Thread.currentThread().isInterrupted(), "Thread should not be interrupted until an InterruptedException is thrown.");
+        assertThrows(DetectJenkinsException.class, detectExecutionManager::call);
         assertTrue(Thread.currentThread().isInterrupted());
     }
 
     @Test
     public void testCallIOException() {
-        try {
-            Mockito.doThrow(new IOException()).when(spiedDetectJarManager).setUpForExecution();
-        } catch (IOException | InterruptedException e) {
-            fail("Unexpected exception thrown", e);
-        }
+        DetectExecutionManager detectExecutionManager = new DetectExecutionManager() {
+            @Override
+            public DetectSetupResponse setUpForExecution() throws IOException {
+                throw new IOException();
+            }
+        };
 
-        assertThrows(DetectJenkinsException.class, spiedDetectJarManager::call);
+        assertThrows(DetectJenkinsException.class, detectExecutionManager::call);
     }
 
     @Test
     public void testCallNoException() {
         DetectSetupResponse detectSetupResponseMock = Mockito.mock(DetectSetupResponse.class);
 
+        DetectExecutionManager detectExecutionManager = new DetectExecutionManager() {
+            @Override
+            public DetectSetupResponse setUpForExecution() {
+                return detectSetupResponseMock;
+            }
+        };
+
         try {
-            Mockito.doReturn(detectSetupResponseMock).when(spiedDetectJarManager).setUpForExecution();
-            assertEquals(detectSetupResponseMock, spiedDetectJarManager.call());
-        } catch (IOException | InterruptedException | IntegrationException e) {
+            assertEquals(detectSetupResponseMock, detectExecutionManager.call());
+        } catch (IntegrationException e) {
             fail("Unexpected exception thrown", e);
         }
     }
