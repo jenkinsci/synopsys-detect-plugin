@@ -43,7 +43,7 @@ public class DetectJarManagerTest {
         System.setOut(originalOut);
     }
 
-    private static Stream<Arguments> inputTestData() {
+    private static Stream<Arguments> setUpForExecutionInput() {
         return Stream.of(
             Arguments.of(null, true, null, testPathEnv, LogLevel.DEBUG),
             Arguments.of(testJavaHome, false, testDetectJarPath, testPathEnv, LogLevel.WARN),
@@ -57,8 +57,8 @@ public class DetectJarManagerTest {
     }
 
     @ParameterizedTest
-    @MethodSource({ "inputTestData" })
-    public void play(String javaHomeInput, Boolean isValidJavaHome, String detectJarPathInput, String pathEnvInput, LogLevel logLevel) {
+    @MethodSource({ "setUpForExecutionInput" })
+    public void testSetUpForExecution(String javaHomeInput, Boolean isValidJavaHome, String detectJarPathInput, String pathEnvInput, LogLevel logLevel) {
         Map<String, String> environmentVariables = new HashMap<>();
         environmentVariables.put("PATH", pathEnvInput);
 
