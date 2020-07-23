@@ -5,15 +5,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -28,37 +25,28 @@ public class DetectJarManagerTest {
 
     private final static String testDetectJarPath = "/test/detect/jar/path/detect.jar";
     private final static String testJavaHome = "/test/java/home/path";
+    private final static String javaBinPath = "/bin/java";
+    private final static String expectedJavaHome = testJavaHome + javaBinPath;
     private final static String testPathEnv = "/test/path/env";
 
     private final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-    private final PrintStream originalOut = System.out;
-
-    @BeforeEach
-    public void setUp() {
-        System.setOut(new PrintStream(byteArrayOutputStream));
-    }
-
-    @AfterEach
-    public void tearDown() {
-        System.setOut(originalOut);
-    }
 
     private static Stream<Arguments> setUpForExecutionInput() {
         return Stream.of(
-            Arguments.of(null, true, null, testPathEnv, LogLevel.DEBUG),
-            Arguments.of(testJavaHome, false, testDetectJarPath, testPathEnv, LogLevel.WARN),
-            Arguments.of(testJavaHome, false, testDetectJarPath, testPathEnv, LogLevel.INFO),
-            Arguments.of(testJavaHome, false, testDetectJarPath, testPathEnv, LogLevel.DEBUG),
-            Arguments.of(testJavaHome, false, testDetectJarPath, testPathEnv, LogLevel.TRACE),
-            Arguments.of("", false, "", "", LogLevel.DEBUG),
-            Arguments.of(" ", false, " ", " ", LogLevel.DEBUG),
-            Arguments.of("", false, "", "", null)
+            Arguments.of(null, "java", true, null, testPathEnv, LogLevel.DEBUG),
+            Arguments.of(testJavaHome, expectedJavaHome, false, testDetectJarPath, testPathEnv, LogLevel.WARN),
+            Arguments.of(testJavaHome, expectedJavaHome, false, testDetectJarPath, testPathEnv, LogLevel.INFO),
+            Arguments.of(testJavaHome, expectedJavaHome, false, testDetectJarPath, testPathEnv, LogLevel.DEBUG),
+            Arguments.of(testJavaHome, expectedJavaHome, false, testDetectJarPath, testPathEnv, LogLevel.TRACE),
+            Arguments.of("", javaBinPath, false, "", "", LogLevel.DEBUG),
+            Arguments.of(" ", System.getProperty("user.dir") + "/ " + javaBinPath, false, " ", " ", LogLevel.DEBUG),
+            Arguments.of("", javaBinPath, false, "", "", null)
         );
     }
 
     @ParameterizedTest
     @MethodSource({ "setUpForExecutionInput" })
-    public void testSetUpForExecution(String javaHomeInput, Boolean isValidJavaHome, String detectJarPathInput, String pathEnvInput, LogLevel logLevel) {
+    public void testSetUpForExecution(String javaHomeInput, String javaHomeExpected, Boolean isValidJavaHome, String detectJarPathInput, String pathEnvInput, LogLevel logLevel) {
         Map<String, String> environmentVariables = new HashMap<>();
         environmentVariables.put("PATH", pathEnvInput);
 
@@ -71,19 +59,16 @@ public class DetectJarManagerTest {
         }
 
         try {
-            // Perform same actions as calculateJavaExecutablePath().
-            String adjustedJavaHome = javaHomeInput == null ? "java" : new File(javaHomeInput + "/bin/java").getCanonicalPath();
-
             // Call the method being tested
             DetectJarManager detectJarManager = new DetectJarManager(jenkinsIntLogger, javaHomeInput, environmentVariables, detectJarPathInput);
             DetectSetupResponse detectSetupResponse = detectJarManager.setUpForExecution();
 
             assertEquals(DetectSetupResponse.ExecutionStrategy.JAR, detectSetupResponse.getExecutionStrategy());
             assertEquals(detectJarPathInput, detectSetupResponse.getDetectRemotePath());
-            assertEquals(adjustedJavaHome, detectSetupResponse.getRemoteJavaHome());
+            assertEquals(javaHomeExpected, detectSetupResponse.getRemoteJavaHome());
 
             if (jenkinsIntLogger.getLogLevel().isLoggable(LogLevel.INFO)) {
-                assertTrue(byteArrayOutputStream.toString().contains("Running with JAVA: " + adjustedJavaHome), "Log does not contain entry for JAVA path.");
+                assertTrue(byteArrayOutputStream.toString().contains("Running with JAVA: " + javaHomeExpected), "Log does not contain entry for JAVA path.");
                 assertTrue(byteArrayOutputStream.toString().contains("Detect configured: " + detectJarPathInput), "Log does not contain entry for Detect path.");
             }
 
