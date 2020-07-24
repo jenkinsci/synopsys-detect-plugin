@@ -20,7 +20,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package com.synopsys.integration.jenkins.detect.substeps;
+package com.synopsys.integration.jenkins.detect.services;
 
 import java.io.IOException;
 
@@ -30,25 +30,23 @@ import com.synopsys.integration.exception.IntegrationException;
 import com.synopsys.integration.jenkins.detect.DetectJenkinsEnvironmentVariable;
 import com.synopsys.integration.jenkins.detect.exception.DetectJenkinsException;
 import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
+import com.synopsys.integration.jenkins.services.JenkinsRemotingService;
 import com.synopsys.integration.jenkins.wrapper.JenkinsProxyHelper;
 import com.synopsys.integration.rest.proxy.ProxyInfo;
 import com.synopsys.integration.util.IntEnvironmentVariables;
 import com.synopsys.integration.util.OperatingSystemType;
 
-import hudson.remoting.VirtualChannel;
-import jenkins.security.MasterToSlaveCallable;
-
 public class DetectWorkspaceService {
     private final JenkinsIntLogger logger;
-    private final VirtualChannel virtualChannel;
+    private final JenkinsRemotingService jenkinsRemotingService;
     private final String remoteJavaHome;
     private final String remoteTempWorkspacePath;
     private final JenkinsProxyHelper jenkinsProxyHelper;
 
-    public DetectWorkspaceService(JenkinsIntLogger logger, JenkinsProxyHelper jenkinsProxyHelper, VirtualChannel virtualChannel, String remoteJavaHome, String remoteTempWorkspacePath) {
+    public DetectWorkspaceService(JenkinsIntLogger logger, JenkinsProxyHelper jenkinsProxyHelper, JenkinsRemotingService jenkinsRemotingService, String remoteJavaHome, String remoteTempWorkspacePath) {
         this.logger = logger;
         this.jenkinsProxyHelper = jenkinsProxyHelper;
-        this.virtualChannel = virtualChannel;
+        this.jenkinsRemotingService = jenkinsRemotingService;
         this.remoteJavaHome = remoteJavaHome;
         this.remoteTempWorkspacePath = remoteTempWorkspacePath;
     }
@@ -64,7 +62,7 @@ public class DetectWorkspaceService {
                 detectExecutionManager = createScriptManager();
             }
 
-            return virtualChannel.call(detectExecutionManager);
+            return jenkinsRemotingService.call(detectExecutionManager);
         } catch (IOException e) {
             throw new DetectJenkinsException("Could not set up Detect environment", e);
         } catch (InterruptedException e) {
@@ -74,7 +72,7 @@ public class DetectWorkspaceService {
     }
 
     private DetectScriptManager createScriptManager() throws IOException, InterruptedException {
-        OperatingSystemType operatingSystemType = virtualChannel.call(new GetOperatingSystemTypeCallable());
+        OperatingSystemType operatingSystemType = jenkinsRemotingService.call(OperatingSystemType::determineFromSystem);
         String scriptUrl;
         if (operatingSystemType == OperatingSystemType.WINDOWS) {
             scriptUrl = DetectScriptManager.LATEST_POWERSHELL_SCRIPT_URL;
@@ -95,12 +93,4 @@ public class DetectWorkspaceService {
         return new DetectScriptManager(logger, scriptUrl, proxyInfo, remoteTempWorkspacePath);
     }
 
-    private static class GetOperatingSystemTypeCallable extends MasterToSlaveCallable<OperatingSystemType, RuntimeException> {
-        private static final long serialVersionUID = -2750322419510141246L;
-
-        @Override
-        public OperatingSystemType call() {
-            return OperatingSystemType.determineFromSystem();
-        }
-    }
 }

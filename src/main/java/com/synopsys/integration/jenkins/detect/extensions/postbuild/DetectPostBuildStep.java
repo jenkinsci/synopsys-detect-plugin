@@ -29,22 +29,15 @@ import javax.annotation.Nonnull;
 
 import org.kohsuke.stapler.DataBoundConstructor;
 
-import com.synopsys.integration.exception.IntegrationException;
 import com.synopsys.integration.jenkins.annotations.HelpMarkdown;
-import com.synopsys.integration.jenkins.detect.exception.DetectJenkinsException;
-import com.synopsys.integration.jenkins.detect.substeps.DetectCommandServicesFactory;
-import com.synopsys.integration.jenkins.detect.substeps.RunDetectCommand;
-import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
-import com.synopsys.integration.jenkins.wrapper.JenkinsWrapper;
+import com.synopsys.integration.jenkins.detect.services.DetectServicesFactory;
+import com.synopsys.integration.jenkins.detect.substeps.DetectCommands;
 
-import hudson.EnvVars;
 import hudson.Extension;
-import hudson.FilePath;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
-import hudson.model.Result;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Publisher;
@@ -78,37 +71,8 @@ public class DetectPostBuildStep extends Recorder {
     // Freestyle
     @Override
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
-        JenkinsIntLogger logger = new JenkinsIntLogger(listener);
-
-        try {
-            FilePath workspace = build.getWorkspace();
-            if (workspace == null) {
-                throw new DetectJenkinsException("Detect cannot be executed when the workspace is null");
-            }
-
-            EnvVars envVars = build.getEnvironment(listener);
-
-            DetectCommandServicesFactory detectCommandServicesFactory = new DetectCommandServicesFactory(JenkinsWrapper.initializeFromJenkinsJVM(), listener, envVars, launcher, workspace, build);
-
-            RunDetectCommand runDetectCommand = detectCommandServicesFactory.createRunDetectCommand(detectProperties);
-            int exitCode = runDetectCommand.execute();
-
-            if (exitCode > 0) {
-                logger.error("Detect failed with exit code " + exitCode);
-                build.setResult(Result.FAILURE);
-            }
-        } catch (InterruptedException e) {
-            logger.error("Detect thread was interrupted", e);
-            build.setResult(Result.ABORTED);
-            Thread.currentThread().interrupt();
-        } catch (IntegrationException e) {
-            logger.error(e.getMessage());
-            logger.debug(e.getMessage(), e);
-            build.setResult(Result.UNSTABLE);
-        } catch (Exception e) {
-            logger.error(e.getMessage(), e);
-            build.setResult(Result.UNSTABLE);
-        }
+        DetectCommands detectCommands = new DetectCommands(DetectServicesFactory.fromPostBuild(build, launcher, listener));
+        detectCommands.runDetectPostBuild(detectProperties);
         return true;
     }
 

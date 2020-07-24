@@ -20,29 +20,34 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package com.synopsys.integration.jenkins.detect.substeps;
+package com.synopsys.integration.jenkins.services;
 
 import java.io.IOException;
 import java.util.List;
 
+import com.synopsys.integration.function.ThrowingSupplier;
 import com.synopsys.integration.util.IntEnvironmentVariables;
 
+import hudson.AbortException;
 import hudson.FilePath;
 import hudson.Launcher;
 import hudson.model.TaskListener;
+import hudson.remoting.Callable;
+import hudson.remoting.VirtualChannel;
+import jenkins.security.MasterToSlaveCallable;
 
-public class JenkinsLauncherService {
+public class JenkinsRemotingService {
     private final Launcher launcher;
     private final FilePath workspace;
     private final TaskListener listener;
 
-    public JenkinsLauncherService(Launcher launcher, FilePath workspace, TaskListener listener) {
+    public JenkinsRemotingService(Launcher launcher, FilePath workspace, TaskListener listener) {
         this.launcher = launcher;
         this.workspace = workspace;
         this.listener = listener;
     }
 
-    public int executeWithEnvironment(IntEnvironmentVariables intEnvironmentVariables, List<String> commandLine) throws IOException, InterruptedException {
+    public int launch(IntEnvironmentVariables intEnvironmentVariables, List<String> commandLine) throws IOException, InterruptedException {
         return launcher.launch()
                    .cmds(commandLine)
                    .envs(intEnvironmentVariables.getVariables())
@@ -51,4 +56,26 @@ public class JenkinsLauncherService {
                    .quiet(true)
                    .join();
     }
+
+    public <T, E extends Throwable> T call(Callable<T, E> callable) throws E, IOException, InterruptedException {
+        VirtualChannel virtualChannel = launcher.getChannel();
+        if (virtualChannel == null) {
+            throw new AbortException("");
+        }
+        return virtualChannel.call(callable);
+    }
+
+    public <T, E extends Throwable> T call(ThrowingSupplier<T, E> supplierToExecute) throws E, IOException, InterruptedException {
+        Callable<T, E> wrappingCallable = new MasterToSlaveCallable<T, E>() {
+            private static final long serialVersionUID = 1943720716430585353L;
+
+            @Override
+            public T call() throws E {
+                return supplierToExecute.get();
+            }
+        };
+
+        return call(wrappingCallable);
+    }
+
 }
