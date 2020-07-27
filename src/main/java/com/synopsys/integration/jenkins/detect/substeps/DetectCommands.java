@@ -45,14 +45,14 @@ public class DetectCommands {
     }
 
     // TODO: Could this benefit from the Strategy pattern?
-    private int runDetect(String detectArguments) throws IOException, InterruptedException, IntegrationException {
+    private int runDetect(String remoteJdkHome, String detectArguments) throws IOException, InterruptedException, IntegrationException {
         DetectEnvironmentService detectEnvironmentService = detectServicesFactory.createDetectEnvironmentService();
         DetectWorkspaceService detectWorkspaceService = detectServicesFactory.createDetectWorkspaceService();
         DetectArgumentService detectArgumentService = detectServicesFactory.createDetectArgumentService();
         JenkinsRemotingService remotingService = detectServicesFactory.createJenkinsRemotingService();
 
         IntEnvironmentVariables intEnvironmentVariables = detectEnvironmentService.createDetectEnvironment();
-        DetectSetupResponse detectSetupResponse = detectWorkspaceService.setUpDetectWorkspace(intEnvironmentVariables);
+        DetectSetupResponse detectSetupResponse = detectWorkspaceService.setUpDetectWorkspace(intEnvironmentVariables, remoteJdkHome);
         List<String> detectCmds = detectArgumentService.parseDetectArguments(intEnvironmentVariables, detectSetupResponse, detectArguments);
 
         return remotingService.launch(intEnvironmentVariables, detectCmds);
@@ -62,21 +62,22 @@ public class DetectCommands {
         JenkinsBuildService jenkinsBuildService = detectServicesFactory.createJenkinsBuildService();
 
         try {
-            int exitCode = runDetect(detectArguments);
+            String remoteJdkHome = jenkinsBuildService.getJDKRemoteHomeOrEmpty().orElse(null);
+            int exitCode = runDetect(remoteJdkHome, detectArguments);
             if (exitCode > 0) {
                 jenkinsBuildService.markBuildFailed("Detect failed with exit code " + exitCode);
             }
         } catch (InterruptedException e) {
             jenkinsBuildService.markBuildInterrupted();
         } catch (IntegrationException e) {
-            jenkinsBuildService.markBuildFailed(e);
+            jenkinsBuildService.markBuildUnstable(e);
         } catch (Exception e) {
             jenkinsBuildService.markBuildFailed(e);
         }
     }
 
     public int runDetectPipeline(boolean returnStatus, String detectArguments) throws IOException, IntegrationException, InterruptedException {
-        int exitCode = runDetect(detectArguments);
+        int exitCode = runDetect(null, detectArguments);
         if (exitCode > 0) {
             String errorMsg = "Detect failed with exit code " + exitCode;
             if (returnStatus) {

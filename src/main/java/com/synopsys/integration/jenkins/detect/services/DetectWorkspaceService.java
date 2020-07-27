@@ -39,25 +39,23 @@ import com.synopsys.integration.util.OperatingSystemType;
 public class DetectWorkspaceService {
     private final JenkinsIntLogger logger;
     private final JenkinsRemotingService jenkinsRemotingService;
-    private final String remoteJavaHome;
     private final String remoteTempWorkspacePath;
     private final JenkinsProxyHelper jenkinsProxyHelper;
 
-    public DetectWorkspaceService(JenkinsIntLogger logger, JenkinsProxyHelper jenkinsProxyHelper, JenkinsRemotingService jenkinsRemotingService, String remoteJavaHome, String remoteTempWorkspacePath) {
+    public DetectWorkspaceService(JenkinsIntLogger logger, JenkinsProxyHelper jenkinsProxyHelper, JenkinsRemotingService jenkinsRemotingService, String remoteTempWorkspacePath) {
         this.logger = logger;
         this.jenkinsProxyHelper = jenkinsProxyHelper;
         this.jenkinsRemotingService = jenkinsRemotingService;
-        this.remoteJavaHome = remoteJavaHome;
         this.remoteTempWorkspacePath = remoteTempWorkspacePath;
     }
 
-    public DetectSetupResponse setUpDetectWorkspace(IntEnvironmentVariables intEnvironmentVariables) throws IntegrationException {
+    public DetectSetupResponse setUpDetectWorkspace(IntEnvironmentVariables intEnvironmentVariables, String remoteJdkHome) throws IntegrationException {
         try {
             DetectExecutionManager detectExecutionManager;
             String detectJarPath = intEnvironmentVariables.getValue(DetectJenkinsEnvironmentVariable.USER_PROVIDED_JAR_PATH.stringValue());
 
             if (StringUtils.isNotBlank(detectJarPath)) {
-                detectExecutionManager = new DetectJarManager(logger, remoteJavaHome, intEnvironmentVariables.getVariables(), detectJarPath);
+                detectExecutionManager = new DetectJarManager(logger, remoteJdkHome, intEnvironmentVariables.getVariables(), detectJarPath);
             } else {
                 detectExecutionManager = createScriptManager();
             }
