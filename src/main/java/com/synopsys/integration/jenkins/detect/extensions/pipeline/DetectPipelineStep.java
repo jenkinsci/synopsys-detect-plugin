@@ -39,8 +39,8 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
 import com.synopsys.integration.jenkins.annotations.HelpMarkdown;
+import com.synopsys.integration.jenkins.detect.DetectCommands;
 import com.synopsys.integration.jenkins.detect.services.DetectServicesFactory;
-import com.synopsys.integration.jenkins.detect.substeps.DetectCommands;
 import com.synopsys.integration.jenkins.wrapper.JenkinsWrapper;
 
 import hudson.EnvVars;
