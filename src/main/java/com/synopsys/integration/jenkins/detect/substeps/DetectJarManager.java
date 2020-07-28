@@ -24,8 +24,6 @@ package com.synopsys.integration.jenkins.detect.substeps;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Map;
 
@@ -52,17 +50,15 @@ public class DetectJarManager extends DetectExecutionManager {
     @Override
     public DetectSetupResponse setUpForExecution() throws IOException, InterruptedException {
         String javaExecutablePath = this.calculateJavaExecutablePath();
+
         logger.info("Running with JAVA: " + javaExecutablePath);
         logger.info("Detect configured: " + detectJarPath);
-        this.logJavaVersion();
+        this.logDebugData(javaExecutablePath);
 
-        Path detectJar = Paths.get(detectJarPath);
-
-        logger.info("Running Detect: " + detectJar.getFileName());
         return new DetectSetupResponse(DetectSetupResponse.ExecutionStrategy.JAR, javaExecutablePath, detectJarPath);
     }
 
-    public String calculateJavaExecutablePath() throws IOException {
+    private String calculateJavaExecutablePath() throws IOException {
         String javaExecutablePath = "java";
         if (javaHome != null) {
             File java = new File(javaHome);
@@ -77,15 +73,15 @@ public class DetectJarManager extends DetectExecutionManager {
         return javaExecutablePath;
     }
 
-    public void logJavaVersion() throws InterruptedException {
-        logger.debug("PATH: " + environmentVariables.get("PATH"));
-        if (LogLevel.DEBUG == logger.getLogLevel()) {
+    private void logDebugData(String javaExecutablePath) throws InterruptedException {
+        if (logger.getLogLevel().isLoggable(LogLevel.DEBUG)) {
             try {
-                logger.info("Java version: ");
-                ProcessBuilder processBuilder = new ProcessBuilder(Arrays.asList("java", "-version"));
+                logger.debug("PATH: " + environmentVariables.get("PATH"));
+                ProcessBuilder processBuilder = new ProcessBuilder(Arrays.asList(javaExecutablePath, "-version"));
                 processBuilder.environment().putAll(environmentVariables);
                 Process process = processBuilder.start();
                 process.waitFor();
+                logger.debug("Java version: ");
                 IOUtils.copy(process.getErrorStream(), logger.getTaskListener().getLogger());
                 IOUtils.copy(process.getInputStream(), logger.getTaskListener().getLogger());
             } catch (IOException e) {
