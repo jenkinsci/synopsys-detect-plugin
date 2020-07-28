@@ -10,7 +10,6 @@ import java.io.PrintStream;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
@@ -34,12 +33,6 @@ public class DetectJarManagerTest {
     private final JenkinsIntLogger jenkinsIntLogger = new JenkinsIntLogger(taskListener);
 
     private final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-
-    @BeforeEach
-    public void setUp() {
-        environmentVariables.put("PATH", pathEnvVarInput);
-        Mockito.when(taskListener.getLogger()).thenReturn(new PrintStream(byteArrayOutputStream));
-    }
 
     @Test
     public void testSetUpForExecutionEmptySpaceStringInput() {
@@ -100,18 +93,22 @@ public class DetectJarManagerTest {
         this.infoLogLevelValidation(javaBinPath, "");
     }
 
-    private void testDetectSetupResponse(DetectSetupResponse detectSetupResponse, String detectJarPathInput, String javaPath) {
-        assertEquals(DetectSetupResponse.ExecutionStrategy.JAR, detectSetupResponse.getExecutionStrategy());
-        assertEquals(detectJarPathInput, detectSetupResponse.getDetectRemotePath());
-        assertEquals(javaPath, detectSetupResponse.getRemoteJavaHome());
-    }
-
     private void createAndTestDetectSetupResponse(String javaHomeInput, String detectJarPathInput, String expectedJavaPath) {
+        environmentVariables.put("PATH", pathEnvVarInput);
+        Mockito.when(taskListener.getLogger()).thenReturn(new PrintStream(byteArrayOutputStream));
+
+        DetectJarManager detectJarManager = new DetectJarManager(jenkinsIntLogger, javaHomeInput, environmentVariables, detectJarPathInput);
+        DetectSetupResponse detectSetupResponse = null;
+
         try {
-            testDetectSetupResponse(new DetectJarManager(jenkinsIntLogger, javaHomeInput, environmentVariables, detectJarPathInput).setUpForExecution(), detectJarPathInput, expectedJavaPath);
+            detectSetupResponse = detectJarManager.setUpForExecution();
         } catch (IOException | InterruptedException e) {
             fail("Unexpected exception thrown", e);
         }
+
+        assertEquals(DetectSetupResponse.ExecutionStrategy.JAR, detectSetupResponse.getExecutionStrategy());
+        assertEquals(detectJarPathInput, detectSetupResponse.getDetectRemotePath());
+        assertEquals(expectedJavaPath, detectSetupResponse.getRemoteJavaHome());
     }
 
     private void infoLogLevelValidation(String javaPath, String detectJarPathInput) {
