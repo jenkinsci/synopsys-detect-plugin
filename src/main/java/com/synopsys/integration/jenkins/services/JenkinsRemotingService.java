@@ -28,7 +28,6 @@ import java.util.List;
 import com.synopsys.integration.function.ThrowingSupplier;
 import com.synopsys.integration.util.IntEnvironmentVariables;
 
-import hudson.AbortException;
 import hudson.FilePath;
 import hudson.Launcher;
 import hudson.model.TaskListener;
@@ -60,8 +59,10 @@ public class JenkinsRemotingService {
     public <T, E extends Throwable> T call(Callable<T, E> callable) throws E, IOException, InterruptedException {
         VirtualChannel virtualChannel = launcher.getChannel();
         if (virtualChannel == null) {
-            throw new AbortException("");
+            // It's rare for the launcher's channel to be null, but if it is we can fall back to the workspace. We rely on the launcher first and foremost because that's how we can run on docker agents. --rotte JUL 2020
+            virtualChannel = workspace.getChannel();
         }
+
         return virtualChannel.call(callable);
     }
 

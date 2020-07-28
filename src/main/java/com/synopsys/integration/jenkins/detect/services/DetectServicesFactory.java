@@ -23,12 +23,15 @@
 package com.synopsys.integration.jenkins.detect.services;
 
 import java.io.IOException;
+import java.util.Optional;
 
+import com.synopsys.integration.function.ThrowingSupplier;
 import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
 import com.synopsys.integration.jenkins.services.JenkinsBuildService;
 import com.synopsys.integration.jenkins.services.JenkinsRemotingService;
 import com.synopsys.integration.jenkins.wrapper.JenkinsWrapper;
 
+import hudson.AbortException;
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Launcher;
@@ -42,16 +45,15 @@ public class DetectServicesFactory {
     private final TaskListener listener;
     private final EnvVars envVars;
     private final Launcher launcher;
-    private final FilePath workspace;
+    private final ThrowingSupplier<FilePath, AbortException> validatedWorkspace;
     private final AbstractBuild<?, ?> build;
 
-    // TODO: Validate the pieces that we need to validate
     private DetectServicesFactory(JenkinsWrapper jenkinsWrapper, TaskListener listener, EnvVars envVars, Launcher launcher, FilePath workspace, AbstractBuild<?, ?> build) {
         this.jenkinsWrapper = jenkinsWrapper;
         this.listener = listener;
         this.envVars = envVars;
         this.launcher = launcher;
-        this.workspace = workspace;
+        this.validatedWorkspace = () -> Optional.ofNullable(workspace).orElseThrow(() -> new AbortException("Detect cannot be executed when the workspace is null"));
         this.build = build;
     }
 
@@ -59,8 +61,8 @@ public class DetectServicesFactory {
         return new DetectServicesFactory(JenkinsWrapper.initializeFromJenkinsJVM(), listener, build.getEnvironment(listener), launcher, build.getWorkspace(), build);
     }
 
-    public static DetectServicesFactory fromPipeline(JenkinsWrapper jenkinsWrapper, TaskListener listener, EnvVars envVars, Launcher launcher, FilePath workspace) {
-        return new DetectServicesFactory(jenkinsWrapper, listener, envVars, launcher, workspace, null);
+    public static DetectServicesFactory fromPipeline(TaskListener listener, EnvVars envVars, Launcher launcher, FilePath workspace) {
+        return new DetectServicesFactory(JenkinsWrapper.initializeFromJenkinsJVM(), listener, envVars, launcher, workspace, null);
     }
 
     public DetectArgumentService createDetectArgumentService() {
@@ -71,12 +73,15 @@ public class DetectServicesFactory {
         return new DetectEnvironmentService(getLogger(), jenkinsWrapper.getProxyHelper(), jenkinsWrapper.getVersionHelper(), jenkinsWrapper.getCredentialsHelper(), envVars);
     }
 
-    public DetectWorkspaceService createDetectWorkspaceService() {
-        return new DetectWorkspaceService(getLogger(), jenkinsWrapper.getProxyHelper(), createJenkinsRemotingService(), WorkspaceList.tempDir(workspace).getRemote());
+    public DetectWorkspaceService createDetectWorkspaceService() throws AbortException {
+        FilePath workspace = validatedWorkspace.get();
+        FilePath workspaceTempDir = WorkspaceList.tempDir(workspace);
+
+        return new DetectWorkspaceService(getLogger(), jenkinsWrapper.getProxyHelper(), createJenkinsRemotingService(), workspaceTempDir.getRemote());
     }
 
-    public JenkinsRemotingService createJenkinsRemotingService() {
-        return new JenkinsRemotingService(launcher, workspace, listener);
+    public JenkinsRemotingService createJenkinsRemotingService() throws AbortException {
+        return new JenkinsRemotingService(launcher, validatedWorkspace.get(), listener);
     }
 
     public JenkinsBuildService createJenkinsBuildService() {

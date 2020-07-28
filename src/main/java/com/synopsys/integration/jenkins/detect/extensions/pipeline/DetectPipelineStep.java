@@ -41,7 +41,6 @@ import org.kohsuke.stapler.DataBoundSetter;
 import com.synopsys.integration.jenkins.annotations.HelpMarkdown;
 import com.synopsys.integration.jenkins.detect.DetectCommands;
 import com.synopsys.integration.jenkins.detect.services.DetectServicesFactory;
-import com.synopsys.integration.jenkins.wrapper.JenkinsWrapper;
 
 import hudson.EnvVars;
 import hudson.Extension;
@@ -122,7 +121,7 @@ public class DetectPipelineStep extends Step implements Serializable {
 
         @Override
         protected Integer run() throws Exception {
-            DetectCommands detectCommands = new DetectCommands(DetectServicesFactory.fromPipeline(JenkinsWrapper.initializeFromJenkinsJVM(), listener, envVars, launcher, workspace));
+            DetectCommands detectCommands = new DetectCommands(DetectServicesFactory.fromPipeline(listener, envVars, launcher, workspace));
             return detectCommands.runDetectPipeline(returnStatus, detectProperties);
         }
 

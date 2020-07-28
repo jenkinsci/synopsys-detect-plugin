@@ -44,7 +44,6 @@ public class DetectCommands {
         this.detectServicesFactory = detectServicesFactory;
     }
 
-    // TODO: Could this benefit from the Strategy pattern?
     private int runDetect(String remoteJdkHome, String detectArguments) throws IOException, InterruptedException, IntegrationException {
         DetectEnvironmentService detectEnvironmentService = detectServicesFactory.createDetectEnvironmentService();
         DetectWorkspaceService detectWorkspaceService = detectServicesFactory.createDetectWorkspaceService();
