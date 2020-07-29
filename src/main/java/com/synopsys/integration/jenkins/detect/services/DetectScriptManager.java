@@ -30,6 +30,7 @@ import java.nio.file.Paths;
 import org.apache.commons.lang3.StringUtils;
 
 import com.synopsys.integration.exception.IntegrationException;
+import com.synopsys.integration.jenkins.detect.exception.DetectJenkinsException;
 import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
 import com.synopsys.integration.rest.client.IntHttpClient;
 import com.synopsys.integration.rest.credentials.Credentials;
@@ -69,38 +70,39 @@ public class DetectScriptManager extends DetectExecutionManager {
     }
 
     @Override
-    public DetectSetupResponse setUpForExecution() throws IntegrationException, IOException, InterruptedException {
-        String scriptFileName = scriptUrl.substring(scriptUrl.lastIndexOf("/") + 1).trim();
-        Path scriptDownloadDirectory = prepareScriptDownloadDirectory();
-        Path detectScriptPath = scriptDownloadDirectory.resolve(scriptFileName);
-
-        if (shouldDownloadScript(scriptUrl, detectScriptPath)) {
-            logger.info("Downloading Detect script from " + scriptUrl + " to " + detectScriptPath);
-            downloadScriptTo(scriptUrl, detectScriptPath);
-        } else {
-            logger.info("Running already installed Detect script " + detectScriptPath);
-        }
-
-        String scriptRemotePath = detectScriptPath.toRealPath().toString();
-        if (StringUtils.isBlank(scriptRemotePath)) {
-            throw new IntegrationException("[ERROR] The Detect script was not downloaded successfully.");
-        }
-
+    public DetectSetupResponse setUpForExecution() throws IntegrationException {
         DetectSetupResponse.ExecutionStrategy executionStrategy;
         if (LATEST_POWERSHELL_SCRIPT_URL.equals(scriptUrl)) {
             executionStrategy = DetectSetupResponse.ExecutionStrategy.POWERSHELL_SCRIPT;
         } else if (LATEST_SHELL_SCRIPT_URL.equals(scriptUrl)) {
             executionStrategy = DetectSetupResponse.ExecutionStrategy.SHELL_SCRIPT;
         } else {
-            throw new IntegrationException("Invalid script url: " + scriptUrl + " valid script urls are " + LATEST_POWERSHELL_SCRIPT_URL + " and " + LATEST_SHELL_SCRIPT_URL);
+            throw new DetectJenkinsException("Invalid script url: " + scriptUrl + " valid script urls are " + LATEST_POWERSHELL_SCRIPT_URL + " and " + LATEST_SHELL_SCRIPT_URL);
+        }
+
+        String scriptFileName = scriptUrl.substring(scriptUrl.lastIndexOf("/") + 1).trim();
+        Path scriptDownloadDirectory = prepareScriptDownloadDirectory();
+        Path detectScriptPath = scriptDownloadDirectory.resolve(scriptFileName);
+
+        // .toFile().exists() is significantly more performant than Files.notExist, so we use that here. --rotte JUL 2020
+        if (!detectScriptPath.toFile().exists()) {
+            logger.info("Downloading Detect script from " + scriptUrl + " to " + detectScriptPath);
+            downloadScriptTo(scriptUrl, detectScriptPath);
+        } else {
+            logger.info("Running already installed Detect script " + detectScriptPath);
+        }
+
+        String scriptRemotePath;
+        try {
+            scriptRemotePath = detectScriptPath.toRealPath().toString();
+            if (StringUtils.isBlank(scriptRemotePath)) {
+                throw new DetectJenkinsException("[ERROR] The Detect script was not downloaded successfully.");
+            }
+        } catch (IOException e) {
+            throw new DetectJenkinsException("[ERROR] The Detect script was not downloaded successfully: " + e.getMessage(), e);
         }
 
         return new DetectSetupResponse(executionStrategy, scriptRemotePath);
-    }
-
-    private boolean shouldDownloadScript(String scriptDownloadUrl, Path localScriptFile) {
-        // .toFile().exists() is significantly more performant than Files.notExist, so we use that here. --rotte JUL 2020
-        return (localScriptFile == null || !localScriptFile.toFile().exists()) && StringUtils.isNotBlank(scriptDownloadUrl);
     }
 
     private Path prepareScriptDownloadDirectory() throws IntegrationException {
@@ -115,7 +117,7 @@ public class DetectScriptManager extends DetectExecutionManager {
         return installationDirectory;
     }
 
-    private void downloadScriptTo(String url, Path path) throws IntegrationException, IOException {
+    private void downloadScriptTo(String url, Path path) throws IntegrationException {
         // Because we're rebuilding the ProxyInfo here, we shouldn't need to worry about IllegalArgumentExceptions. If we change that implementation, they should be handled nicely here. -- rotte JUL 2020
         CredentialsBuilder credentialsBuilder = Credentials.newBuilder();
         credentialsBuilder.setUsernameAndPassword(proxyUsername, proxyPassword);
@@ -136,6 +138,8 @@ public class DetectScriptManager extends DetectExecutionManager {
         try (Response response = intHttpClient.execute(request)) {
             response.throwExceptionForError();
             Files.copy(response.getContent(), path);
+        } catch (IOException e) {
+            throw new DetectJenkinsException("Synopsys Detect for Jenkins could not download the script successfully: " + e.getMessage(), e);
         }
     }
 }

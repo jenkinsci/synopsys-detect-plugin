@@ -94,4 +94,5 @@ public class JenkinsBuildService {
             build.setResult(executor.abortResult());
         }
     }
+
 }

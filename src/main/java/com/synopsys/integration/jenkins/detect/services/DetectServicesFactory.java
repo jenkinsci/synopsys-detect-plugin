@@ -77,7 +77,7 @@ public class DetectServicesFactory {
         FilePath workspace = validatedWorkspace.get();
         FilePath workspaceTempDir = WorkspaceList.tempDir(workspace);
 
-        return new DetectWorkspaceService(getLogger(), jenkinsWrapper.getProxyHelper(), createJenkinsRemotingService(), workspaceTempDir.getRemote());
+        return new DetectWorkspaceService(getLogger(), jenkinsWrapper.getProxyHelper(), workspaceTempDir.getRemote());
     }
 
     public JenkinsRemotingService createJenkinsRemotingService() throws AbortException {

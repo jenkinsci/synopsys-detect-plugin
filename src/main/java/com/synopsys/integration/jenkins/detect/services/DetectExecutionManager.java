@@ -22,27 +22,17 @@
  */
 package com.synopsys.integration.jenkins.detect.services;
 
-import java.io.IOException;
-
 import com.synopsys.integration.exception.IntegrationException;
-import com.synopsys.integration.jenkins.detect.exception.DetectJenkinsException;
 
 import jenkins.security.MasterToSlaveCallable;
 
 public abstract class DetectExecutionManager extends MasterToSlaveCallable<DetectSetupResponse, IntegrationException> {
     private static final long serialVersionUID = -2742973770990818323L;
 
-    public abstract DetectSetupResponse setUpForExecution() throws IOException, InterruptedException, IntegrationException;
+    public abstract DetectSetupResponse setUpForExecution() throws IntegrationException;
 
     @Override
     public DetectSetupResponse call() throws IntegrationException {
-        try {
-            return this.setUpForExecution();
-        } catch (IOException e) {
-            throw new DetectJenkinsException("Could not set up Detect environment", e);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new DetectJenkinsException("Could not set up Detect environment", e);
-        }
+        return this.setUpForExecution();
     }
 }

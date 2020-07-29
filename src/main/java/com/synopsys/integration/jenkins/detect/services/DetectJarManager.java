@@ -40,17 +40,17 @@ public class DetectJarManager extends DetectExecutionManager {
     private final JenkinsIntLogger logger;
     private final Map<String, String> environmentVariables;
     private final String detectJarPath;
-    private final String javaHome;
+    private final String remoteJdkHome;
 
-    public DetectJarManager(JenkinsIntLogger logger, String javaHome, Map<String, String> environmentVariables, String detectJarPath) {
+    public DetectJarManager(JenkinsIntLogger logger, String remoteJdkHome, Map<String, String> environmentVariables, String detectJarPath) {
         this.logger = logger;
-        this.javaHome = javaHome;
+        this.remoteJdkHome = remoteJdkHome;
         this.environmentVariables = environmentVariables;
         this.detectJarPath = detectJarPath;
     }
 
     @Override
-    public DetectSetupResponse setUpForExecution() throws IOException, InterruptedException {
+    public DetectSetupResponse setUpForExecution() {
         String javaExecutablePath = this.calculateJavaExecutablePath();
         logger.info("Running with JAVA: " + javaExecutablePath);
         logger.info("Detect configured: " + detectJarPath);
@@ -62,22 +62,22 @@ public class DetectJarManager extends DetectExecutionManager {
         return new DetectSetupResponse(DetectSetupResponse.ExecutionStrategy.JAR, javaExecutablePath, detectJarPath);
     }
 
-    public String calculateJavaExecutablePath() throws IOException {
+    public String calculateJavaExecutablePath() {
         String javaExecutablePath = "java";
-        if (javaHome != null) {
-            File java = new File(javaHome);
-            java = new File(java, "bin");
+        if (remoteJdkHome != null) {
+            File remoteJdkJava = new File(remoteJdkHome);
+            remoteJdkJava = new File(remoteJdkJava, "bin");
             if (SystemUtils.IS_OS_WINDOWS) {
-                java = new File(java, "java.exe");
+                remoteJdkJava = new File(remoteJdkJava, "java.exe");
             } else {
-                java = new File(java, "java");
+                remoteJdkJava = new File(remoteJdkJava, "java");
             }
-            javaExecutablePath = java.getCanonicalPath();
+            javaExecutablePath = remoteJdkJava.getPath();
         }
         return javaExecutablePath;
     }
 
-    public void logJavaVersion() throws InterruptedException {
+    public void logJavaVersion() {
         logger.debug("PATH: " + environmentVariables.get("PATH"));
         if (LogLevel.DEBUG == logger.getLogLevel()) {
             try {
@@ -90,6 +90,9 @@ public class DetectJarManager extends DetectExecutionManager {
                 IOUtils.copy(process.getInputStream(), logger.getTaskListener().getLogger());
             } catch (IOException e) {
                 logger.debug("Error printing the JAVA version: " + e.getMessage(), e);
+            } catch (InterruptedException e) {
+                logger.debug("Error printing the JAVA version: " + e.getMessage(), e);
+                Thread.currentThread().interrupt();
             }
         }
     }

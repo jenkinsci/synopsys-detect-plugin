@@ -29,6 +29,7 @@ import com.synopsys.integration.exception.IntegrationException;
 import com.synopsys.integration.jenkins.detect.exception.DetectJenkinsException;
 import com.synopsys.integration.jenkins.detect.services.DetectArgumentService;
 import com.synopsys.integration.jenkins.detect.services.DetectEnvironmentService;
+import com.synopsys.integration.jenkins.detect.services.DetectExecutionManager;
 import com.synopsys.integration.jenkins.detect.services.DetectServicesFactory;
 import com.synopsys.integration.jenkins.detect.services.DetectSetupResponse;
 import com.synopsys.integration.jenkins.detect.services.DetectWorkspaceService;
@@ -36,6 +37,7 @@ import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
 import com.synopsys.integration.jenkins.services.JenkinsBuildService;
 import com.synopsys.integration.jenkins.services.JenkinsRemotingService;
 import com.synopsys.integration.util.IntEnvironmentVariables;
+import com.synopsys.integration.util.OperatingSystemType;
 
 public class DetectCommands {
     private final DetectServicesFactory detectServicesFactory;
@@ -51,7 +53,9 @@ public class DetectCommands {
         JenkinsRemotingService remotingService = detectServicesFactory.createJenkinsRemotingService();
 
         IntEnvironmentVariables intEnvironmentVariables = detectEnvironmentService.createDetectEnvironment();
-        DetectSetupResponse detectSetupResponse = detectWorkspaceService.setUpDetectWorkspace(intEnvironmentVariables, remoteJdkHome);
+        OperatingSystemType operatingSystemType = remotingService.call(OperatingSystemType::determineFromSystem);
+        DetectExecutionManager detectExecutionManager = detectWorkspaceService.determineExecutionManager(intEnvironmentVariables, operatingSystemType, remoteJdkHome);
+        DetectSetupResponse detectSetupResponse = remotingService.call(detectExecutionManager);
         List<String> detectCmds = detectArgumentService.parseDetectArguments(intEnvironmentVariables, detectSetupResponse, detectArguments);
 
         return remotingService.launch(intEnvironmentVariables, detectCmds);
