@@ -20,7 +20,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package com.synopsys.integration.jenkins.detect.services;
+package com.synopsys.integration.jenkins.detect.service.workspace;
 
 import org.apache.commons.lang3.StringUtils;
 

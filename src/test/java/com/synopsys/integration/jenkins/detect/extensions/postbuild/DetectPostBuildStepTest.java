@@ -24,8 +24,8 @@ import org.powermock.modules.junit4.PowerMockRunner;
 import com.synopsys.integration.blackduck.configuration.BlackDuckServerConfigBuilder;
 import com.synopsys.integration.builder.BuilderPropertyKey;
 import com.synopsys.integration.jenkins.detect.extensions.global.DetectGlobalConfig;
-import com.synopsys.integration.jenkins.detect.services.DetectExecutionManager;
-import com.synopsys.integration.jenkins.detect.services.DetectSetupResponse;
+import com.synopsys.integration.jenkins.detect.service.workspace.DetectExecutionManager;
+import com.synopsys.integration.jenkins.detect.service.workspace.DetectSetupResponse;
 
 import hudson.EnvVars;
 import hudson.ExtensionList;

@@ -40,7 +40,7 @@ import org.kohsuke.stapler.DataBoundSetter;
 
 import com.synopsys.integration.jenkins.annotations.HelpMarkdown;
 import com.synopsys.integration.jenkins.detect.DetectCommands;
-import com.synopsys.integration.jenkins.detect.services.DetectServicesFactory;
+import com.synopsys.integration.jenkins.detect.service.DetectServicesFactory;
 
 import hudson.EnvVars;
 import hudson.Extension;

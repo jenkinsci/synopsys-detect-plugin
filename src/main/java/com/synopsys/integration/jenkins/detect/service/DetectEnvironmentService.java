@@ -20,7 +20,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package com.synopsys.integration.jenkins.detect.services;
+package com.synopsys.integration.jenkins.detect.service;
 
 import java.util.Map;
 import java.util.Optional;

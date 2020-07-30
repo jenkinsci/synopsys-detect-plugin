@@ -20,15 +20,16 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package com.synopsys.integration.jenkins.detect.services;
+package com.synopsys.integration.jenkins.detect.service;
 
 import java.io.IOException;
 import java.util.Optional;
 
 import com.synopsys.integration.function.ThrowingSupplier;
+import com.synopsys.integration.jenkins.detect.service.workspace.DetectWorkspaceService;
 import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
-import com.synopsys.integration.jenkins.services.JenkinsBuildService;
-import com.synopsys.integration.jenkins.services.JenkinsRemotingService;
+import com.synopsys.integration.jenkins.service.JenkinsBuildService;
+import com.synopsys.integration.jenkins.service.JenkinsRemotingService;
 import com.synopsys.integration.jenkins.wrapper.JenkinsWrapper;
 
 import hudson.AbortException;

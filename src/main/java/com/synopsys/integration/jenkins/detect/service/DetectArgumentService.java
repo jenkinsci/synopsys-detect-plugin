@@ -20,7 +20,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package com.synopsys.integration.jenkins.detect.services;
+package com.synopsys.integration.jenkins.detect.service;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -34,6 +34,7 @@ import org.apache.tools.ant.types.Commandline;
 
 import com.synopsys.integration.IntegrationEscapeUtils;
 import com.synopsys.integration.jenkins.detect.DetectJenkinsEnvironmentVariable;
+import com.synopsys.integration.jenkins.detect.service.workspace.DetectSetupResponse;
 import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
 import com.synopsys.integration.jenkins.wrapper.JenkinsVersionHelper;
 import com.synopsys.integration.phonehome.request.PhoneHomeRequestBody;

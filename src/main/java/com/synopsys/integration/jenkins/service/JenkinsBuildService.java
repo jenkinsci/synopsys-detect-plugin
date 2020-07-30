@@ -20,12 +20,11 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package com.synopsys.integration.jenkins.services;
+package com.synopsys.integration.jenkins.service;
 
 import java.io.IOException;
 import java.util.Optional;
 
-import com.synopsys.integration.exception.IntegrationException;
 import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
 
 import hudson.model.AbstractBuild;
@@ -50,12 +49,6 @@ public class JenkinsBuildService {
 
     public void markBuildFailed(Exception e) {
         logger.error(e.getMessage(), e);
-        build.setResult(Result.FAILURE);
-    }
-
-    public void markBuildFailed(IntegrationException e) {
-        logger.error(e.getMessage());
-        logger.debug(e.getMessage(), e);
         build.setResult(Result.FAILURE);
     }
 
