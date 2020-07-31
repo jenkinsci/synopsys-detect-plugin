@@ -20,19 +20,19 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package com.synopsys.integration.jenkins.detect.service.workspace;
+package com.synopsys.integration.jenkins.detect.service.strategy;
+
+import java.util.List;
+import java.util.function.Function;
 
 import com.synopsys.integration.exception.IntegrationException;
 
 import jenkins.security.MasterToSlaveCallable;
 
-public abstract class DetectExecutionManager extends MasterToSlaveCallable<DetectSetupResponse, IntegrationException> {
-    private static final long serialVersionUID = -2742973770990818323L;
+public abstract class DetectExecutionStrategy {
+    public abstract MasterToSlaveCallable<String, IntegrationException> getSetupCallable();
 
-    public abstract DetectSetupResponse setUpForExecution() throws IntegrationException;
+    public abstract Function<String, String> getArgumentEscaper();
 
-    @Override
-    public DetectSetupResponse call() throws IntegrationException {
-        return this.setUpForExecution();
-    }
+    public abstract List<String> getInitialArguments(String setupResponse);
 }

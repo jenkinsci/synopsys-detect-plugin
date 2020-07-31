@@ -26,9 +26,10 @@ import java.io.IOException;
 import java.util.Optional;
 
 import com.synopsys.integration.function.ThrowingSupplier;
-import com.synopsys.integration.jenkins.detect.service.workspace.DetectWorkspaceService;
+import com.synopsys.integration.jenkins.detect.service.strategy.DetectStrategyService;
 import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
 import com.synopsys.integration.jenkins.service.JenkinsBuildService;
+import com.synopsys.integration.jenkins.service.JenkinsConfigService;
 import com.synopsys.integration.jenkins.service.JenkinsRemotingService;
 import com.synopsys.integration.jenkins.wrapper.JenkinsWrapper;
 
@@ -71,14 +72,14 @@ public class DetectServicesFactory {
     }
 
     public DetectEnvironmentService createDetectEnvironmentService() {
-        return new DetectEnvironmentService(getLogger(), jenkinsWrapper.getProxyHelper(), jenkinsWrapper.getVersionHelper(), jenkinsWrapper.getCredentialsHelper(), envVars);
+        return new DetectEnvironmentService(getLogger(), jenkinsWrapper.getProxyHelper(), jenkinsWrapper.getVersionHelper(), jenkinsWrapper.getCredentialsHelper(), createJenkinsConfigService(), envVars);
     }
 
-    public DetectWorkspaceService createDetectWorkspaceService() throws AbortException {
+    public DetectStrategyService createDetectStrategyService() throws AbortException {
         FilePath workspace = validatedWorkspace.get();
         FilePath workspaceTempDir = WorkspaceList.tempDir(workspace);
 
-        return new DetectWorkspaceService(getLogger(), jenkinsWrapper.getProxyHelper(), workspaceTempDir.getRemote());
+        return new DetectStrategyService(getLogger(), jenkinsWrapper.getProxyHelper(), workspaceTempDir.getRemote());
     }
 
     public JenkinsRemotingService createJenkinsRemotingService() throws AbortException {
@@ -89,8 +90,11 @@ public class DetectServicesFactory {
         return new JenkinsBuildService(getLogger(), build);
     }
 
+    public JenkinsConfigService createJenkinsConfigService() {
+        return new JenkinsConfigService();
+    }
+
     public JenkinsIntLogger getLogger() {
         return new JenkinsIntLogger(listener);
     }
-
 }

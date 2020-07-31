@@ -24,7 +24,6 @@ package com.synopsys.integration.jenkins.detect.service;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -32,9 +31,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tools.ant.types.Commandline;
 
-import com.synopsys.integration.IntegrationEscapeUtils;
 import com.synopsys.integration.jenkins.detect.DetectJenkinsEnvironmentVariable;
-import com.synopsys.integration.jenkins.detect.service.workspace.DetectSetupResponse;
 import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
 import com.synopsys.integration.jenkins.wrapper.JenkinsVersionHelper;
 import com.synopsys.integration.phonehome.request.PhoneHomeRequestBody;
@@ -52,19 +49,16 @@ public class DetectArgumentService {
         this.jenkinsVersionHelper = jenkinsVersionHelper;
     }
 
-    public List<String> parseDetectArguments(IntEnvironmentVariables intEnvironmentVariables, DetectSetupResponse detectSetupResponse, String detectArgumentString) {
-        DetectSetupResponse.ExecutionStrategy executionStrategy = detectSetupResponse.getExecutionStrategy();
+    public List<String> parseDetectArgumentString(IntEnvironmentVariables intEnvironmentVariables, Function<String, String> strategyEscaper, List<String> invocationParameters, String detectArgumentString) {
         boolean shouldEscape = Boolean.parseBoolean(intEnvironmentVariables.getValue(DetectJenkinsEnvironmentVariable.SHOULD_ESCAPE.stringValue(), "true"));
         Function<String, String> argumentEscaper;
         if (shouldEscape) {
-            argumentEscaper = getArgumentEscaper(executionStrategy);
+            argumentEscaper = strategyEscaper;
         } else {
             argumentEscaper = Function.identity();
         }
 
-        String detectRemotePath = detectSetupResponse.getDetectRemotePath();
-        String remoteJavaPath = detectSetupResponse.getRemoteJavaHome();
-        List<String> detectArguments = new ArrayList<>(getInvocationParameters(executionStrategy, detectRemotePath, remoteJavaPath));
+        List<String> detectArguments = new ArrayList<>(invocationParameters);
 
         if (StringUtils.isNotBlank(detectArgumentString)) {
             Arrays.stream(Commandline.translateCommandline(detectArgumentString))
@@ -77,42 +71,18 @@ public class DetectArgumentService {
         }
 
         if (detectArguments.stream().noneMatch(argument -> argument.contains(LOGGING_LEVEL_KEY))) {
-            detectArguments.add(formatAsPropertyAndEscapedValue(intEnvironmentVariables, argumentEscaper, LOGGING_LEVEL_KEY, logger.getLogLevel().toString()));
+            detectArguments.add(formatAsPropertyAndEscapedValue(intEnvironmentVariables, strategyEscaper, LOGGING_LEVEL_KEY, logger.getLogLevel().toString()));
         }
 
         logger.info("Running Detect command: " + StringUtils.join(detectArguments, " "));
 
         // Phone Home arguments that we do not want logged:
         String jenkinsVersion = jenkinsVersionHelper.getJenkinsVersion().orElse(PhoneHomeRequestBody.UNKNOWN_FIELD_VALUE);
-        detectArguments.add(formatAsPropertyAndEscapedValue(intEnvironmentVariables, argumentEscaper, "detect.phone.home.passthrough.jenkins.version", jenkinsVersion));
+        detectArguments.add(formatAsPropertyAndEscapedValue(intEnvironmentVariables, strategyEscaper, "detect.phone.home.passthrough.jenkins.version", jenkinsVersion));
         String pluginVersion = jenkinsVersionHelper.getPluginVersion("blackduck-detect").orElse(PhoneHomeRequestBody.UNKNOWN_FIELD_VALUE);
-        detectArguments.add(formatAsPropertyAndEscapedValue(intEnvironmentVariables, argumentEscaper, "detect.phone.home.passthrough.jenkins.plugin.version", pluginVersion));
+        detectArguments.add(formatAsPropertyAndEscapedValue(intEnvironmentVariables, strategyEscaper, "detect.phone.home.passthrough.jenkins.plugin.version", pluginVersion));
 
         return detectArguments;
-    }
-
-    private Function<String, String> getArgumentEscaper(DetectSetupResponse.ExecutionStrategy executionStrategy) {
-        switch (executionStrategy) {
-            case POWERSHELL_SCRIPT:
-                return IntegrationEscapeUtils::escapePowerShell;
-            case SHELL_SCRIPT:
-                return IntegrationEscapeUtils::escapeXSI;
-            default:
-                return Function.identity();
-        }
-    }
-
-    private List<String> getInvocationParameters(DetectSetupResponse.ExecutionStrategy executionStrategy, String remoteDetectPath, String remoteJavaPath) {
-        switch (executionStrategy) {
-            case JAR:
-                return Arrays.asList(remoteJavaPath, "-jar", remoteDetectPath);
-            case POWERSHELL_SCRIPT:
-                return Arrays.asList("powershell", String.format("\"Import-Module '%s'; detect\"", remoteDetectPath));
-            case SHELL_SCRIPT:
-                return Arrays.asList("bash", remoteDetectPath);
-            default:
-                return Collections.emptyList();
-        }
     }
 
     private String handleVariableReplacement(IntEnvironmentVariables intEnvironmentVariables, String value) {

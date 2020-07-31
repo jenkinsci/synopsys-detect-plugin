@@ -30,9 +30,8 @@ import com.synopsys.integration.jenkins.detect.exception.DetectJenkinsException;
 import com.synopsys.integration.jenkins.detect.service.DetectArgumentService;
 import com.synopsys.integration.jenkins.detect.service.DetectEnvironmentService;
 import com.synopsys.integration.jenkins.detect.service.DetectServicesFactory;
-import com.synopsys.integration.jenkins.detect.service.workspace.DetectExecutionManager;
-import com.synopsys.integration.jenkins.detect.service.workspace.DetectSetupResponse;
-import com.synopsys.integration.jenkins.detect.service.workspace.DetectWorkspaceService;
+import com.synopsys.integration.jenkins.detect.service.strategy.DetectExecutionStrategy;
+import com.synopsys.integration.jenkins.detect.service.strategy.DetectStrategyService;
 import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
 import com.synopsys.integration.jenkins.service.JenkinsBuildService;
 import com.synopsys.integration.jenkins.service.JenkinsRemotingService;
@@ -46,12 +45,12 @@ public class DetectCommands {
         this.detectServicesFactory = detectServicesFactory;
     }
 
-    public void runDetectPostBuild(String detectArguments) {
+    public void runDetectPostBuild(String detectArgumentString) {
         JenkinsBuildService jenkinsBuildService = detectServicesFactory.createJenkinsBuildService();
 
         try {
             String remoteJdkHome = jenkinsBuildService.getJDKRemoteHomeOrEmpty().orElse(null);
-            int exitCode = runDetect(remoteJdkHome, detectArguments);
+            int exitCode = runDetect(remoteJdkHome, detectArgumentString);
             if (exitCode > 0) {
                 jenkinsBuildService.markBuildFailed("Detect failed with exit code " + exitCode);
             }
@@ -64,8 +63,8 @@ public class DetectCommands {
         }
     }
 
-    public int runDetectPipeline(boolean returnStatus, String detectArguments) throws IOException, IntegrationException, InterruptedException {
-        int exitCode = runDetect(null, detectArguments);
+    public int runDetectPipeline(boolean returnStatus, String detectArgumentString) throws IOException, IntegrationException, InterruptedException {
+        int exitCode = runDetect(null, detectArgumentString);
         if (exitCode > 0) {
             String errorMsg = "Detect failed with exit code " + exitCode;
             if (returnStatus) {
@@ -79,17 +78,20 @@ public class DetectCommands {
         return exitCode;
     }
 
-    private int runDetect(String remoteJdkHome, String detectArguments) throws IOException, InterruptedException, IntegrationException {
+    private int runDetect(String remoteJdkHome, String detectArgumentString) throws IOException, InterruptedException, IntegrationException {
         DetectEnvironmentService detectEnvironmentService = detectServicesFactory.createDetectEnvironmentService();
-        DetectWorkspaceService detectWorkspaceService = detectServicesFactory.createDetectWorkspaceService();
+        DetectStrategyService detectStrategyService = detectServicesFactory.createDetectStrategyService();
         DetectArgumentService detectArgumentService = detectServicesFactory.createDetectArgumentService();
         JenkinsRemotingService remotingService = detectServicesFactory.createJenkinsRemotingService();
 
         IntEnvironmentVariables intEnvironmentVariables = detectEnvironmentService.createDetectEnvironment();
         OperatingSystemType operatingSystemType = remotingService.call(OperatingSystemType::determineFromSystem);
-        DetectExecutionManager detectExecutionManager = detectWorkspaceService.determineExecutionManager(intEnvironmentVariables, operatingSystemType, remoteJdkHome);
-        DetectSetupResponse detectSetupResponse = remotingService.call(detectExecutionManager);
-        List<String> detectCmds = detectArgumentService.parseDetectArguments(intEnvironmentVariables, detectSetupResponse, detectArguments);
+        DetectExecutionStrategy detectExecutionStrategy = detectStrategyService.getExecutionStrategy(intEnvironmentVariables, operatingSystemType, remoteJdkHome);
+
+        String setupResponse = remotingService.call(detectExecutionStrategy.getSetupCallable());
+        List<String> initialArguments = detectExecutionStrategy.getInitialArguments(setupResponse);
+
+        List<String> detectCmds = detectArgumentService.parseDetectArgumentString(intEnvironmentVariables, detectExecutionStrategy.getArgumentEscaper(), initialArguments, detectArgumentString);
 
         return remotingService.launch(intEnvironmentVariables, detectCmds);
     }

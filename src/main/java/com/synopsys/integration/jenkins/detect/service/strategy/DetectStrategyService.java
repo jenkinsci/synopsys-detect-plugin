@@ -20,60 +20,38 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package com.synopsys.integration.jenkins.detect.service.workspace;
+package com.synopsys.integration.jenkins.detect.service.strategy;
 
 import org.apache.commons.lang3.StringUtils;
 
 import com.synopsys.integration.jenkins.detect.DetectJenkinsEnvironmentVariable;
 import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
 import com.synopsys.integration.jenkins.wrapper.JenkinsProxyHelper;
-import com.synopsys.integration.rest.proxy.ProxyInfo;
 import com.synopsys.integration.util.IntEnvironmentVariables;
 import com.synopsys.integration.util.OperatingSystemType;
 
-public class DetectWorkspaceService {
+public class DetectStrategyService {
     private final JenkinsIntLogger logger;
     private final String remoteTempWorkspacePath;
     private final JenkinsProxyHelper jenkinsProxyHelper;
 
-    public DetectWorkspaceService(JenkinsIntLogger logger, JenkinsProxyHelper jenkinsProxyHelper, String remoteTempWorkspacePath) {
+    public DetectStrategyService(JenkinsIntLogger logger, JenkinsProxyHelper jenkinsProxyHelper, String remoteTempWorkspacePath) {
         this.logger = logger;
         this.jenkinsProxyHelper = jenkinsProxyHelper;
         this.remoteTempWorkspacePath = remoteTempWorkspacePath;
     }
 
-    public DetectExecutionManager determineExecutionManager(IntEnvironmentVariables intEnvironmentVariables, OperatingSystemType operatingSystemType, String remoteJdkHome) {
-        DetectExecutionManager detectExecutionManager;
+    public DetectExecutionStrategy getExecutionStrategy(IntEnvironmentVariables intEnvironmentVariables, OperatingSystemType operatingSystemType, String remoteJdkHome) {
+        DetectExecutionStrategy detectExecutionStrategy;
         String detectJarPath = intEnvironmentVariables.getValue(DetectJenkinsEnvironmentVariable.USER_PROVIDED_JAR_PATH.stringValue());
 
         if (StringUtils.isNotBlank(detectJarPath)) {
-            detectExecutionManager = new DetectJarManager(logger, remoteJdkHome, intEnvironmentVariables.getVariables(), detectJarPath);
+            detectExecutionStrategy = new DetectJarStrategy(logger, intEnvironmentVariables, remoteJdkHome, detectJarPath);
         } else {
-            detectExecutionManager = createScriptManager(operatingSystemType);
+            detectExecutionStrategy = new DetectScriptStrategy(logger, jenkinsProxyHelper, operatingSystemType, remoteTempWorkspacePath);
         }
 
-        return detectExecutionManager;
-    }
-
-    private DetectScriptManager createScriptManager(OperatingSystemType operatingSystemType) {
-        String scriptUrl;
-        if (operatingSystemType == OperatingSystemType.WINDOWS) {
-            scriptUrl = DetectScriptManager.LATEST_POWERSHELL_SCRIPT_URL;
-        } else {
-            scriptUrl = DetectScriptManager.LATEST_SHELL_SCRIPT_URL;
-        }
-
-        ProxyInfo proxyInfo;
-        try {
-            proxyInfo = jenkinsProxyHelper.getProxyInfo(scriptUrl);
-        } catch (IllegalArgumentException e) {
-            logger.warn("Synopsys Detect for Jenkins could not resolve proxy info from Jenkins because: " + e.getMessage());
-            logger.warn("Continuing without proxy...");
-            logger.trace("Stack trace:", e);
-            proxyInfo = ProxyInfo.NO_PROXY_INFO;
-        }
-
-        return new DetectScriptManager(logger, scriptUrl, proxyInfo, remoteTempWorkspacePath);
+        return detectExecutionStrategy;
     }
 
 }
