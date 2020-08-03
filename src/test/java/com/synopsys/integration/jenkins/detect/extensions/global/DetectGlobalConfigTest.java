@@ -5,15 +5,10 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.jvnet.hudson.test.JenkinsRule;
-import org.powermock.core.classloader.annotations.PowerMockIgnore;
-import org.powermock.modules.junit4.PowerMockRunner;
 
 import hudson.util.FormValidation;
 
-@PowerMockIgnore({ "javax.crypto.*", "javax.net.ssl.*", "javax.xml.*" })
-@RunWith(PowerMockRunner.class)
 public class DetectGlobalConfigTest {
     @Rule
     public JenkinsRule jenkinsRule = new JenkinsRule();

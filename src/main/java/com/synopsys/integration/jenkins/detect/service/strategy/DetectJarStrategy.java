@@ -24,8 +24,6 @@ package com.synopsys.integration.jenkins.detect.service.strategy;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -87,13 +85,11 @@ public class DetectJarStrategy extends DetectExecutionStrategy {
         @Override
         public String call() {
             String javaExecutablePath = this.calculateJavaExecutablePath();
+
             logger.info("Running with JAVA: " + javaExecutablePath);
             logger.info("Detect configured: " + detectJarPath);
-            this.logJavaVersion();
+            this.logDebugData(javaExecutablePath);
 
-            Path detectJar = Paths.get(detectJarPath);
-
-            logger.info("Running Detect: " + detectJar.getFileName());
             return javaExecutablePath;
         }
 
@@ -107,20 +103,24 @@ public class DetectJarStrategy extends DetectExecutionStrategy {
                 } else {
                     remoteJdkJava = new File(remoteJdkJava, "java");
                 }
-                javaExecutablePath = remoteJdkJava.getPath();
+                try {
+                    javaExecutablePath = remoteJdkJava.getCanonicalPath();
+                } catch (IOException e) {
+                    logger.warn("Dtect could not get Java Home from configured JDK, falling back to java on path: " + e.getMessage());
+                }
             }
             return javaExecutablePath;
         }
 
-        private void logJavaVersion() {
-            logger.debug("PATH: " + environmentVariables.get("PATH"));
-            if (LogLevel.DEBUG == logger.getLogLevel()) {
+        private void logDebugData(String javaExecutablePath) {
+            if (logger.getLogLevel().isLoggable(LogLevel.DEBUG)) {
                 try {
-                    logger.info("Java version: ");
-                    ProcessBuilder processBuilder = new ProcessBuilder(Arrays.asList("java", "-version"));
+                    logger.debug("PATH: " + environmentVariables.get("PATH"));
+                    ProcessBuilder processBuilder = new ProcessBuilder(Arrays.asList(javaExecutablePath, "-version"));
                     processBuilder.environment().putAll(environmentVariables);
                     Process process = processBuilder.start();
                     process.waitFor();
+                    logger.debug("Java version: ");
                     IOUtils.copy(process.getErrorStream(), logger.getTaskListener().getLogger());
                     IOUtils.copy(process.getInputStream(), logger.getTaskListener().getLogger());
                 } catch (IOException e) {
