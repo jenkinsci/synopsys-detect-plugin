@@ -55,6 +55,7 @@ public class DetectCommands {
                 jenkinsBuildService.markBuildFailed("Detect failed with exit code " + exitCode);
             }
         } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
             jenkinsBuildService.markBuildInterrupted();
         } catch (IntegrationException e) {
             jenkinsBuildService.markBuildUnstable(e);
