@@ -121,14 +121,12 @@ public class ParseDetectArguments {
     }
 
     private String handleVariableReplacement(String value) {
-        if (value != null) {
-            String newValue = Util.replaceMacro(value, intEnvironmentVariables.getVariables());
-            if (StringUtils.isNotBlank(newValue) && newValue.contains("$")) {
-                logger.warn("Variable may not have been properly replaced. Argument: " + value + ", resolved argument: " + newValue + ". Make sure the variable has been properly defined.");
-            }
-            return newValue;
+        // This is only called internally, and calls StringUtils.isNotBlank first. Because of this, the value can never be null
+        String newValue = Util.replaceMacro(value, intEnvironmentVariables.getVariables());
+        if (StringUtils.isNotBlank(newValue) && newValue.contains("$")) {
+            logger.warn("Variable may not have been properly replaced. Argument: " + value + ", resolved argument: " + newValue + ". Make sure the variable has been properly defined.");
         }
-        return null;
+        return newValue;
     }
 
     private String formatAsPropertyAndEscapedValue(Function<String, String> argumentEscaper, String detectProperty, String value) {
