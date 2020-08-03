@@ -20,7 +20,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package com.synopsys.integration.jenkins.detect.substeps;
+package com.synopsys.integration.jenkins.detect.service;
 
 import java.util.Map;
 import java.util.Optional;
@@ -29,26 +29,28 @@ import java.util.function.BiConsumer;
 import org.apache.commons.lang3.StringUtils;
 
 import com.synopsys.integration.blackduck.configuration.BlackDuckServerConfigBuilder;
-import com.synopsys.integration.jenkins.JenkinsProxyHelper;
-import com.synopsys.integration.jenkins.JenkinsVersionHelper;
-import com.synopsys.integration.jenkins.SynopsysCredentialsHelper;
 import com.synopsys.integration.jenkins.detect.extensions.global.DetectGlobalConfig;
 import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
+import com.synopsys.integration.jenkins.service.JenkinsConfigService;
+import com.synopsys.integration.jenkins.wrapper.JenkinsProxyHelper;
+import com.synopsys.integration.jenkins.wrapper.JenkinsVersionHelper;
+import com.synopsys.integration.jenkins.wrapper.SynopsysCredentialsHelper;
 import com.synopsys.integration.util.IntEnvironmentVariables;
 
-import jenkins.model.GlobalConfiguration;
-
-public class CreateDetectEnvironment {
+public class DetectEnvironmentService {
     private final JenkinsIntLogger logger;
     private final JenkinsProxyHelper jenkinsProxyHelper;
     private final JenkinsVersionHelper jenkinsVersionHelper;
     private final SynopsysCredentialsHelper synopsysCredentialsHelper;
     private final Map<String, String> environmentVariables;
+    private final JenkinsConfigService jenkinsConfigService;
 
-    public CreateDetectEnvironment(JenkinsIntLogger logger, JenkinsProxyHelper jenkinsProxyHelper, JenkinsVersionHelper jenkinsVersionHelper, SynopsysCredentialsHelper synopsysCredentialsHelper, Map<String, String> environmentVariables) {
+    public DetectEnvironmentService(JenkinsIntLogger logger, JenkinsProxyHelper jenkinsProxyHelper, JenkinsVersionHelper jenkinsVersionHelper, SynopsysCredentialsHelper synopsysCredentialsHelper, JenkinsConfigService jenkinsConfigService,
+        Map<String, String> environmentVariables) {
         this.logger = logger;
         this.jenkinsProxyHelper = jenkinsProxyHelper;
         this.jenkinsVersionHelper = jenkinsVersionHelper;
+        this.jenkinsConfigService = jenkinsConfigService;
         this.synopsysCredentialsHelper = synopsysCredentialsHelper;
         this.environmentVariables = environmentVariables;
     }
@@ -71,12 +73,12 @@ public class CreateDetectEnvironment {
     }
 
     private void populateAllBlackDuckEnvironmentVariables(BiConsumer<String, String> environmentPutter) {
-        DetectGlobalConfig detectGlobalConfig = GlobalConfiguration.all().get(DetectGlobalConfig.class);
-        if (detectGlobalConfig == null) {
+        Optional<DetectGlobalConfig> detectGlobalConfig = jenkinsConfigService.getGlobalConfiguration(DetectGlobalConfig.class);
+        if (!detectGlobalConfig.isPresent()) {
             return;
         }
 
-        BlackDuckServerConfigBuilder blackDuckServerConfigBuilder = detectGlobalConfig.getBlackDuckServerConfigBuilder(jenkinsProxyHelper, synopsysCredentialsHelper);
+        BlackDuckServerConfigBuilder blackDuckServerConfigBuilder = detectGlobalConfig.get().getBlackDuckServerConfigBuilder(jenkinsProxyHelper, synopsysCredentialsHelper);
 
         blackDuckServerConfigBuilder.getProperties()
             .forEach((builderPropertyKey, propertyValue) -> acceptIfNotNull(environmentPutter, builderPropertyKey.getKey(), propertyValue));

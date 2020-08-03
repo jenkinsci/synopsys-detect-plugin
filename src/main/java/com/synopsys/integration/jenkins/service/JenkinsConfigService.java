@@ -20,20 +20,15 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package com.synopsys.integration.jenkins.detect;
+package com.synopsys.integration.jenkins.service;
 
-public enum DetectJenkinsEnvironmentVariable {
-    USER_PROVIDED_JAR_PATH("DETECT_JAR"),
-    SHOULD_ESCAPE("DETECT_PLUGIN_ESCAPING");
+import java.util.Optional;
 
-    private final String environmentVariable;
+import jenkins.model.GlobalConfiguration;
 
-    DetectJenkinsEnvironmentVariable(String environmentVariable) {
-        this.environmentVariable = environmentVariable;
+public class JenkinsConfigService {
+    public <T extends GlobalConfiguration> Optional<T> getGlobalConfiguration(Class<T> configurationClass) {
+        T globalConfig = GlobalConfiguration.all().get(configurationClass);
+        return Optional.ofNullable(globalConfig);
     }
-
-    public String stringValue() {
-        return environmentVariable;
-    }
-
 }

@@ -57,9 +57,10 @@ import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.cloudbees.plugins.credentials.impl.BaseStandardCredentials;
 import com.synopsys.integration.blackduck.configuration.BlackDuckServerConfig;
 import com.synopsys.integration.blackduck.configuration.BlackDuckServerConfigBuilder;
-import com.synopsys.integration.jenkins.JenkinsProxyHelper;
-import com.synopsys.integration.jenkins.SynopsysCredentialsHelper;
 import com.synopsys.integration.jenkins.annotations.HelpMarkdown;
+import com.synopsys.integration.jenkins.wrapper.JenkinsProxyHelper;
+import com.synopsys.integration.jenkins.wrapper.JenkinsWrapper;
+import com.synopsys.integration.jenkins.wrapper.SynopsysCredentialsHelper;
 import com.synopsys.integration.log.LogLevel;
 import com.synopsys.integration.log.PrintStreamIntLogger;
 import com.synopsys.integration.rest.client.ConnectionResult;
@@ -162,15 +163,15 @@ public class DetectGlobalConfig extends GlobalConfiguration implements Serializa
     @POST
     public FormValidation doTestBlackDuckConnection(@QueryParameter("blackDuckUrl") String blackDuckUrl, @QueryParameter("blackDuckCredentialsId") String blackDuckCredentialsId, @QueryParameter("blackDuckTimeout") String blackDuckTimeout,
         @QueryParameter("trustBlackDuckCertificates") boolean trustBlackDuckCertificates) {
-        Jenkins jenkins = Jenkins.getInstanceOrNull();
-        if (jenkins == null) {
+        JenkinsWrapper jenkinsWrapper = JenkinsWrapper.initializeFromJenkinsJVM();
+        if (!jenkinsWrapper.getJenkins().isPresent()) {
             return FormValidation.warning(
                 "Connection validation could not be completed: Validation couldn't retrieve the instance of Jenkins from the JVM. This may happen if Jenkins is still starting up or if this code is running on a different JVM than your Jenkins server.");
         }
-        jenkins.checkPermission(Jenkins.ADMINISTER);
+        jenkinsWrapper.getJenkins().get().checkPermission(Jenkins.ADMINISTER);
 
-        SynopsysCredentialsHelper synopsysCredentialsHelper = new SynopsysCredentialsHelper(jenkins);
-        JenkinsProxyHelper jenkinsProxyHelper = JenkinsProxyHelper.fromJenkins(jenkins);
+        SynopsysCredentialsHelper synopsysCredentialsHelper = jenkinsWrapper.getCredentialsHelper();
+        JenkinsProxyHelper jenkinsProxyHelper = jenkinsWrapper.getProxyHelper();
 
         try {
             BlackDuckServerConfig blackDuckServerConfig = createBlackDuckServerConfigBuilder(jenkinsProxyHelper, synopsysCredentialsHelper, blackDuckUrl, blackDuckCredentialsId, Integer.parseInt(blackDuckTimeout),
