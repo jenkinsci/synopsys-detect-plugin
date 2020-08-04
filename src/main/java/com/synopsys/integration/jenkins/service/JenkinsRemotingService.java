@@ -25,8 +25,8 @@ package com.synopsys.integration.jenkins.service;
 import java.io.IOException;
 import java.util.List;
 
-import com.synopsys.integration.function.ThrowingSupplier;
 import com.synopsys.integration.util.IntEnvironmentVariables;
+import com.synopsys.integration.util.OperatingSystemType;
 
 import hudson.FilePath;
 import hudson.Launcher;
@@ -66,17 +66,17 @@ public class JenkinsRemotingService {
         return virtualChannel.call(callable);
     }
 
-    public <T, E extends Throwable> T call(ThrowingSupplier<T, E> supplierToExecute) throws E, IOException, InterruptedException {
-        Callable<T, E> wrappingCallable = new MasterToSlaveCallable<T, E>() {
-            private static final long serialVersionUID = 1943720716430585353L;
+    public OperatingSystemType getRemoteOperatingSystemType() throws IOException, InterruptedException {
+        return call(new OperatingSystemTypeCallable());
+    }
 
-            @Override
-            public T call() throws E {
-                return supplierToExecute.get();
-            }
-        };
+    public static class OperatingSystemTypeCallable extends MasterToSlaveCallable<OperatingSystemType, RuntimeException> {
+        private static final long serialVersionUID = 1943720716430585353L;
 
-        return call(wrappingCallable);
+        @Override
+        public OperatingSystemType call() {
+            return OperatingSystemType.determineFromSystem();
+        }
     }
 
 }

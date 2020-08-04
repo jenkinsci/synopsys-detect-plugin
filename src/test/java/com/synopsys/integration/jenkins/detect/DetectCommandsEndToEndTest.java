@@ -13,12 +13,10 @@ import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
 
 import com.synopsys.integration.blackduck.configuration.BlackDuckServerConfigBuilder;
 import com.synopsys.integration.builder.BuilderPropertyKey;
-import com.synopsys.integration.function.ThrowingSupplier;
 import com.synopsys.integration.jenkins.detect.extensions.global.DetectGlobalConfig;
 import com.synopsys.integration.jenkins.detect.service.DetectArgumentService;
 import com.synopsys.integration.jenkins.detect.service.DetectEnvironmentService;
@@ -123,7 +121,7 @@ public class DetectCommandsEndToEndTest {
             Mockito.when(jenkinsRemotingService.launch(Mockito.any(), Mockito.any())).thenReturn(0);
             Mockito.when(jenkinsRemotingService.call(Mockito.any(DetectJarStrategy.SetupCallableImpl.class))).thenReturn(JDK_HOME);
             Mockito.when(jenkinsRemotingService.call(Mockito.any(DetectScriptStrategy.SetupCallableImpl.class))).thenReturn(detectPath);
-            Mockito.when(jenkinsRemotingService.call(ArgumentMatchers.<ThrowingSupplier<OperatingSystemType, ?>>any())).thenReturn(operatingSystemType);
+            Mockito.when(jenkinsRemotingService.getRemoteOperatingSystemType()).thenReturn(operatingSystemType);
 
             JenkinsConfigService jenkinsConfigService = Mockito.mock(JenkinsConfigService.class);
             Mockito.when(jenkinsConfigService.getGlobalConfiguration(DetectGlobalConfig.class)).thenReturn(Optional.of(detectGlobalConfig));

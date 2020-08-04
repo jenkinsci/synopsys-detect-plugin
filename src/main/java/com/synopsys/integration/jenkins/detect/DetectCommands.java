@@ -86,7 +86,7 @@ public class DetectCommands {
         JenkinsRemotingService remotingService = detectServicesFactory.createJenkinsRemotingService();
 
         IntEnvironmentVariables intEnvironmentVariables = detectEnvironmentService.createDetectEnvironment();
-        OperatingSystemType operatingSystemType = remotingService.call(OperatingSystemType::determineFromSystem);
+        OperatingSystemType operatingSystemType = remotingService.getRemoteOperatingSystemType();
         DetectExecutionStrategy detectExecutionStrategy = detectStrategyService.getExecutionStrategy(intEnvironmentVariables, operatingSystemType, remoteJdkHome);
 
         String setupResponse = remotingService.call(detectExecutionStrategy.getSetupCallable());
