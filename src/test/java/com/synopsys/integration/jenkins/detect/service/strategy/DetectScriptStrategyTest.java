@@ -6,8 +6,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.List;
@@ -27,19 +29,27 @@ public class DetectScriptStrategyTest {
     private final String unescapedSpecialCharacters = "|&;<>()$`\\\"' \t\r\n\n*?[#~=%,";
     private JenkinsIntLogger defaultLogger;
     private JenkinsProxyHelper defaultProxyHelper;
+    private ByteArrayOutputStream logs;
 
     @BeforeEach
     public void setUpMocks() {
+        logs = new ByteArrayOutputStream();
         TaskListener mockedTaskListener = Mockito.mock(TaskListener.class);
-        Mockito.when(mockedTaskListener.getLogger()).thenReturn(System.out);
+        Mockito.when(mockedTaskListener.getLogger()).thenReturn(new PrintStream(logs));
         defaultLogger = new JenkinsIntLogger(mockedTaskListener);
         defaultProxyHelper = new JenkinsProxyHelper();
     }
 
     @Test
     public void testNoProxyDetermineable() {
-        DetectScriptStrategy detectScriptStrategy = new DetectScriptStrategy(defaultLogger, defaultProxyHelper, OperatingSystemType.LINUX, null);
+        String expectedExceptionMessage = "expected test message";
 
+        JenkinsProxyHelper mockedProxyHelper = Mockito.mock(JenkinsProxyHelper.class);
+        Mockito.when(mockedProxyHelper.getProxyInfo(Mockito.anyString())).thenThrow(new IllegalArgumentException(expectedExceptionMessage));
+        DetectScriptStrategy detectScriptStrategy = new DetectScriptStrategy(defaultLogger, mockedProxyHelper, OperatingSystemType.LINUX, null);
+        detectScriptStrategy.getSetupCallable();
+
+        assertTrue(logs.toString().contains(expectedExceptionMessage));
     }
 
     @Test
