@@ -9,6 +9,7 @@ import java.io.PrintStream;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -16,7 +17,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import com.synopsys.integration.jenkins.JenkinsVersionHelper;
-import com.synopsys.integration.jenkins.detect.DetectJenkinsEnvironmentVariable;
 import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
 import com.synopsys.integration.log.LogLevel;
 import com.synopsys.integration.util.IntEnvironmentVariables;
@@ -24,8 +24,6 @@ import com.synopsys.integration.util.IntEnvironmentVariables;
 import hudson.model.TaskListener;
 
 public class ParseDetectArgumentsTest {
-
-    private final static IntEnvironmentVariables intEnvironmentVariables = Mockito.mock(IntEnvironmentVariables.class);
     private final static JenkinsVersionHelper jenkinsVersionHelper = Mockito.mock(JenkinsVersionHelper.class);
 
     private final static String errorMessage = "Output Detect Command does not contain: ";
@@ -39,27 +37,33 @@ public class ParseDetectArgumentsTest {
     private final static String jenkinsVersionParam = "--detect.phone.home.passthrough.jenkins.version";
     private final static String pluginVersionParam = "--detect.phone.home.passthrough.jenkins.plugin.version";
 
+    private final IntEnvironmentVariables intEnvironmentVariables = new IntEnvironmentVariables();
     private final TaskListener taskListener = Mockito.mock(TaskListener.class);
     private final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
     private final JenkinsIntLogger jenkinsIntLogger = new JenkinsIntLogger(taskListener);
 
+    private Map<String, String> inputDetectProperties = new LinkedHashMap<>();
     private Map<String, String> expectedVisibleDetectProperties = new LinkedHashMap<>();
     private Map<String, String> expectedHiddenDetectProperties = new LinkedHashMap<>();
 
     @BeforeEach
     public void setUp() {
         jenkinsIntLogger.setLogLevel(LogLevel.DEBUG);
+        intEnvironmentVariables.put("DETECT_PLUGIN_ESCAPING", "true");
 
         // Set default expected values. Tests will apply different if needed
         Mockito.when(taskListener.getLogger()).thenReturn(new PrintStream(byteArrayOutputStream));
-        Mockito.when(intEnvironmentVariables.getValue(DetectJenkinsEnvironmentVariable.SHOULD_ESCAPE.stringValue(), "true")).thenReturn("true");
-        Mockito.when(jenkinsVersionHelper.getJenkinsVersion()).thenReturn(java.util.Optional.of(expectedJenkinsVersion));
-        Mockito.when(jenkinsVersionHelper.getPluginVersion("blackduck-detect")).thenReturn(java.util.Optional.of(expectedJenkinsPluginVersion));
+        Mockito.when(jenkinsVersionHelper.getJenkinsVersion()).thenReturn(Optional.of(expectedJenkinsVersion));
+        Mockito.when(jenkinsVersionHelper.getPluginVersion("blackduck-detect")).thenReturn(Optional.of(expectedJenkinsPluginVersion));
+
+        // These are the standard input detect properties
+        inputDetectProperties.put("--detect.docker.passthrough.service.timeout", "1234567890");
+        inputDetectProperties.put("--detect.cleanup", "ThisIsFalse");
 
         // These are the standard expected detect properties. Tests will update if needed.
         // They SHOULD be visible in the output log message and be within the return List
-        expectedVisibleDetectProperties.put("--detect.docker.passthrough.service.timeout", "1234567890");
-        expectedVisibleDetectProperties.put("--detect.cleanup", "ThisIsFalse");
+        expectedVisibleDetectProperties.putAll(inputDetectProperties);
+        expectedVisibleDetectProperties.put(loggingLevelKey, jenkinsIntLogger.getLogLevel().toString());
 
         // These are the automatically appended detect properties added by parseDetectArguments().
         // They should NOT be visible in the output log message but should be within the return List
@@ -68,28 +72,22 @@ public class ParseDetectArgumentsTest {
     }
 
     private String createDetectPropertiesInputString() {
-        return expectedVisibleDetectProperties.keySet().stream()
-                   .map(key -> key + "=" + expectedVisibleDetectProperties.get(key) + " ")
+        return inputDetectProperties.keySet().stream()
+                   .map(key -> key + "=" + inputDetectProperties.get(key) + " ")
                    .collect(Collectors.joining());
     }
 
     @Test
     public void testParseDetectArgumentsJar() {
-        // This is used to validate a log entry from calling handleVariableReplacement()
-        expectedVisibleDetectProperties.put("$VISIBLE", "visible");
-
         DetectSetupResponse detectSetupResponse = new DetectSetupResponse(DetectSetupResponse.ExecutionStrategy.JAR, expectedJavaHome, expectedDetectPath);
         ParseDetectArguments parseDetectArguments = new ParseDetectArguments(jenkinsIntLogger, intEnvironmentVariables, jenkinsVersionHelper, detectSetupResponse, createDetectPropertiesInputString());
         List<String> detectCommandLine = parseDetectArguments.parseDetectArguments();
 
-        assertEquals(9, detectCommandLine.size()); // Jar args (3) + passed args (3) + auto added args (3)
+        assertEquals(8, detectCommandLine.size()); // Jar args (3) + passed args (2) + auto added args (3)
         assertEquals(expectedJavaHome, detectCommandLine.get(0));
         assertEquals("-jar", detectCommandLine.get(1));
         assertEquals(expectedDetectPath, detectCommandLine.get(2));
-        commonValidation(detectCommandLine, "default");
-
-        // Validate log entry from handleVariableReplacement()
-        assertTrue(byteArrayOutputStream.toString().contains("Variable may not have been properly replaced. Argument: $VISIBLE=visible"), "Log should contain message about unable to replace variable.");
+        commonValidation(detectCommandLine);
     }
 
     @Test
@@ -101,7 +99,7 @@ public class ParseDetectArgumentsTest {
         assertEquals(7, detectCommandLine.size()); // Shell args (2) + passed args (2) + auto added args (3)
         assertEquals("bash", detectCommandLine.get(0));
         assertEquals(expectedDetectPath, detectCommandLine.get(1));
-        commonValidation(detectCommandLine, "default");
+        commonValidation(detectCommandLine);
     }
 
     @Test
@@ -114,12 +112,12 @@ public class ParseDetectArgumentsTest {
         assertEquals(7, detectCommandLine.size()); // PowerShell args (2) + passed args (2) + auto added args (3)
         assertEquals("powershell", detectCommandLine.get(0));
         assertEquals(expectedPowerShellJavaCommand, detectCommandLine.get(1));
-        commonValidation(detectCommandLine, "default");
+        commonValidation(detectCommandLine);
     }
 
     @Test
     public void testParseDetectArgumentsShouldEscapeFalse() {
-        Mockito.when(intEnvironmentVariables.getValue(DetectJenkinsEnvironmentVariable.SHOULD_ESCAPE.stringValue(), "true")).thenReturn("false");
+        intEnvironmentVariables.put("DETECT_PLUGIN_ESCAPING", "false");
 
         DetectSetupResponse detectSetupResponse = new DetectSetupResponse(DetectSetupResponse.ExecutionStrategy.JAR, expectedJavaHome, expectedDetectPath);
         ParseDetectArguments parseDetectArguments = new ParseDetectArguments(jenkinsIntLogger, intEnvironmentVariables, jenkinsVersionHelper, detectSetupResponse, createDetectPropertiesInputString());
@@ -129,28 +127,29 @@ public class ParseDetectArgumentsTest {
         assertEquals(expectedJavaHome, detectCommandLine.get(0));
         assertEquals("-jar", detectCommandLine.get(1));
         assertEquals(expectedDetectPath, detectCommandLine.get(2));
-        commonValidation(detectCommandLine, "default");
+        commonValidation(detectCommandLine);
     }
 
     @Test
     public void testParseDetectArgumentsCustomLogLevel() {
-        expectedVisibleDetectProperties.put(loggingLevelKey, expectedCustomLogLevel);
+        inputDetectProperties.put(loggingLevelKey, expectedCustomLogLevel);
+        expectedVisibleDetectProperties.replace(loggingLevelKey, expectedCustomLogLevel);
 
         DetectSetupResponse detectSetupResponse = new DetectSetupResponse(DetectSetupResponse.ExecutionStrategy.JAR, expectedJavaHome, expectedDetectPath);
         ParseDetectArguments parseDetectArguments = new ParseDetectArguments(jenkinsIntLogger, intEnvironmentVariables, jenkinsVersionHelper, detectSetupResponse, createDetectPropertiesInputString());
         List<String> detectCommandLine = parseDetectArguments.parseDetectArguments();
 
-        assertEquals(8, detectCommandLine.size()); // Jar args (2) + passed args (2) + auto added args (3)
+        assertEquals(8, detectCommandLine.size()); // Jar args (2) + passed args (3) + auto added args (2)
         assertEquals(expectedJavaHome, detectCommandLine.get(0));
         assertEquals("-jar", detectCommandLine.get(1));
         assertEquals(expectedDetectPath, detectCommandLine.get(2));
-        commonValidation(detectCommandLine, expectedCustomLogLevel);
+        commonValidation(detectCommandLine);
     }
 
     @Test
     public void testParseDetectArgumentsUnknownJenkinsVersion() {
-        Mockito.when(jenkinsVersionHelper.getJenkinsVersion()).thenReturn(java.util.Optional.empty());
-        Mockito.when(jenkinsVersionHelper.getPluginVersion("blackduck-detect")).thenReturn(java.util.Optional.empty());
+        Mockito.when(jenkinsVersionHelper.getJenkinsVersion()).thenReturn(Optional.empty());
+        Mockito.when(jenkinsVersionHelper.getPluginVersion("blackduck-detect")).thenReturn(Optional.empty());
 
         DetectSetupResponse detectSetupResponse = new DetectSetupResponse(DetectSetupResponse.ExecutionStrategy.JAR, expectedJavaHome, expectedDetectPath);
         ParseDetectArguments parseDetectArguments = new ParseDetectArguments(jenkinsIntLogger, intEnvironmentVariables, jenkinsVersionHelper, detectSetupResponse, "");
@@ -161,11 +160,20 @@ public class ParseDetectArgumentsTest {
         assertTrue(detectCommandLine.stream().anyMatch(argument -> argument.contains(pluginVersionParam + "=<unknown>")), errorMessage + "correct plugins version");
     }
 
-    private void commonValidation(List<String> detectCommandLine, String logLevelSearchValue) {
-        // This is added automatically when parseDetectArguments() is called
-        // The key will either be retrieved from the logger, or passed in as a parameter
-        expectedVisibleDetectProperties.put(loggingLevelKey, (logLevelSearchValue.equals("default") ? jenkinsIntLogger.getLogLevel().toString() : logLevelSearchValue));
+    @Test
+    public void testParseDetectArgumentsVariableNotReplaced() {
+        // This is used to validate a log entry from calling handleVariableReplacement()
+        inputDetectProperties.put("$VISIBLE", "visible");
 
+        DetectSetupResponse detectSetupResponse = new DetectSetupResponse(DetectSetupResponse.ExecutionStrategy.JAR, expectedJavaHome, expectedDetectPath);
+        ParseDetectArguments parseDetectArguments = new ParseDetectArguments(jenkinsIntLogger, intEnvironmentVariables, jenkinsVersionHelper, detectSetupResponse, createDetectPropertiesInputString());
+        List<String> detectCommandLine = parseDetectArguments.parseDetectArguments();
+
+        // Validate log entry from handleVariableReplacement()
+        assertTrue(byteArrayOutputStream.toString().contains("Variable may not have been properly replaced. Argument: $VISIBLE=visible"), "Log should contain message about unable to replace variable.");
+    }
+
+    private void commonValidation(List<String> detectCommandLine) {
         // Validate that detectCommandLine DOES contain all the visible and hidden properties
         validateMapProperties(expectedVisibleDetectProperties, detectCommandLine);
         validateMapProperties(expectedHiddenDetectProperties, detectCommandLine);
