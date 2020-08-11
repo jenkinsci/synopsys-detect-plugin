@@ -5,12 +5,6 @@ install: true
 jdk:
   - openjdk8
 
-addons:
-  sonarcloud:
-    organization: "black-duck-software"
-    token:
-      secure: "fMaMfvGHtpgmizXHh+9jju6bH8fuFOhMJPanTgcTNVQFNgLotGtLqE4pyXfu0i7FHqoGeVTeamNlV8kt1LBjGNSip8UBtEeLFDELA5fsbLM9I7lWHWqrhNGOHy+LeHQszwfL5B90jhMqFNR08N9yxV0NUtU3KE85ssYtkynyzb1Ymj1d7gz15maB91oKuqCaLnrQHBB/Y1HNkGv8I6EOOqwbqaQ0G9c9pmy//t1tv0sMI1tCeGptGMDaBztV2MaLEC7w5OBMZL0EwRiTT/vpROh8PYXl8hMfYpNOFZyOPoL6twLUuJm5MUMB+Oc4NWwgrJTZrL+xIzYxGFsEPgSrNMCAhgbh8RymjHPRBxA19D/B1URPrQ2IUocVlDlBjzijChdrwOcPTnftQc7rhLhJxZbuaX+FfI6K+fn9gBzf0yb0z1VuvvjefGCvSS6UfrP1ounG/x5QxJwQ19gA1lshtshG1XpbAmGn5iJbsVlf+4l6ViWA/pGbIjzRJvUulEsjGcoRrNtWSkIXW0m+nDXvlcL+W5IrzvL9Qw3l4lSg0sSdVpSXapl/pRYAv4H0+kb4mN2+HaC+NOmliKRSKNNCYoH5cnQ/aEcl6xXvQXr6iRwtK8ymEWDS5lSfojXSe9RyQpOMgZi4VdV24I4kDsdfG+QNY5Y7fJzem8z9SZV7vEQ="
-
 notifications:
   email:
     recipients:
@@ -18,7 +12,7 @@ notifications:
       - billings@synopsys.com
 
 script:
-  - "./gradlew clean build jpi jacocoTestReport coveralls sonarqube -Dsonar.projectName='Synopsys Detect for Jenkins'"
+  - "./gradlew clean build jpi
 
 after_success:
   - bash <(curl -s https://copilot.blackducksoftware.com/ci/travis/scripts/upload)
@@ -26,6 +20,5 @@ after_success:
 cache:
   directories:
     - "$HOME/.m2/repository"
-    - "$HOME/.sonar/cache"
     - "$HOME/.gradle"
     - ".gradle"
