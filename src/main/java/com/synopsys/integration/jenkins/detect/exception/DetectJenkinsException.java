@@ -28,17 +28,18 @@ public class DetectJenkinsException extends IntegrationException {
     private static final long serialVersionUID = -1172941819259598247L;
 
     public DetectJenkinsException() {
+        super();
     }
 
-    public DetectJenkinsException(final String message) {
+    public DetectJenkinsException(String message) {
         super(message);
     }
 
-    public DetectJenkinsException(final Throwable cause) {
+    public DetectJenkinsException(Throwable cause) {
         super(cause);
     }
 
-    public DetectJenkinsException(final String message, final Throwable cause) {
+    public DetectJenkinsException(String message, Throwable cause) {
         super(message, cause);
     }
 

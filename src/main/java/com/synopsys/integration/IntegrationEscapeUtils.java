@@ -34,7 +34,7 @@ public class IntegrationEscapeUtils extends StringEscapeUtils {
     public static final CharSequenceTranslator ESCAPE_POWERSHELL;
 
     static {
-        final Map<CharSequence, CharSequence> escapePowershellMap = new HashMap<>();
+        Map<CharSequence, CharSequence> escapePowershellMap = new HashMap<>();
         escapePowershellMap.put("|", "`|");
         escapePowershellMap.put("&", "`&");
         escapePowershellMap.put(";", "`;");
@@ -64,7 +64,7 @@ public class IntegrationEscapeUtils extends StringEscapeUtils {
         );
     }
 
-    public static String escapePowerShell(final String input) {
+    public static String escapePowerShell(String input) {
         return ESCAPE_POWERSHELL.translate(input);
     }
 }
