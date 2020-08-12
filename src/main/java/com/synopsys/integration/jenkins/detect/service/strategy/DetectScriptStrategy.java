@@ -22,7 +22,6 @@
  */
 package com.synopsys.integration.jenkins.detect.service.strategy;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -30,8 +29,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
-
-import org.apache.commons.lang3.StringUtils;
 
 import com.synopsys.integration.IntegrationEscapeUtils;
 import com.synopsys.integration.exception.IntegrationException;
@@ -52,7 +49,9 @@ import jenkins.security.MasterToSlaveCallable;
 public class DetectScriptStrategy extends DetectExecutionStrategy {
     public static final String DETECT_INSTALL_DIRECTORY = "Detect_Installation";
     public static final String LATEST_SHELL_SCRIPT_URL = "https://detect.synopsys.com/detect.sh";
+    public static final String SHELL_SCRIPT_FILENAME = "detect.sh";
     public static final String LATEST_POWERSHELL_SCRIPT_URL = "https://detect.synopsys.com/detect.ps1";
+    public static final String POWERSHELL_SCRIPT_FILENAME = "detect.ps1";
 
     private final JenkinsIntLogger logger;
     private final OperatingSystemType operatingSystemType;
@@ -85,10 +84,13 @@ public class DetectScriptStrategy extends DetectExecutionStrategy {
     @Override
     public MasterToSlaveCallable<String, IntegrationException> getSetupCallable() {
         String scriptUrl;
+        String scriptFileName;
         if (operatingSystemType == OperatingSystemType.WINDOWS) {
             scriptUrl = LATEST_POWERSHELL_SCRIPT_URL;
+            scriptFileName = POWERSHELL_SCRIPT_FILENAME;
         } else {
             scriptUrl = LATEST_SHELL_SCRIPT_URL;
+            scriptFileName = SHELL_SCRIPT_FILENAME;
         }
 
         // ProxyInfo itself isn't serializable, so we unpack it into serializable pieces and rebuild it later when we download the script. -- rotte JUL 2020
@@ -108,7 +110,7 @@ public class DetectScriptStrategy extends DetectExecutionStrategy {
         String proxyPassword = proxyInfo.getPassword().orElse(null);
         String proxyNtlmDomain = proxyInfo.getNtlmDomain().orElse(null);
         String proxyNtlmWorkstation = proxyInfo.getNtlmWorkstation().orElse(null);
-        return new SetupCallableImpl(logger, toolsDirectory, scriptUrl, proxyHost, proxyPort, proxyUsername, proxyPassword, proxyNtlmDomain, proxyNtlmWorkstation);
+        return new SetupCallableImpl(logger, toolsDirectory, scriptUrl, scriptFileName, proxyHost, proxyPort, proxyUsername, proxyPassword, proxyNtlmDomain, proxyNtlmWorkstation);
     }
 
     public static class SetupCallableImpl extends MasterToSlaveCallable<String, IntegrationException> {
@@ -122,12 +124,14 @@ public class DetectScriptStrategy extends DetectExecutionStrategy {
         private final String proxyPassword;
         private final String proxyNtlmDomain;
         private final String proxyNtlmWorkstation;
+        private final String scriptFileName;
 
-        public SetupCallableImpl(JenkinsIntLogger logger, String toolsDirectory, String scriptUrl, String proxyHost, int proxyPort, String proxyUsername, String proxyPassword,
+        public SetupCallableImpl(JenkinsIntLogger logger, String toolsDirectory, String scriptUrl, String scriptFileName, String proxyHost, int proxyPort, String proxyUsername, String proxyPassword,
             String proxyNtlmDomain, String proxyNtlmWorkstation) {
             this.logger = logger;
             this.toolsDirectory = toolsDirectory;
             this.scriptUrl = scriptUrl;
+            this.scriptFileName = scriptFileName;
             this.proxyHost = proxyHost;
             this.proxyPort = proxyPort;
             this.proxyUsername = proxyUsername;
@@ -138,45 +142,37 @@ public class DetectScriptStrategy extends DetectExecutionStrategy {
 
         @Override
         public String call() throws IntegrationException {
-            String scriptFileName = scriptUrl.substring(scriptUrl.lastIndexOf("/") + 1).trim();
-            Path scriptDownloadDirectory = prepareScriptDownloadDirectory();
-            Path detectScriptPath = scriptDownloadDirectory.resolve(scriptFileName);
-
-            // .toFile().exists() is significantly more performant than Files.notExist, so we use that here. --rotte JUL 2020
-            if (!detectScriptPath.toFile().exists()) {
-                logger.info("Downloading Detect script from " + scriptUrl + " to " + detectScriptPath);
-                downloadScriptTo(scriptUrl, detectScriptPath);
-            } else {
-                logger.info("Running already installed Detect script " + detectScriptPath);
-            }
-
             String scriptRemotePath;
+
             try {
-                scriptRemotePath = detectScriptPath.toRealPath().toString();
-                if (StringUtils.isBlank(scriptRemotePath)) {
-                    throw new DetectJenkinsException("[ERROR] The Detect script was not downloaded successfully.");
+                Path installationDirectory = Paths.get(toolsDirectory, DETECT_INSTALL_DIRECTORY);
+                Files.createDirectories(installationDirectory);
+                Path detectScriptPath = installationDirectory.resolve(scriptFileName);
+
+                // .toFile().exists() is significantly more performant than Files.notExist, so we use that here. --rotte JUL 2020
+                if (detectScriptPath.toFile().exists()) {
+                    logger.info("Running already installed Detect script " + detectScriptPath);
+                } else {
+                    logger.info("Downloading Detect script from " + scriptUrl + " to " + detectScriptPath);
+
+                    IntHttpClient intHttpClient = new IntHttpClient(logger, 120, true, rebuildProxyInfo());
+                    Request request = new Request.Builder().uri(scriptUrl).build();
+
+                    try (Response response = intHttpClient.execute(request)) {
+                        response.throwExceptionForError();
+                        Files.copy(response.getContent(), detectScriptPath);
+                    }
                 }
-            } catch (IOException e) {
+
+                scriptRemotePath = detectScriptPath.toRealPath().toString();
+            } catch (Exception e) {
                 throw new DetectJenkinsException("[ERROR] The Detect script was not downloaded successfully: " + e.getMessage(), e);
             }
 
             return scriptRemotePath;
         }
 
-        private Path prepareScriptDownloadDirectory() throws IntegrationException {
-            Path installationDirectory = Paths.get(toolsDirectory, DETECT_INSTALL_DIRECTORY);
-
-            try {
-                Files.createDirectories(installationDirectory);
-            } catch (Exception e) {
-                throw new IntegrationException("Could not create the Detect installation directory: " + installationDirectory, e);
-            }
-
-            return installationDirectory;
-        }
-
-        private void downloadScriptTo(String url, Path path) throws IntegrationException {
-            // Because we're rebuilding the ProxyInfo here, we shouldn't need to worry about IllegalArgumentExceptions. If we change that implementation, they should be handled nicely here. -- rotte JUL 2020
+        private ProxyInfo rebuildProxyInfo() {
             CredentialsBuilder credentialsBuilder = Credentials.newBuilder();
             credentialsBuilder.setUsernameAndPassword(proxyUsername, proxyPassword);
             Credentials proxyCredentials = credentialsBuilder.build();
@@ -188,17 +184,7 @@ public class DetectScriptStrategy extends DetectExecutionStrategy {
             proxyInfoBuilder.setNtlmDomain(proxyNtlmDomain);
             proxyInfoBuilder.setNtlmWorkstation(proxyNtlmWorkstation);
 
-            ProxyInfo proxyInfo = proxyInfoBuilder.build();
-
-            IntHttpClient intHttpClient = new IntHttpClient(logger, 120, true, proxyInfo);
-
-            Request request = new Request.Builder().uri(url).build();
-            try (Response response = intHttpClient.execute(request)) {
-                response.throwExceptionForError();
-                Files.copy(response.getContent(), path);
-            } catch (IOException e) {
-                throw new DetectJenkinsException("Synopsys Detect for Jenkins could not download the script successfully: " + e.getMessage(), e);
-            }
+            return proxyInfoBuilder.build();
         }
     }
 
