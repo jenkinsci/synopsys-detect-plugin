@@ -6,7 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,31 +26,33 @@ import com.synopsys.integration.util.IntEnvironmentVariables;
 import hudson.model.TaskListener;
 
 public class DetectArgumentServiceTest {
-    private final static JenkinsVersionHelper jenkinsVersionHelper = Mockito.mock(JenkinsVersionHelper.class);
+    private final JenkinsVersionHelper jenkinsVersionHelper = Mockito.mock(JenkinsVersionHelper.class);
 
-    private final static String errorMessage = "Output Detect Command does not contain: ";
-    private final static String loggingLevelKey = "--logging.level.com.synopsys.integration";
-    private final static String expectedTestInvocationParameter = "TestInvocationParameter";
-    private final static String expectedJenkinsVersion = "JenkinsVersion";
-    private final static String pluginName = "blackduck-detect";
-    private final static String expectedJenkinsPluginVersion = "JenkinsPluginVersion";
-    private final static String jenkinsVersionParam = "--detect.phone.home.passthrough.jenkins.version";
-    private final static String pluginVersionParam = "--detect.phone.home.passthrough.jenkins.plugin.version";
+    private static final String errorMessage = "Output Detect Command does not contain: ";
+    private static final String loggingLevelKey = "--logging.level.com.synopsys.integration";
+    private static final String expectedTestInvocationParameter = "TestInvocationParameter";
+    private static final String expectedJenkinsVersion = "JenkinsVersion";
+    private static final String pluginName = "blackduck-detect";
+    private static final String expectedJenkinsPluginVersion = "JenkinsPluginVersion";
+    private static final String jenkinsVersionParam = "--detect.phone.home.passthrough.jenkins.version";
+    private static final String pluginVersionParam = "--detect.phone.home.passthrough.jenkins.plugin.version";
 
     private final IntEnvironmentVariables intEnvironmentVariables = new IntEnvironmentVariables();
-    private final TaskListener taskListener = Mockito.mock(TaskListener.class);
     private final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-    private final JenkinsIntLogger jenkinsIntLogger = new JenkinsIntLogger(taskListener);
-    private final DetectArgumentService detectArgumentService = new DetectArgumentService(jenkinsIntLogger, jenkinsVersionHelper);
-
     private final Function<String, String> strategyEscaper = Function.identity();
-    private final List<String> invocationParameters = Arrays.asList(expectedTestInvocationParameter);
+    private final List<String> invocationParameters = Collections.singletonList(expectedTestInvocationParameter);
+
+    private DetectArgumentService detectArgumentService;
     private Map<String, String> inputDetectProperties = new LinkedHashMap<>();
     private Map<String, String> expectedVisibleDetectProperties = new LinkedHashMap<>();
     private Map<String, String> expectedHiddenDetectProperties = new LinkedHashMap<>();
 
     @BeforeEach
     public void setUp() {
+        // Setup logger
+        TaskListener taskListener = Mockito.mock(TaskListener.class);
+        JenkinsIntLogger jenkinsIntLogger = new JenkinsIntLogger(taskListener);
+
         jenkinsIntLogger.setLogLevel(LogLevel.DEBUG);
         intEnvironmentVariables.put("DETECT_PLUGIN_ESCAPING", "true");
 
@@ -72,6 +74,9 @@ public class DetectArgumentServiceTest {
         // They should NOT be visible in the output log message but should be within the return List
         expectedHiddenDetectProperties.put(jenkinsVersionParam, expectedJenkinsVersion);
         expectedHiddenDetectProperties.put(pluginVersionParam, expectedJenkinsPluginVersion);
+
+        // Create object in test
+        detectArgumentService = new DetectArgumentService(jenkinsIntLogger, jenkinsVersionHelper);
     }
 
     private String createDetectPropertiesInputString() {
@@ -140,12 +145,10 @@ public class DetectArgumentServiceTest {
 
     @Test
     public void testNoDetectArguments() {
-        expectedVisibleDetectProperties.clear();
-
         List<String> detectCommandLine = detectArgumentService.parseDetectArgumentString(intEnvironmentVariables, strategyEscaper, invocationParameters, "");
 
         assertEquals(4, detectCommandLine.size()); // Invocation args (1) + passed args (0) + auto added args (3)
-        commonValidation(detectCommandLine, expectedVisibleDetectProperties, expectedHiddenDetectProperties);
+        commonValidation(detectCommandLine, new LinkedHashMap<>(), expectedHiddenDetectProperties);
     }
 
     @Test
