@@ -88,7 +88,7 @@ public class DetectArgumentService {
     private String handleVariableReplacement(IntEnvironmentVariables intEnvironmentVariables, String value) {
         // This is only called internally, and calls StringUtils.isNotBlank first. Because of this, StringUtils.isNotBlank can never return false
         String newValue = Util.replaceMacro(value, intEnvironmentVariables.getVariables());
-        if (StringUtils.isNotBlank(newValue) && newValue.contains("$")) {
+        if (newValue.contains("$")) {
             logger.warn("Variable may not have been properly replaced. Argument: " + value + ", resolved argument: " + newValue + ". Make sure the variable has been properly defined.");
         }
         return newValue;
