@@ -73,9 +73,9 @@ public class DetectCommandsEndToEndTest {
         assertEquals("--detect.docker.passthrough.service.timeout\\=120", actualCmd.get(i++));
         assertEquals("--detect.cleanup\\=false", actualCmd.get(i++));
         assertEquals("--detect.project.name\\=Test\\ Project\\'", actualCmd.get(i++));
-        assertEquals("--logging.level.com.synopsys.integration=INFO", actualCmd.get(i++));
-        assertTrue(actualCmd.get(i++).startsWith("--detect.phone.home.passthrough.jenkins.version="));
-        assertTrue(actualCmd.get(i).startsWith("--detect.phone.home.passthrough.jenkins.plugin.version="));
+        assertEquals("--logging.level.com.synopsys.integration\\=INFO", actualCmd.get(i++));
+        assertTrue(actualCmd.get(i++).startsWith("--detect.phone.home.passthrough.jenkins.version\\="));
+        assertTrue(actualCmd.get(i).startsWith("--detect.phone.home.passthrough.jenkins.plugin.version\\="));
     }
 
     @Test
@@ -90,9 +90,9 @@ public class DetectCommandsEndToEndTest {
         assertEquals("--detect.docker.passthrough.service.timeout`=120", actualCmd.get(i++));
         assertEquals("--detect.cleanup`=false", actualCmd.get(i++));
         assertEquals("--detect.project.name`=Test` Project`'", actualCmd.get(i++));
-        assertEquals("--logging.level.com.synopsys.integration=INFO", actualCmd.get(i++));
-        assertTrue(actualCmd.get(i++).startsWith("--detect.phone.home.passthrough.jenkins.version="));
-        assertTrue(actualCmd.get(i).startsWith("--detect.phone.home.passthrough.jenkins.plugin.version="));
+        assertEquals("--logging.level.com.synopsys.integration`=INFO", actualCmd.get(i++));
+        assertTrue(actualCmd.get(i++).startsWith("--detect.phone.home.passthrough.jenkins.version`="));
+        assertTrue(actualCmd.get(i).startsWith("--detect.phone.home.passthrough.jenkins.plugin.version`="));
     }
 
     private List<String> doTest(Map<String, String> environmentVariables, OperatingSystemType operatingSystemType, String detectPath, String javaHomePath) {

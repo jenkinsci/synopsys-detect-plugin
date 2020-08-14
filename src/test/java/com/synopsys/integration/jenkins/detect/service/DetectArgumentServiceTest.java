@@ -43,9 +43,9 @@ public class DetectArgumentServiceTest {
     private final List<String> invocationParameters = Collections.singletonList(expectedTestInvocationParameter);
 
     private DetectArgumentService detectArgumentService;
-    private Map<String, String> inputDetectProperties = new LinkedHashMap<>();
-    private Map<String, String> expectedVisibleDetectProperties = new LinkedHashMap<>();
-    private Map<String, String> expectedHiddenDetectProperties = new LinkedHashMap<>();
+    private Map<String, String> inputDetectProperties;
+    private Map<String, String> expectedVisibleDetectProperties;
+    private Map<String, String> expectedHiddenDetectProperties;
 
     @BeforeEach
     public void setUp() {
@@ -62,16 +62,19 @@ public class DetectArgumentServiceTest {
         Mockito.when(jenkinsVersionHelper.getPluginVersion(pluginName)).thenReturn(Optional.of(expectedJenkinsPluginVersion));
 
         // These are the standard input detect properties
+        inputDetectProperties = new LinkedHashMap<>();
         inputDetectProperties.put("--detect.docker.passthrough.service.timeout", "1234567890");
         inputDetectProperties.put("--detect.cleanup", "ThisIsFalse");
 
         // These are the standard expected detect properties. Tests will update if needed.
         // They SHOULD be visible in the output log message and be within the return List
+        expectedVisibleDetectProperties = new LinkedHashMap<>();
         expectedVisibleDetectProperties.putAll(inputDetectProperties);
         expectedVisibleDetectProperties.put(loggingLevelKey, jenkinsIntLogger.getLogLevel().toString());
 
         // These are the automatically appended detect properties added by DetectArgumentService(). Tests will update if needed.
         // They should NOT be visible in the output log message but should be within the return List
+        expectedHiddenDetectProperties = new LinkedHashMap<>();
         expectedHiddenDetectProperties.put(jenkinsVersionParam, expectedJenkinsVersion);
         expectedHiddenDetectProperties.put(pluginVersionParam, expectedJenkinsPluginVersion);
 
@@ -86,8 +89,8 @@ public class DetectArgumentServiceTest {
     }
 
     @Test
-    public void testDetectArgumentService() {
-        List<String> detectCommandLine = detectArgumentService.parseDetectArgumentString(intEnvironmentVariables, strategyEscaper, invocationParameters, createDetectPropertiesInputString());
+    public void testGetDetectArguments() {
+        List<String> detectCommandLine = detectArgumentService.getDetectArguments(intEnvironmentVariables, strategyEscaper, invocationParameters, createDetectPropertiesInputString());
 
         assertEquals(6, detectCommandLine.size()); // Invocation args (1) + passed args (2) + auto added args (3)
         commonValidation(detectCommandLine, expectedVisibleDetectProperties, expectedHiddenDetectProperties);
@@ -97,7 +100,7 @@ public class DetectArgumentServiceTest {
     public void testShouldEscapeFalse() {
         intEnvironmentVariables.put("DETECT_PLUGIN_ESCAPING", "false");
 
-        List<String> detectCommandLine = detectArgumentService.parseDetectArgumentString(intEnvironmentVariables, strategyEscaper, invocationParameters, createDetectPropertiesInputString());
+        List<String> detectCommandLine = detectArgumentService.getDetectArguments(intEnvironmentVariables, strategyEscaper, invocationParameters, createDetectPropertiesInputString());
 
         assertEquals(6, detectCommandLine.size()); // Invocation args (1) + passed args (2) + auto added args (3)
         commonValidation(detectCommandLine, expectedVisibleDetectProperties, expectedHiddenDetectProperties);
@@ -111,7 +114,7 @@ public class DetectArgumentServiceTest {
         inputDetectProperties.put("--blackduck.trust.cert", "$TRUST_CERT");
         expectedVisibleDetectProperties.put("--blackduck.trust.cert", "false");
 
-        List<String> detectCommandLine = detectArgumentService.parseDetectArgumentString(intEnvironmentVariables, strategyEscaper, invocationParameters, createDetectPropertiesInputString());
+        List<String> detectCommandLine = detectArgumentService.getDetectArguments(intEnvironmentVariables, strategyEscaper, invocationParameters, createDetectPropertiesInputString());
 
         assertEquals(7, detectCommandLine.size()); // Invocation args (1) + passed args (3) + auto added args (3)
         commonValidation(detectCommandLine, expectedVisibleDetectProperties, expectedHiddenDetectProperties);
@@ -122,13 +125,13 @@ public class DetectArgumentServiceTest {
         // This is used to validate a log entry from calling handleVariableReplacement()
         inputDetectProperties.put("$VISIBLE", "visible");
 
-        List<String> detectCommandLine = detectArgumentService.parseDetectArgumentString(intEnvironmentVariables, strategyEscaper, invocationParameters, createDetectPropertiesInputString());
+        List<String> detectCommandLine = detectArgumentService.getDetectArguments(intEnvironmentVariables, strategyEscaper, invocationParameters, createDetectPropertiesInputString());
 
         assertEquals(7, detectCommandLine.size()); // Invocation args (1) + passed args (3) + auto added args (3)
         commonValidation(detectCommandLine, expectedVisibleDetectProperties, expectedHiddenDetectProperties);
 
         // Validate log entry from handleVariableReplacement()
-        assertTrue(byteArrayOutputStream.toString().contains("Variable may not have been properly replaced. Argument: $VISIBLE=visible"), "Log should contain message about unable to replace variable.");
+        assertTrue(byteArrayOutputStream.toString().contains("A variable may not have been properly replaced in resolved argument: $VISIBLE"), "Log should contain message about unable to replace variable.");
     }
 
     @Test
@@ -137,7 +140,7 @@ public class DetectArgumentServiceTest {
         inputDetectProperties.put(loggingLevelKey, expectedCustomLogLevel);
         expectedVisibleDetectProperties.replace(loggingLevelKey, expectedCustomLogLevel);
 
-        List<String> detectCommandLine = detectArgumentService.parseDetectArgumentString(intEnvironmentVariables, strategyEscaper, invocationParameters, createDetectPropertiesInputString());
+        List<String> detectCommandLine = detectArgumentService.getDetectArguments(intEnvironmentVariables, strategyEscaper, invocationParameters, createDetectPropertiesInputString());
 
         assertEquals(6, detectCommandLine.size()); // Invocation args (1) + passed args (3) + auto added args (2)
         commonValidation(detectCommandLine, expectedVisibleDetectProperties, expectedHiddenDetectProperties);
@@ -145,7 +148,7 @@ public class DetectArgumentServiceTest {
 
     @Test
     public void testNoDetectArguments() {
-        List<String> detectCommandLine = detectArgumentService.parseDetectArgumentString(intEnvironmentVariables, strategyEscaper, invocationParameters, "");
+        List<String> detectCommandLine = detectArgumentService.getDetectArguments(intEnvironmentVariables, strategyEscaper, invocationParameters, "\t");
 
         assertEquals(4, detectCommandLine.size()); // Invocation args (1) + passed args (0) + auto added args (3)
         commonValidation(detectCommandLine, new LinkedHashMap<>(), expectedHiddenDetectProperties);
@@ -159,7 +162,7 @@ public class DetectArgumentServiceTest {
         expectedHiddenDetectProperties.replace(jenkinsVersionParam, expectedJenkinsVersion, "<unknown>");
         expectedHiddenDetectProperties.replace(pluginVersionParam, expectedJenkinsPluginVersion, "<unknown>");
 
-        List<String> detectCommandLine = detectArgumentService.parseDetectArgumentString(intEnvironmentVariables, strategyEscaper, invocationParameters, createDetectPropertiesInputString());
+        List<String> detectCommandLine = detectArgumentService.getDetectArguments(intEnvironmentVariables, strategyEscaper, invocationParameters, createDetectPropertiesInputString());
 
         assertEquals(6, detectCommandLine.size()); // Invocation args (1) + passed args (2) + auto added args (3)
         commonValidation(detectCommandLine, expectedVisibleDetectProperties, expectedHiddenDetectProperties);
@@ -169,7 +172,7 @@ public class DetectArgumentServiceTest {
     public void testEmptyIntEnvironmentVariables() {
         IntEnvironmentVariables intEnvironmentVariables = new IntEnvironmentVariables(false);
 
-        List<String> detectCommandLine = detectArgumentService.parseDetectArgumentString(intEnvironmentVariables, strategyEscaper, invocationParameters, createDetectPropertiesInputString());
+        List<String> detectCommandLine = detectArgumentService.getDetectArguments(intEnvironmentVariables, strategyEscaper, invocationParameters, createDetectPropertiesInputString());
 
         assertEquals(6, detectCommandLine.size()); // Invocation args (1) + passed args (2) + auto added args (3)
         commonValidation(detectCommandLine, expectedVisibleDetectProperties, expectedHiddenDetectProperties);
