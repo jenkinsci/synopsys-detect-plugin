@@ -92,7 +92,7 @@ public class DetectCommands {
         String setupResponse = remotingService.call(detectExecutionStrategy.getSetupCallable());
         List<String> initialArguments = detectExecutionStrategy.getInitialArguments(setupResponse);
 
-        List<String> detectCmds = detectArgumentService.parseDetectArgumentString(intEnvironmentVariables, detectExecutionStrategy.getArgumentEscaper(), initialArguments, detectArgumentString);
+        List<String> detectCmds = detectArgumentService.getDetectArguments(intEnvironmentVariables, detectExecutionStrategy.getArgumentEscaper(), initialArguments, detectArgumentString);
 
         return remotingService.launch(intEnvironmentVariables, detectCmds);
     }
