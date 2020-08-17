@@ -11,12 +11,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
 import com.synopsys.integration.blackduck.configuration.BlackDuckServerConfigBuilder;
 import com.synopsys.integration.builder.BuilderPropertyKey;
+import com.synopsys.integration.jenkins.detect.exception.DetectJenkinsException;
 import com.synopsys.integration.jenkins.detect.extensions.global.DetectGlobalConfig;
 import com.synopsys.integration.jenkins.detect.service.DetectArgumentService;
 import com.synopsys.integration.jenkins.detect.service.DetectEnvironmentService;
@@ -40,65 +42,21 @@ public class DetectCommandsEndToEndTest {
     private static final String WORKSPACE_TMP_REL_PATH = "out/test/DetectPostBuildStepTest/testPerform/workspace@tmp";
     private static final String JDK_HOME = "/tmp/jdk/bin/java";
     private static final String JAVA_HOME_VALUE = System.getenv("JAVA_HOME");
+    private static final String DETECT_JAR_PATH = "/tmp/detect.jar";
+    private static final String DETECT_SHELL_PATH = "/tmp/detect.sh";
+    private static final String DETECT_POWERSHELL_PATH = "/tmp/detect.ps1";
 
-    @Test
-    public void testPerformJar() {
-        final String detectPath = "/tmp/detect.jar";
-        Map<String, String> environment = new HashMap<>();
-        environment.put(DetectJenkinsEnvironmentVariable.USER_PROVIDED_JAR_PATH.stringValue(), detectPath);
+    private JenkinsRemotingService jenkinsRemotingService;
+    private DetectServicesFactory detectServicesFactory;
+    private JenkinsProxyHelper mockedProxyHelper;
+    private JenkinsVersionHelper mockedVersionHelper;
+    private JenkinsConfigService jenkinsConfigService;
+    private JenkinsIntLogger jenkinsIntLogger;
 
-        List<String> actualCmd = doTest(environment, OperatingSystemType.LINUX, detectPath, JAVA_HOME_VALUE);
-
-        int i = 0;
-        assertEquals(JDK_HOME, actualCmd.get(i++));
-        assertEquals("-jar", actualCmd.get(i++));
-        assertEquals(detectPath, actualCmd.get(i++));
-        assertEquals("--detect.docker.passthrough.service.timeout=120", actualCmd.get(i++));
-        assertEquals("--detect.cleanup=false", actualCmd.get(i++));
-        assertEquals("--detect.project.name=Test Project'", actualCmd.get(i++));
-        assertEquals("--logging.level.com.synopsys.integration=INFO", actualCmd.get(i++));
-        assertTrue(actualCmd.get(i++).startsWith("--detect.phone.home.passthrough.jenkins.version="));
-        assertTrue(actualCmd.get(i).startsWith("--detect.phone.home.passthrough.jenkins.plugin.version="));
-    }
-
-    @Test
-    public void testPerformShell() {
-        final String detectPath = "/tmp/detect.sh";
-
-        List<String> actualCmd = doTest(new HashMap<>(), OperatingSystemType.LINUX, detectPath, JAVA_HOME_VALUE);
-
-        int i = 0;
-        assertEquals("bash", actualCmd.get(i++));
-        assertEquals(detectPath, actualCmd.get(i++));
-        assertEquals("--detect.docker.passthrough.service.timeout\\=120", actualCmd.get(i++));
-        assertEquals("--detect.cleanup\\=false", actualCmd.get(i++));
-        assertEquals("--detect.project.name\\=Test\\ Project\\'", actualCmd.get(i++));
-        assertEquals("--logging.level.com.synopsys.integration\\=INFO", actualCmd.get(i++));
-        assertTrue(actualCmd.get(i++).startsWith("--detect.phone.home.passthrough.jenkins.version\\="));
-        assertTrue(actualCmd.get(i).startsWith("--detect.phone.home.passthrough.jenkins.plugin.version\\="));
-    }
-
-    @Test
-    public void testPerformPowerShell() {
-        final String detectPath = "/tmp/detect.ps1";
-
-        List<String> actualCmd = doTest(new HashMap<>(), OperatingSystemType.WINDOWS, detectPath, JAVA_HOME_VALUE);
-
-        int i = 0;
-        assertEquals("powershell", actualCmd.get(i++));
-        assertEquals("\"Import-Module '" + detectPath + "'; detect\"", actualCmd.get(i++));
-        assertEquals("--detect.docker.passthrough.service.timeout`=120", actualCmd.get(i++));
-        assertEquals("--detect.cleanup`=false", actualCmd.get(i++));
-        assertEquals("--detect.project.name`=Test` Project`'", actualCmd.get(i++));
-        assertEquals("--logging.level.com.synopsys.integration`=INFO", actualCmd.get(i++));
-        assertTrue(actualCmd.get(i++).startsWith("--detect.phone.home.passthrough.jenkins.version`="));
-        assertTrue(actualCmd.get(i).startsWith("--detect.phone.home.passthrough.jenkins.plugin.version`="));
-    }
-
-    private List<String> doTest(Map<String, String> environmentVariables, OperatingSystemType operatingSystemType, String detectPath, String javaHomePath) {
+    @BeforeEach
+    public void setUpMocks() {
         try {
-            System.out.println("Starting testPerform. Errors logged about missing Black Duck values are benign.");
-            JenkinsIntLogger jenkinsIntLogger = new JenkinsIntLogger(null);
+            jenkinsIntLogger = new JenkinsIntLogger(null);
             Map<BuilderPropertyKey, String> builderEnvironmentVariables = new HashMap<>();
             builderEnvironmentVariables.put(BlackDuckServerConfigBuilder.TIMEOUT_KEY, "120");
 
@@ -108,35 +66,100 @@ public class DetectCommandsEndToEndTest {
             DetectGlobalConfig detectGlobalConfig = Mockito.mock(DetectGlobalConfig.class);
             Mockito.when(detectGlobalConfig.getBlackDuckServerConfigBuilder(Mockito.any(), Mockito.any())).thenReturn(blackDuckServerConfigBuilder);
 
-            JenkinsProxyHelper mockedProxyHelper = Mockito.mock(JenkinsProxyHelper.class);
+            mockedProxyHelper = Mockito.mock(JenkinsProxyHelper.class);
             Mockito.when(mockedProxyHelper.getProxyInfo(Mockito.anyString())).thenReturn(ProxyInfo.NO_PROXY_INFO);
 
-            JenkinsVersionHelper mockedVersionHelper = Mockito.mock(JenkinsVersionHelper.class);
-            SynopsysCredentialsHelper mockedCredentialsHelper = Mockito.mock(SynopsysCredentialsHelper.class);
+            mockedVersionHelper = Mockito.mock(JenkinsVersionHelper.class);
 
-            JenkinsBuildService jenkinsBuildService = Mockito.mock(JenkinsBuildService.class);
-            Mockito.when(jenkinsBuildService.getJDKRemoteHomeOrEmpty()).thenReturn(Optional.of("/tmp/jdk"));
-
-            JenkinsRemotingService jenkinsRemotingService = Mockito.mock(JenkinsRemotingService.class);
+            jenkinsRemotingService = Mockito.mock(JenkinsRemotingService.class);
             Mockito.when(jenkinsRemotingService.launch(Mockito.any(), Mockito.any())).thenReturn(0);
             Mockito.when(jenkinsRemotingService.call(Mockito.any(DetectJarStrategy.SetupCallableImpl.class))).thenReturn(JDK_HOME);
-            Mockito.when(jenkinsRemotingService.call(Mockito.any(DetectScriptStrategy.SetupCallableImpl.class))).thenReturn(detectPath);
-            Mockito.when(jenkinsRemotingService.getRemoteOperatingSystemType()).thenReturn(operatingSystemType);
 
-            JenkinsConfigService jenkinsConfigService = Mockito.mock(JenkinsConfigService.class);
+            jenkinsConfigService = Mockito.mock(JenkinsConfigService.class);
             Mockito.when(jenkinsConfigService.getGlobalConfiguration(DetectGlobalConfig.class)).thenReturn(Optional.of(detectGlobalConfig));
 
             DetectArgumentService detectArgumentService = new DetectArgumentService(jenkinsIntLogger, mockedVersionHelper);
-            DetectEnvironmentService detectEnvironmentService = new DetectEnvironmentService(jenkinsIntLogger, mockedProxyHelper, mockedVersionHelper, mockedCredentialsHelper, jenkinsConfigService, environmentVariables);
             DetectStrategyService detectStrategyService = new DetectStrategyService(jenkinsIntLogger, mockedProxyHelper, WORKSPACE_TMP_REL_PATH);
 
-            DetectServicesFactory detectServicesFactory = Mockito.mock(DetectServicesFactory.class);
+            detectServicesFactory = Mockito.mock(DetectServicesFactory.class);
             Mockito.when(detectServicesFactory.createJenkinsRemotingService()).thenReturn(jenkinsRemotingService);
-            Mockito.when(detectServicesFactory.createJenkinsBuildService()).thenReturn(jenkinsBuildService);
             Mockito.when(detectServicesFactory.createJenkinsConfigService()).thenReturn(jenkinsConfigService);
             Mockito.when(detectServicesFactory.createDetectArgumentService()).thenReturn(detectArgumentService);
-            Mockito.when(detectServicesFactory.createDetectEnvironmentService()).thenReturn(detectEnvironmentService);
             Mockito.when(detectServicesFactory.createDetectStrategyService()).thenReturn(detectStrategyService);
+        } catch (Throwable t) {
+            fail("An unexpected exception was thrown by the test code. The test likely requires fixing: ", t);
+        }
+    }
+
+    @Test
+    public void testPostBuildJar() {
+        Map<String, String> environment = new HashMap<>();
+        environment.put(DetectJenkinsEnvironmentVariable.USER_PROVIDED_JAR_PATH.stringValue(), DETECT_JAR_PATH);
+
+        mockEnvironment(environment);
+        validateRunDetectPostBuild(OperatingSystemType.LINUX, DETECT_JAR_PATH);
+
+        validateJarOutput(JAVA_HOME_VALUE);
+    }
+
+    @Test
+    public void testPostBuildShell() {
+        mockEnvironment(new HashMap<>());
+        validateRunDetectPostBuild(OperatingSystemType.LINUX, DETECT_SHELL_PATH);
+
+        validateShellOutput(JAVA_HOME_VALUE);
+    }
+
+    @Test
+    public void testPostBuildPowerShell() {
+        mockEnvironment(new HashMap<>());
+        validateRunDetectPostBuild(OperatingSystemType.WINDOWS, DETECT_POWERSHELL_PATH);
+
+        validatePowershellOutput(JAVA_HOME_VALUE);
+    }
+
+    @Test
+    public void testPipelineJar() {
+        Map<String, String> environment = new HashMap<>();
+        environment.put(DetectJenkinsEnvironmentVariable.USER_PROVIDED_JAR_PATH.stringValue(), DETECT_JAR_PATH);
+
+        mockEnvironment(environment);
+        validateRunDetectPipeline(OperatingSystemType.LINUX, DETECT_JAR_PATH);
+
+        validateJarOutput(JAVA_HOME_VALUE);
+    }
+
+    @Test
+    public void testPipelineShell() {
+        mockEnvironment(new HashMap<>());
+        validateRunDetectPostBuild(OperatingSystemType.LINUX, DETECT_SHELL_PATH);
+
+        validateShellOutput(JAVA_HOME_VALUE);
+    }
+
+    @Test
+    public void testPipelinePowershell() {
+        mockEnvironment(new HashMap<>());
+        validateRunDetectPipeline(OperatingSystemType.WINDOWS, DETECT_POWERSHELL_PATH);
+
+        validatePowershellOutput(JAVA_HOME_VALUE);
+    }
+
+    private void mockEnvironment(Map<String, String> environmentVariables) {
+        SynopsysCredentialsHelper mockedCredentialsHelper = Mockito.mock(SynopsysCredentialsHelper.class);
+        DetectEnvironmentService detectEnvironmentService = new DetectEnvironmentService(jenkinsIntLogger, mockedProxyHelper, mockedVersionHelper, mockedCredentialsHelper, jenkinsConfigService, environmentVariables);
+        Mockito.when(detectServicesFactory.createDetectEnvironmentService()).thenReturn(detectEnvironmentService);
+    }
+
+    private void validateRunDetectPostBuild(OperatingSystemType operatingSystemType, String detectPath) {
+        try {
+            // Build service only matters for PostBuild
+            JenkinsBuildService jenkinsBuildService = Mockito.mock(JenkinsBuildService.class);
+            Mockito.when(jenkinsBuildService.getJDKRemoteHomeOrEmpty()).thenReturn(Optional.of("/tmp/jdk"));
+            Mockito.when(detectServicesFactory.createJenkinsBuildService()).thenReturn(jenkinsBuildService);
+
+            Mockito.when(jenkinsRemotingService.call(Mockito.any(DetectScriptStrategy.SetupCallableImpl.class))).thenReturn(detectPath);
+            Mockito.when(jenkinsRemotingService.getRemoteOperatingSystemType()).thenReturn(operatingSystemType);
 
             // run the method we're testing
             DetectCommands detectCommands = new DetectCommands(detectServicesFactory);
@@ -147,7 +170,71 @@ public class DetectCommandsEndToEndTest {
             Mockito.verify(jenkinsBuildService, Mockito.never()).markBuildUnstable(Mockito.any());
             Mockito.verify(jenkinsBuildService, Mockito.never()).markBuildFailed(Mockito.any(String.class));
             Mockito.verify(jenkinsBuildService, Mockito.never()).markBuildFailed(Mockito.any(Exception.class));
+        } catch (Throwable t) {
+            fail("An unexpected exception was thrown by the test code. The test likely requires fixing: ", t);
+        }
+    }
 
+    private void validateRunDetectPipeline(OperatingSystemType operatingSystemType, String detectPath) {
+        try {
+            Mockito.when(jenkinsRemotingService.call(Mockito.any(DetectScriptStrategy.SetupCallableImpl.class))).thenReturn(detectPath);
+            Mockito.when(jenkinsRemotingService.getRemoteOperatingSystemType()).thenReturn(operatingSystemType);
+
+            // run the method we're testing
+            DetectCommands detectCommands = new DetectCommands(detectServicesFactory);
+            detectCommands.runDetectPipeline(false, DETECT_PROPERTY_INPUT);
+        } catch (DetectJenkinsException e) {
+            fail("The Detect execution returned a failing status code instead of a successful status code: " + e.getMessage());
+        } catch (Throwable t) {
+            fail("An unexpected exception was thrown by the test code. The test likely requires fixing: ", t);
+        }
+    }
+
+    private void validateJarOutput(String javaHomePath) {
+        List<String> actualCommand = captureDetectCommands(javaHomePath);
+
+        int i = 0;
+        assertEquals(JDK_HOME, actualCommand.get(i++));
+        assertEquals("-jar", actualCommand.get(i++));
+        assertEquals(DETECT_JAR_PATH, actualCommand.get(i++));
+        assertEquals("--detect.docker.passthrough.service.timeout=120", actualCommand.get(i++));
+        assertEquals("--detect.cleanup=false", actualCommand.get(i++));
+        assertEquals("--detect.project.name=Test Project'", actualCommand.get(i++));
+        assertEquals("--logging.level.com.synopsys.integration=INFO", actualCommand.get(i++));
+        assertTrue(actualCommand.get(i++).startsWith("--detect.phone.home.passthrough.jenkins.version="));
+        assertTrue(actualCommand.get(i).startsWith("--detect.phone.home.passthrough.jenkins.plugin.version="));
+    }
+
+    private void validateShellOutput(String javaHomePath) {
+        List<String> actualCommand = captureDetectCommands(javaHomePath);
+
+        int i = 0;
+        assertEquals("bash", actualCommand.get(i++));
+        assertEquals(DETECT_SHELL_PATH, actualCommand.get(i++));
+        assertEquals("--detect.docker.passthrough.service.timeout\\=120", actualCommand.get(i++));
+        assertEquals("--detect.cleanup\\=false", actualCommand.get(i++));
+        assertEquals("--detect.project.name\\=Test\\ Project\\'", actualCommand.get(i++));
+        assertEquals("--logging.level.com.synopsys.integration\\=INFO", actualCommand.get(i++));
+        assertTrue(actualCommand.get(i++).startsWith("--detect.phone.home.passthrough.jenkins.version\\="));
+        assertTrue(actualCommand.get(i).startsWith("--detect.phone.home.passthrough.jenkins.plugin.version\\="));
+    }
+
+    private void validatePowershellOutput(String javaHomePath) {
+        List<String> actualCommand = captureDetectCommands(javaHomePath);
+
+        int i = 0;
+        assertEquals("powershell", actualCommand.get(i++));
+        assertEquals("\"Import-Module '" + DETECT_POWERSHELL_PATH + "'; detect\"", actualCommand.get(i++));
+        assertEquals("--detect.docker.passthrough.service.timeout`=120", actualCommand.get(i++));
+        assertEquals("--detect.cleanup`=false", actualCommand.get(i++));
+        assertEquals("--detect.project.name`=Test` Project`'", actualCommand.get(i++));
+        assertEquals("--logging.level.com.synopsys.integration`=INFO", actualCommand.get(i++));
+        assertTrue(actualCommand.get(i++).startsWith("--detect.phone.home.passthrough.jenkins.version`="));
+        assertTrue(actualCommand.get(i).startsWith("--detect.phone.home.passthrough.jenkins.plugin.version`="));
+    }
+
+    private List<String> captureDetectCommands(String javaHomePath) {
+        try {
             // get the Detect command line that was constructed to return to calling test for validation
             ArgumentCaptor<List<String>> cmdsArgCapture = ArgumentCaptor.forClass(List.class);
             ArgumentCaptor<IntEnvironmentVariables> detectEnvCapture = ArgumentCaptor.forClass(IntEnvironmentVariables.class);
@@ -157,8 +244,8 @@ public class DetectCommandsEndToEndTest {
             assertNotEquals(javaHomePath, detectEnvCapture.getValue().getValue("JAVA_HOME"));
 
             return cmdsArgCapture.getValue();
-        } catch (Throwable t) {
-            fail("An unexpected exception was thrown by the test code. The test likely requires fixing: ", t);
+        } catch (Exception e) {
+            fail("An unexpected exception was thrown by the test code. The test likely requires fixing: ", e);
             return Collections.emptyList();
         }
     }
