@@ -37,10 +37,11 @@ public class DetectArgumentServiceTest {
     private static final String jenkinsVersionParam = "--detect.phone.home.passthrough.jenkins.version";
     private static final String pluginVersionParam = "--detect.phone.home.passthrough.jenkins.plugin.version";
 
-    private final IntEnvironmentVariables intEnvironmentVariables = new IntEnvironmentVariables();
-    private final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
     private final Function<String, String> strategyEscaper = Function.identity();
     private final List<String> invocationParameters = Collections.singletonList(expectedTestInvocationParameter);
+
+    private IntEnvironmentVariables intEnvironmentVariables;
+    private ByteArrayOutputStream byteArrayOutputStream;
 
     private DetectArgumentService detectArgumentService;
     private Map<String, String> inputDetectProperties;
@@ -54,9 +55,11 @@ public class DetectArgumentServiceTest {
         JenkinsIntLogger jenkinsIntLogger = new JenkinsIntLogger(taskListener);
 
         jenkinsIntLogger.setLogLevel(LogLevel.DEBUG);
+        intEnvironmentVariables = new IntEnvironmentVariables();
         intEnvironmentVariables.put("DETECT_PLUGIN_ESCAPING", "true");
 
         // Set default expected values. Tests will apply different if needed
+        byteArrayOutputStream = new ByteArrayOutputStream();
         Mockito.when(taskListener.getLogger()).thenReturn(new PrintStream(byteArrayOutputStream));
         Mockito.when(jenkinsVersionHelper.getJenkinsVersion()).thenReturn(Optional.of(expectedJenkinsVersion));
         Mockito.when(jenkinsVersionHelper.getPluginVersion(pluginName)).thenReturn(Optional.of(expectedJenkinsPluginVersion));
@@ -122,7 +125,6 @@ public class DetectArgumentServiceTest {
 
     @Test
     public void testVariableNotReplaced() {
-        // This is used to validate a log entry from calling handleVariableReplacement()
         inputDetectProperties.put("$VISIBLE", "visible");
 
         List<String> detectCommandLine = detectArgumentService.getDetectArguments(intEnvironmentVariables, strategyEscaper, invocationParameters, createDetectPropertiesInputString());
@@ -130,7 +132,6 @@ public class DetectArgumentServiceTest {
         assertEquals(7, detectCommandLine.size()); // Invocation args (1) + passed args (3) + auto added args (3)
         commonValidation(detectCommandLine, expectedVisibleDetectProperties, expectedHiddenDetectProperties);
 
-        // Validate log entry from handleVariableReplacement()
         assertTrue(byteArrayOutputStream.toString().contains("A variable may not have been properly replaced in resolved argument: $VISIBLE"), "Log should contain message about unable to replace variable.");
     }
 
@@ -156,7 +157,6 @@ public class DetectArgumentServiceTest {
 
     @Test
     public void testUnknownJenkinsVersion() {
-        // Mock and set expectedHiddenDetectProperties for <unknown> Jenkins version properties
         Mockito.when(jenkinsVersionHelper.getJenkinsVersion()).thenReturn(Optional.empty());
         Mockito.when(jenkinsVersionHelper.getPluginVersion(pluginName)).thenReturn(Optional.empty());
         expectedHiddenDetectProperties.replace(jenkinsVersionParam, expectedJenkinsVersion, "<unknown>");
