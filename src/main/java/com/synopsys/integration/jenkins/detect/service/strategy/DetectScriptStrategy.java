@@ -154,7 +154,7 @@ public class DetectScriptStrategy extends DetectExecutionStrategy {
                 if (detectScriptPath.toFile().exists()) {
                     logger.info("Running already installed Detect script " + detectScriptPath);
                 } else {
-                    logger.info(String.format("Downloading Detect script from %s to %s", httpUrl.toString(), detectScriptPath));
+                    logger.info(String.format("Downloading Detect script from %s to %s", httpUrl.string(), detectScriptPath));
 
                     IntHttpClient intHttpClient = new IntHttpClient(logger, 120, true, rebuildProxyInfo());
                     Request request = new Request.Builder().url(httpUrl).build();
