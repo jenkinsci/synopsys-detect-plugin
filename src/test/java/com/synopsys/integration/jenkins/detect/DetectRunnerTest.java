@@ -147,8 +147,10 @@ public class DetectRunnerTest {
             Mockito.verify(mockedRemotingService).launch(detectEnvCapture.capture(), cmdsArgCapture.capture());
 
             // verify that the system env is NOT inherited
-            // TODO: Add new test to specifically check that the system env is NOT inherited.
-            //       The test should be run if System.getenv().size > 0
+            // TODO: Verification is needed to check that the system env is not being inherited. A new test should be put in place,
+            //       which will only be run if System.getenv().size > 0. In order to do this, detectRunner.runDetect() needs to be
+            //       run, which currently requires the setup above. Long term, the tests here should be redesigned so that we aren't
+            //       performing all of the mocking. Until then, perform the assert below against all System.getenv() entries.
             System.getenv().forEach((key, value) ->
                                         assertNotEquals(value, detectEnvCapture.getValue().getValue(value))
             );
