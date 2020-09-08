@@ -55,7 +55,7 @@ public class DetectArgumentServiceTest {
         JenkinsIntLogger jenkinsIntLogger = new JenkinsIntLogger(taskListener);
 
         jenkinsIntLogger.setLogLevel(LogLevel.DEBUG);
-        intEnvironmentVariables = new IntEnvironmentVariables();
+        intEnvironmentVariables = IntEnvironmentVariables.includeSystemEnv();
         intEnvironmentVariables.put("DETECT_PLUGIN_ESCAPING", "true");
 
         // Set default expected values. Tests will apply different if needed
@@ -112,7 +112,7 @@ public class DetectArgumentServiceTest {
     @Test
     public void testVariableReplaced() {
         // Set up intEnvironmentVariables to only contain custom variable to verify search and replace of the same
-        IntEnvironmentVariables intEnvironmentVariables = new IntEnvironmentVariables(false);
+        IntEnvironmentVariables intEnvironmentVariables = IntEnvironmentVariables.empty();
         intEnvironmentVariables.put("TRUST_CERT", "false");
         inputDetectProperties.put("--blackduck.trust.cert", "$TRUST_CERT");
         expectedVisibleDetectProperties.put("--blackduck.trust.cert", "false");
@@ -170,7 +170,7 @@ public class DetectArgumentServiceTest {
 
     @Test
     public void testEmptyIntEnvironmentVariables() {
-        IntEnvironmentVariables intEnvironmentVariables = new IntEnvironmentVariables(false);
+        IntEnvironmentVariables intEnvironmentVariables = IntEnvironmentVariables.empty();
 
         List<String> detectCommandLine = detectArgumentService.getDetectArguments(intEnvironmentVariables, strategyEscaper, invocationParameters, createDetectPropertiesInputString());
 
