@@ -36,7 +36,6 @@ public class DetectRunnerTest {
     private static final String DETECT_PROPERTY_INPUT = "--detect.docker.passthrough.service.timeout=$BLACKDUCK_TIMEOUT --detect.cleanup=false --detect.project.name=\"Test Project'\"";
     private static final String WORKSPACE_TMP_REL_PATH = "out/test/DetectPostBuildStepTest/testPerform/workspace@tmp";
     private static final String JDK_HOME = "/tmp/jdk/bin/java";
-    private static final String JAVA_HOME_VALUE = System.getenv("JAVA_HOME");
     private static final String DETECT_JAR_PATH = "/tmp/detect.jar";
     private static final String DETECT_SHELL_PATH = "/tmp/detect.sh";
     private static final String DETECT_POWERSHELL_PATH = "/tmp/detect.ps1";
@@ -47,7 +46,7 @@ public class DetectRunnerTest {
         HashMap<String, String> environment = new HashMap<>();
         environment.put(DetectJenkinsEnvironmentVariable.USER_PROVIDED_JAR_PATH.stringValue(), DETECT_JAR_PATH);
 
-        List<String> actualCommand = runDetectAndCaptureCommand(environment, JAVA_HOME_VALUE, mockedRemotingService);
+        List<String> actualCommand = runDetectAndCaptureCommand(environment, mockedRemotingService);
 
         int i = 0;
         assertEquals(JDK_HOME, actualCommand.get(i++));
@@ -66,7 +65,7 @@ public class DetectRunnerTest {
         JenkinsRemotingService mockedRemotingService = getMockedRemotingService(OperatingSystemType.LINUX, DETECT_SHELL_PATH);
         HashMap<String, String> environment = new HashMap<>();
 
-        List<String> actualCommand = runDetectAndCaptureCommand(environment, JAVA_HOME_VALUE, mockedRemotingService);
+        List<String> actualCommand = runDetectAndCaptureCommand(environment, mockedRemotingService);
 
         int i = 0;
         assertEquals("bash", actualCommand.get(i++));
@@ -84,7 +83,7 @@ public class DetectRunnerTest {
         JenkinsRemotingService mockedRemotingService = getMockedRemotingService(OperatingSystemType.WINDOWS, DETECT_POWERSHELL_PATH);
         HashMap<String, String> environment = new HashMap<>();
 
-        List<String> actualCommand = runDetectAndCaptureCommand(environment, JAVA_HOME_VALUE, mockedRemotingService);
+        List<String> actualCommand = runDetectAndCaptureCommand(environment, mockedRemotingService);
 
         int i = 0;
         assertEquals("powershell", actualCommand.get(i++));
@@ -112,7 +111,7 @@ public class DetectRunnerTest {
         return mockedRemotingService;
     }
 
-    private List<String> runDetectAndCaptureCommand(Map<String, String> environmentVariables, String javaHomePath, JenkinsRemotingService mockedRemotingService) {
+    private List<String> runDetectAndCaptureCommand(Map<String, String> environmentVariables, JenkinsRemotingService mockedRemotingService) {
         try {
             JenkinsIntLogger jenkinsIntLogger = new JenkinsIntLogger(null);
             Map<BuilderPropertyKey, String> builderEnvironmentVariables = new HashMap<>();
@@ -147,8 +146,15 @@ public class DetectRunnerTest {
             ArgumentCaptor<IntEnvironmentVariables> detectEnvCapture = ArgumentCaptor.forClass(IntEnvironmentVariables.class);
             Mockito.verify(mockedRemotingService).launch(detectEnvCapture.capture(), cmdsArgCapture.capture());
 
-            // verify that the system env is NOT inherited (use JAVA_HOME, if set)
-            assertNotEquals(javaHomePath, detectEnvCapture.getValue().getValue("JAVA_HOME"));
+            // verify that the system env is NOT inherited
+            // TODO: Verification is needed to check that the system env is not being inherited. A new test should be put in place,
+            //       which will only be run if System.getenv().size > 0. In order to do this, detectRunner.runDetect() needs to be
+            //       run, which currently requires the setup above. Long term, the tests here should be redesigned so that we aren't
+            //       performing all of the mocking. Until then, perform the assert below against all System.getenv() entries.
+            System.getenv().forEach((key, value) ->
+                                        assertNotEquals(value, detectEnvCapture.getValue().getValue(value))
+            );
+
             return cmdsArgCapture.getValue();
         } catch (Throwable t) {
             fail("An unexpected exception was thrown by the test code: ", t);

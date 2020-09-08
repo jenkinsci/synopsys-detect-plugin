@@ -30,7 +30,7 @@ import com.synopsys.integration.exception.IntegrationException;
 import jenkins.security.MasterToSlaveCallable;
 
 public abstract class DetectExecutionStrategy {
-    public abstract MasterToSlaveCallable<String, IntegrationException> getSetupCallable();
+    public abstract MasterToSlaveCallable<String, IntegrationException> getSetupCallable() throws IntegrationException;
 
     public abstract Function<String, String> getArgumentEscaper();
 

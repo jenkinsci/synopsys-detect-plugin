@@ -74,7 +74,12 @@ public class DetectScriptStrategyCallableTest {
         assumeTrue(new File(toolsDirectoryPath).setReadOnly(), "Skipping test because we can't modify file permissions.");
 
         DetectScriptStrategy detectScriptStrategy = new DetectScriptStrategy(defaultLogger, defaultProxyHelper, OperatingSystemType.determineFromSystem(), toolsDirectoryPath);
-        assertThrows(IntegrationException.class, detectScriptStrategy.getSetupCallable()::call);
+
+        try {
+            assertThrows(IntegrationException.class, detectScriptStrategy.getSetupCallable()::call);
+        } catch (IntegrationException e) {
+            fail("An unexpected exception occurred: ", e);
+        }
     }
 
     @Test

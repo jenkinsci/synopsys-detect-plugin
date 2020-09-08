@@ -47,7 +47,7 @@ public class DetectJarStrategyTest {
 
     @BeforeEach
     public void setup() {
-        environmentVariables = new IntEnvironmentVariables(false);
+        environmentVariables = IntEnvironmentVariables.empty();
         environmentVariables.put("PATH", expectedPath);
 
         TaskListener taskListener = Mockito.mock(TaskListener.class);
