@@ -179,7 +179,14 @@ public class DetectGlobalConfig extends GlobalConfiguration implements Serializa
             ConnectionResult connectionResult = blackDuckServerConfig.createBlackDuckHttpClient(new PrintStreamIntLogger(System.out, LogLevel.DEBUG)).attemptConnection();
             if (connectionResult.isFailure()) {
                 int statusCode = connectionResult.getHttpStatusCode();
-                String statusPhrase = EnglishReasonPhraseCatalog.INSTANCE.getReason(statusCode, Locale.ENGLISH);
+                String validationMessage;
+                try {
+                    String statusPhrase = EnglishReasonPhraseCatalog.INSTANCE.getReason(statusCode, Locale.ENGLISH);
+                    validationMessage = String.format("ERROR: Connection attempt returned %s %s", statusCode, statusPhrase);
+                } catch (IllegalArgumentException ignored) {
+                    // EnglishReasonPhraseCatalog throws an IllegalArgumentException if the status code is outside of the 100-600 range --rotte AUG 2020
+                    validationMessage = "ERROR: Connection could not be established.";
+                }
 
                 // This is how Jenkins constructs an error with an exception stack trace, we're using it here because often a status code and phrase are not enough, but also (especially with proxies) the failure message can be too much.
                 String moreDetailsHtml = connectionResult.getFailureMessage()
@@ -187,7 +194,7 @@ public class DetectGlobalConfig extends GlobalConfiguration implements Serializa
                                              .map(msg -> String.format("<a href='#' class='showDetails'>%s</a><pre style='display:none'>%s</pre>", Messages.FormValidation_Error_Details(), msg))
                                              .orElse(StringUtils.EMPTY);
 
-                return FormValidation.errorWithMarkup(String.format("ERROR: Connection attempt returned %s %s %s", statusCode, statusPhrase, moreDetailsHtml));
+                return FormValidation.errorWithMarkup(String.join(" ", validationMessage, moreDetailsHtml));
             }
         } catch (IllegalArgumentException e) {
             return FormValidation.error(e.getMessage());

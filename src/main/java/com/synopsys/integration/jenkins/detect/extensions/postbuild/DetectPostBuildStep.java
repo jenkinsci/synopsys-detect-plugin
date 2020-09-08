@@ -30,8 +30,7 @@ import javax.annotation.Nonnull;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import com.synopsys.integration.jenkins.annotations.HelpMarkdown;
-import com.synopsys.integration.jenkins.detect.DetectCommands;
-import com.synopsys.integration.jenkins.detect.service.DetectServicesFactory;
+import com.synopsys.integration.jenkins.detect.service.DetectCommandsFactory;
 
 import hudson.Extension;
 import hudson.Launcher;
@@ -71,8 +70,8 @@ public class DetectPostBuildStep extends Recorder {
     // Freestyle
     @Override
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
-        DetectCommands detectCommands = new DetectCommands(DetectServicesFactory.fromPostBuild(build, launcher, listener));
-        detectCommands.runDetectPostBuild(detectProperties);
+        DetectCommandsFactory.fromPostBuild(build, launcher, listener)
+            .runDetect(detectProperties);
         return true;
     }
 

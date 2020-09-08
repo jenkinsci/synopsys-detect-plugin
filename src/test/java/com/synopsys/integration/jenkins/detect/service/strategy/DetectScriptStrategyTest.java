@@ -2,6 +2,7 @@ package com.synopsys.integration.jenkins.detect.service.strategy;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
@@ -12,6 +13,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import com.synopsys.integration.exception.IntegrationException;
 import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
 import com.synopsys.integration.jenkins.wrapper.JenkinsProxyHelper;
 import com.synopsys.integration.util.OperatingSystemType;
@@ -40,7 +42,12 @@ public class DetectScriptStrategyTest {
         JenkinsProxyHelper mockedProxyHelper = Mockito.mock(JenkinsProxyHelper.class);
         Mockito.when(mockedProxyHelper.getProxyInfo(Mockito.anyString())).thenThrow(new IllegalArgumentException(expectedExceptionMessage));
         DetectScriptStrategy detectScriptStrategy = new DetectScriptStrategy(defaultLogger, mockedProxyHelper, OperatingSystemType.LINUX, null);
-        detectScriptStrategy.getSetupCallable();
+
+        try {
+            detectScriptStrategy.getSetupCallable();
+        } catch (IntegrationException e) {
+            fail("An unexpected exception occurred: ", e);
+        }
 
         assertTrue(logs.toString().contains(expectedExceptionMessage));
     }

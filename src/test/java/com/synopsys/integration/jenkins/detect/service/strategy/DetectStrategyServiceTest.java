@@ -10,7 +10,7 @@ import com.synopsys.integration.util.IntEnvironmentVariables;
 public class DetectStrategyServiceTest {
     @Test
     public void testGetJarStrategy() {
-        IntEnvironmentVariables intEnvironmentVariables = new IntEnvironmentVariables(false);
+        IntEnvironmentVariables intEnvironmentVariables = IntEnvironmentVariables.empty();
         intEnvironmentVariables.put(DetectJenkinsEnvironmentVariable.USER_PROVIDED_JAR_PATH.stringValue(), "/tmp/path/to/detect.jar");
 
         DetectExecutionStrategy detectExecutionStrategy = testGetExecutionStrategy(intEnvironmentVariables);
@@ -19,7 +19,7 @@ public class DetectStrategyServiceTest {
 
     @Test
     public void testGetScriptStrategy() {
-        IntEnvironmentVariables intEnvironmentVariables = new IntEnvironmentVariables(false);
+        IntEnvironmentVariables intEnvironmentVariables = IntEnvironmentVariables.empty();
 
         DetectExecutionStrategy detectExecutionStrategy = testGetExecutionStrategy(intEnvironmentVariables);
         assertEquals(DetectScriptStrategy.class, detectExecutionStrategy.getClass());

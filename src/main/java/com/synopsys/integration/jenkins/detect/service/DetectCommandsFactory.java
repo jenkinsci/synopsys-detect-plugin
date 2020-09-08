@@ -26,6 +26,9 @@ import java.io.IOException;
 import java.util.Optional;
 
 import com.synopsys.integration.function.ThrowingSupplier;
+import com.synopsys.integration.jenkins.detect.DetectFreestyleCommands;
+import com.synopsys.integration.jenkins.detect.DetectPipelineCommands;
+import com.synopsys.integration.jenkins.detect.DetectRunner;
 import com.synopsys.integration.jenkins.detect.service.strategy.DetectStrategyService;
 import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
 import com.synopsys.integration.jenkins.service.JenkinsBuildService;
@@ -42,7 +45,7 @@ import hudson.model.BuildListener;
 import hudson.model.TaskListener;
 import hudson.slaves.WorkspaceList;
 
-public class DetectServicesFactory {
+public class DetectCommandsFactory {
     private final JenkinsWrapper jenkinsWrapper;
     private final TaskListener listener;
     private final EnvVars envVars;
@@ -50,7 +53,7 @@ public class DetectServicesFactory {
     private final ThrowingSupplier<FilePath, AbortException> validatedWorkspace;
     private final AbstractBuild<?, ?> build;
 
-    private DetectServicesFactory(JenkinsWrapper jenkinsWrapper, TaskListener listener, EnvVars envVars, Launcher launcher, FilePath workspace, AbstractBuild<?, ?> build) {
+    private DetectCommandsFactory(JenkinsWrapper jenkinsWrapper, TaskListener listener, EnvVars envVars, Launcher launcher, FilePath workspace, AbstractBuild<?, ?> build) {
         this.jenkinsWrapper = jenkinsWrapper;
         this.listener = listener;
         this.envVars = envVars;
@@ -59,42 +62,48 @@ public class DetectServicesFactory {
         this.build = build;
     }
 
-    public static DetectServicesFactory fromPostBuild(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws IOException, InterruptedException {
-        return new DetectServicesFactory(JenkinsWrapper.initializeFromJenkinsJVM(), listener, build.getEnvironment(listener), launcher, build.getWorkspace(), build);
+    public static DetectFreestyleCommands fromPostBuild(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws IOException, InterruptedException {
+        DetectCommandsFactory detectCommandsFactory = new DetectCommandsFactory(JenkinsWrapper.initializeFromJenkinsJVM(), listener, build.getEnvironment(listener), launcher, build.getWorkspace(), build);
+        return new DetectFreestyleCommands(detectCommandsFactory.createJenkinsBuildService(), detectCommandsFactory.createDetectRunner());
     }
 
-    public static DetectServicesFactory fromPipeline(TaskListener listener, EnvVars envVars, Launcher launcher, FilePath workspace) {
-        return new DetectServicesFactory(JenkinsWrapper.initializeFromJenkinsJVM(), listener, envVars, launcher, workspace, null);
+    public static DetectPipelineCommands fromPipeline(TaskListener listener, EnvVars envVars, Launcher launcher, FilePath workspace) throws AbortException {
+        DetectCommandsFactory detectCommandsFactory = new DetectCommandsFactory(JenkinsWrapper.initializeFromJenkinsJVM(), listener, envVars, launcher, workspace, null);
+        return new DetectPipelineCommands(detectCommandsFactory.createDetectRunner(), detectCommandsFactory.getLogger());
     }
 
-    public DetectArgumentService createDetectArgumentService() {
+    private DetectRunner createDetectRunner() throws AbortException {
+        return new DetectRunner(createDetectEnvironmentService(), createJenkinsRemotingService(), createDetectStrategyService(), createDetectArgumentService());
+    }
+
+    private DetectArgumentService createDetectArgumentService() {
         return new DetectArgumentService(getLogger(), jenkinsWrapper.getVersionHelper());
     }
 
-    public DetectEnvironmentService createDetectEnvironmentService() {
+    private DetectEnvironmentService createDetectEnvironmentService() {
         return new DetectEnvironmentService(getLogger(), jenkinsWrapper.getProxyHelper(), jenkinsWrapper.getVersionHelper(), jenkinsWrapper.getCredentialsHelper(), createJenkinsConfigService(), envVars);
     }
 
-    public DetectStrategyService createDetectStrategyService() throws AbortException {
+    private DetectStrategyService createDetectStrategyService() throws AbortException {
         FilePath workspace = validatedWorkspace.get();
         FilePath workspaceTempDir = WorkspaceList.tempDir(workspace);
 
         return new DetectStrategyService(getLogger(), jenkinsWrapper.getProxyHelper(), workspaceTempDir.getRemote());
     }
 
-    public JenkinsRemotingService createJenkinsRemotingService() throws AbortException {
+    private JenkinsRemotingService createJenkinsRemotingService() throws AbortException {
         return new JenkinsRemotingService(launcher, validatedWorkspace.get(), listener);
     }
 
-    public JenkinsBuildService createJenkinsBuildService() {
+    private JenkinsBuildService createJenkinsBuildService() {
         return new JenkinsBuildService(getLogger(), build);
     }
 
-    public JenkinsConfigService createJenkinsConfigService() {
+    private JenkinsConfigService createJenkinsConfigService() {
         return new JenkinsConfigService();
     }
 
-    public JenkinsIntLogger getLogger() {
+    private JenkinsIntLogger getLogger() {
         return new JenkinsIntLogger(listener);
     }
 }
