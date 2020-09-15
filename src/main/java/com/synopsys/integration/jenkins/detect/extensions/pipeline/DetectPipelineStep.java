@@ -29,6 +29,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.jenkinsci.plugins.workflow.steps.Step;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
@@ -39,6 +40,8 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
 import com.synopsys.integration.jenkins.annotations.HelpMarkdown;
+import com.synopsys.integration.jenkins.detect.extensions.DetectDownloadStrategy;
+import com.synopsys.integration.jenkins.detect.extensions.InheritFromGlobalDownloadStrategy;
 import com.synopsys.integration.jenkins.detect.service.DetectCommandsFactory;
 
 import hudson.EnvVars;
@@ -60,6 +63,9 @@ public class DetectPipelineStep extends Step implements Serializable {
     @HelpMarkdown("If true (checked), returns the status code of the Detect run instead of throwing an exception")
     private boolean returnStatus = false;
 
+    @Nullable
+    private DetectDownloadStrategy downloadStrategyOverride;
+
     @DataBoundConstructor
     public DetectPipelineStep(String detectProperties) {
         this.detectProperties = detectProperties;
@@ -67,6 +73,19 @@ public class DetectPipelineStep extends Step implements Serializable {
 
     public String getDetectProperties() {
         return detectProperties;
+    }
+
+    public DetectDownloadStrategy getDownloadStrategyOverride() {
+        return downloadStrategyOverride;
+    }
+
+    @DataBoundSetter
+    public void setDownloadStrategyOverride(DetectDownloadStrategy downloadStrategyOverride) {
+        this.downloadStrategyOverride = downloadStrategyOverride;
+    }
+
+    public DetectDownloadStrategy getDefaultDownloadStrategyOverride() {
+        return new InheritFromGlobalDownloadStrategy();
     }
 
     public boolean getReturnStatus() {

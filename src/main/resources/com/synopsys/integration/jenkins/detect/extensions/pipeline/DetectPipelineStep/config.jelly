@@ -5,4 +5,5 @@
     <f:entry field="returnStatus" title="Return status code">
         <f:checkbox/>
     </f:entry>
+    <f:dropdownDescriptorSelector field="downloadStrategyOverride" title="Custom download strategy" default="${instance.defaultDownloadStrategyOverride}"/>
 </j:jelly>

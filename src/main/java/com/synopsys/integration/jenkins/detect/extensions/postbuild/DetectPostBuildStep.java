@@ -26,10 +26,14 @@ import java.io.IOException;
 import java.io.Serializable;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
 
 import com.synopsys.integration.jenkins.annotations.HelpMarkdown;
+import com.synopsys.integration.jenkins.detect.extensions.DetectDownloadStrategy;
+import com.synopsys.integration.jenkins.detect.extensions.InheritFromGlobalDownloadStrategy;
 import com.synopsys.integration.jenkins.detect.service.DetectCommandsFactory;
 
 import hudson.Extension;
@@ -48,6 +52,9 @@ public class DetectPostBuildStep extends Recorder {
     @HelpMarkdown("The command line options to pass to Synopsys Detect")
     private final String detectProperties;
 
+    @Nullable
+    private DetectDownloadStrategy downloadStrategyOverride;
+
     @DataBoundConstructor
     public DetectPostBuildStep(String detectProperties) {
         this.detectProperties = detectProperties;
@@ -55,6 +62,19 @@ public class DetectPostBuildStep extends Recorder {
 
     public String getDetectProperties() {
         return detectProperties;
+    }
+
+    public DetectDownloadStrategy getDownloadStrategyOverride() {
+        return downloadStrategyOverride;
+    }
+
+    @DataBoundSetter
+    public void setDownloadStrategyOverride(DetectDownloadStrategy downloadStrategyOverride) {
+        this.downloadStrategyOverride = downloadStrategyOverride;
+    }
+
+    public DetectDownloadStrategy getDefaultDownloadStrategyOverride() {
+        return new InheritFromGlobalDownloadStrategy();
     }
 
     @Override
