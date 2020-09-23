@@ -40,7 +40,7 @@ import hudson.util.ListBoxModel;
 public class AirGapDownloadStrategy extends DetectDownloadStrategy {
     public static String DISPLAY_NAME = "Install AirGapped Detect as a Tool Installation";
     @Nullable
-    private DetectAirGapInstallation airGapInstallation;
+    private String airGapInstallationName;
 
     @DataBoundConstructor
     public AirGapDownloadStrategy() {
@@ -52,13 +52,13 @@ public class AirGapDownloadStrategy extends DetectDownloadStrategy {
         return (DescriptorImpl) super.getDescriptor();
     }
 
-    public DetectAirGapInstallation getAirGapInstallation() {
-        return airGapInstallation;
+    public String getAirGapInstallationName() {
+        return airGapInstallationName;
     }
 
     @DataBoundSetter
-    public void setAirGapInstallation(DetectAirGapInstallation airGapInstallation) {
-        this.airGapInstallation = airGapInstallation;
+    public void setAirGapInstallationName(String airGapInstallationName) {
+        this.airGapInstallationName = airGapInstallationName;
     }
 
     @Extension
