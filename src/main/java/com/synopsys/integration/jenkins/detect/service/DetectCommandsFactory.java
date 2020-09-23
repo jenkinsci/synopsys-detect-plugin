@@ -34,6 +34,7 @@ import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
 import com.synopsys.integration.jenkins.service.JenkinsBuildService;
 import com.synopsys.integration.jenkins.service.JenkinsConfigService;
 import com.synopsys.integration.jenkins.service.JenkinsRemotingService;
+import com.synopsys.integration.jenkins.service.JenkinsServicesFactory;
 import com.synopsys.integration.jenkins.wrapper.JenkinsWrapper;
 
 import hudson.AbortException;
@@ -42,6 +43,7 @@ import hudson.FilePath;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
+import hudson.model.Node;
 import hudson.model.TaskListener;
 import hudson.slaves.WorkspaceList;
 
@@ -49,39 +51,46 @@ public class DetectCommandsFactory {
     private final JenkinsWrapper jenkinsWrapper;
     private final TaskListener listener;
     private final EnvVars envVars;
-    private final Launcher launcher;
     private final ThrowingSupplier<FilePath, AbortException> validatedWorkspace;
-    private final AbstractBuild<?, ?> build;
 
-    private DetectCommandsFactory(JenkinsWrapper jenkinsWrapper, TaskListener listener, EnvVars envVars, Launcher launcher, FilePath workspace, AbstractBuild<?, ?> build) {
+    private DetectCommandsFactory(JenkinsWrapper jenkinsWrapper, TaskListener listener, EnvVars envVars, FilePath workspace) {
         this.jenkinsWrapper = jenkinsWrapper;
         this.listener = listener;
         this.envVars = envVars;
-        this.launcher = launcher;
         this.validatedWorkspace = () -> Optional.ofNullable(workspace).orElseThrow(() -> new AbortException("Detect cannot be executed when the workspace is null"));
-        this.build = build;
     }
 
     public static DetectFreestyleCommands fromPostBuild(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws IOException, InterruptedException {
-        DetectCommandsFactory detectCommandsFactory = new DetectCommandsFactory(JenkinsWrapper.initializeFromJenkinsJVM(), listener, build.getEnvironment(listener), launcher, build.getWorkspace(), build);
-        return new DetectFreestyleCommands(detectCommandsFactory.createJenkinsBuildService(), detectCommandsFactory.createDetectRunner());
+        DetectCommandsFactory detectCommandsFactory = new DetectCommandsFactory(JenkinsWrapper.initializeFromJenkinsJVM(), listener, build.getEnvironment(listener), build.getWorkspace());
+
+        JenkinsServicesFactory jenkinsServicesFactory = new JenkinsServicesFactory(detectCommandsFactory.getLogger(), build, build.getEnvironment(listener), launcher, listener, build.getBuiltOn(), build.getWorkspace());
+        JenkinsBuildService jenkinsBuildService = jenkinsServicesFactory.createJenkinsBuildService();
+        JenkinsConfigService jenkinsConfigService = jenkinsServicesFactory.createJenkinsConfigService();
+        JenkinsRemotingService jenkinsRemotingService = jenkinsServicesFactory.createJenkinsRemotingService();
+
+        return new DetectFreestyleCommands(jenkinsBuildService, detectCommandsFactory.createDetectRunner(jenkinsConfigService, jenkinsRemotingService));
     }
 
-    public static DetectPipelineCommands fromPipeline(TaskListener listener, EnvVars envVars, Launcher launcher, FilePath workspace) throws AbortException {
-        DetectCommandsFactory detectCommandsFactory = new DetectCommandsFactory(JenkinsWrapper.initializeFromJenkinsJVM(), listener, envVars, launcher, workspace, null);
-        return new DetectPipelineCommands(detectCommandsFactory.createDetectRunner(), detectCommandsFactory.getLogger());
+    public static DetectPipelineCommands fromPipeline(TaskListener listener, EnvVars envVars, Launcher launcher, Node node, FilePath workspace) throws AbortException {
+        DetectCommandsFactory detectCommandsFactory = new DetectCommandsFactory(JenkinsWrapper.initializeFromJenkinsJVM(), listener, envVars, workspace);
+
+        JenkinsServicesFactory jenkinsServicesFactory = new JenkinsServicesFactory(detectCommandsFactory.getLogger(), null, envVars, launcher, listener, node, workspace);
+        JenkinsConfigService jenkinsConfigService = jenkinsServicesFactory.createJenkinsConfigService();
+        JenkinsRemotingService jenkinsRemotingService = jenkinsServicesFactory.createJenkinsRemotingService();
+
+        return new DetectPipelineCommands(detectCommandsFactory.createDetectRunner(jenkinsConfigService, jenkinsRemotingService), detectCommandsFactory.getLogger());
     }
 
-    private DetectRunner createDetectRunner() throws AbortException {
-        return new DetectRunner(createDetectEnvironmentService(), createJenkinsRemotingService(), createDetectStrategyService(), createDetectArgumentService());
+    private DetectRunner createDetectRunner(JenkinsConfigService jenkinsConfigService, JenkinsRemotingService jenkinsRemotingService) throws AbortException {
+        return new DetectRunner(createDetectEnvironmentService(jenkinsConfigService), jenkinsRemotingService, createDetectStrategyService(), createDetectArgumentService());
     }
 
     private DetectArgumentService createDetectArgumentService() {
         return new DetectArgumentService(getLogger(), jenkinsWrapper.getVersionHelper());
     }
 
-    private DetectEnvironmentService createDetectEnvironmentService() {
-        return new DetectEnvironmentService(getLogger(), jenkinsWrapper.getProxyHelper(), jenkinsWrapper.getVersionHelper(), jenkinsWrapper.getCredentialsHelper(), createJenkinsConfigService(), envVars);
+    private DetectEnvironmentService createDetectEnvironmentService(JenkinsConfigService jenkinsConfigService) {
+        return new DetectEnvironmentService(getLogger(), jenkinsWrapper.getProxyHelper(), jenkinsWrapper.getVersionHelper(), jenkinsWrapper.getCredentialsHelper(), jenkinsConfigService, envVars);
     }
 
     private DetectStrategyService createDetectStrategyService() throws AbortException {
@@ -89,18 +98,6 @@ public class DetectCommandsFactory {
         FilePath workspaceTempDir = WorkspaceList.tempDir(workspace);
 
         return new DetectStrategyService(getLogger(), jenkinsWrapper.getProxyHelper(), workspaceTempDir.getRemote());
-    }
-
-    private JenkinsRemotingService createJenkinsRemotingService() throws AbortException {
-        return new JenkinsRemotingService(launcher, validatedWorkspace.get(), listener);
-    }
-
-    private JenkinsBuildService createJenkinsBuildService() {
-        return new JenkinsBuildService(getLogger(), build);
-    }
-
-    private JenkinsConfigService createJenkinsConfigService() {
-        return new JenkinsConfigService();
     }
 
     private JenkinsIntLogger getLogger() {

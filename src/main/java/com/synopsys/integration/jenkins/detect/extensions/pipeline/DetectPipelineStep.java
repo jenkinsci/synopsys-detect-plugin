@@ -48,8 +48,7 @@ import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
-import hudson.model.Computer;
-import hudson.model.Run;
+import hudson.model.Node;
 import hudson.model.TaskListener;
 
 public class DetectPipelineStep extends Step implements Serializable {
@@ -106,7 +105,7 @@ public class DetectPipelineStep extends Step implements Serializable {
     public static final class DescriptorImpl extends StepDescriptor {
         @Override
         public Set<? extends Class<?>> getRequiredContext() {
-            return new HashSet<>(Arrays.asList(TaskListener.class, EnvVars.class, Computer.class, FilePath.class, Run.class));
+            return new HashSet<>(Arrays.asList(TaskListener.class, EnvVars.class, FilePath.class, Launcher.class, Node.class));
         }
 
         @Override
@@ -128,6 +127,7 @@ public class DetectPipelineStep extends Step implements Serializable {
         private final transient EnvVars envVars;
         private final transient FilePath workspace;
         private final transient Launcher launcher;
+        private final transient Node node;
 
         protected Execution(@Nonnull StepContext context) throws InterruptedException, IOException {
             super(context);
@@ -135,11 +135,12 @@ public class DetectPipelineStep extends Step implements Serializable {
             envVars = context.get(EnvVars.class);
             workspace = context.get(FilePath.class);
             launcher = context.get(Launcher.class);
+            node = context.get(Node.class);
         }
 
         @Override
         protected Integer run() throws Exception {
-            return DetectCommandsFactory.fromPipeline(listener, envVars, launcher, workspace)
+            return DetectCommandsFactory.fromPipeline(listener, envVars, launcher, node, workspace)
                        .runDetect(returnStatus, detectProperties);
         }
 
