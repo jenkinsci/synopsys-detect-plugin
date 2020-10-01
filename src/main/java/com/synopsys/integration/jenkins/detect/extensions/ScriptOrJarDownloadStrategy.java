@@ -29,6 +29,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import hudson.Extension;
 
 public class ScriptOrJarDownloadStrategy extends DetectDownloadStrategy {
+    private static final long serialVersionUID = 3453314100205960797L;
     public static String DISPLAY_NAME = "Download via scripts or use DETECT_JAR_PATH";
 
     @DataBoundConstructor
