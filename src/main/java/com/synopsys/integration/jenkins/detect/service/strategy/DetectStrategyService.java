@@ -25,6 +25,8 @@ package com.synopsys.integration.jenkins.detect.service.strategy;
 import org.apache.commons.lang3.StringUtils;
 
 import com.synopsys.integration.jenkins.detect.DetectJenkinsEnvironmentVariable;
+import com.synopsys.integration.jenkins.detect.extensions.AirGapDownloadStrategy;
+import com.synopsys.integration.jenkins.detect.extensions.DetectDownloadStrategy;
 import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
 import com.synopsys.integration.jenkins.wrapper.JenkinsProxyHelper;
 import com.synopsys.integration.util.IntEnvironmentVariables;
@@ -41,11 +43,13 @@ public class DetectStrategyService {
         this.remoteTempWorkspacePath = remoteTempWorkspacePath;
     }
 
-    public DetectExecutionStrategy getExecutionStrategy(IntEnvironmentVariables intEnvironmentVariables, OperatingSystemType operatingSystemType, String remoteJdkHome) {
+    public DetectExecutionStrategy getExecutionStrategy(IntEnvironmentVariables intEnvironmentVariables, OperatingSystemType operatingSystemType, String remoteJdkHome, DetectDownloadStrategy detectDownloadStrategy) {
         DetectExecutionStrategy detectExecutionStrategy;
         String detectJarPath = intEnvironmentVariables.getValue(DetectJenkinsEnvironmentVariable.USER_PROVIDED_JAR_PATH.stringValue());
 
-        if (StringUtils.isNotBlank(detectJarPath)) {
+        if (detectDownloadStrategy instanceof AirGapDownloadStrategy) {
+            detectExecutionStrategy = new DetectScriptStrategy(logger, jenkinsProxyHelper, operatingSystemType, remoteTempWorkspacePath);
+        } else if (StringUtils.isNotBlank(detectJarPath)) {
             detectExecutionStrategy = new DetectJarStrategy(logger, intEnvironmentVariables, remoteJdkHome, detectJarPath);
         } else {
             detectExecutionStrategy = new DetectScriptStrategy(logger, jenkinsProxyHelper, operatingSystemType, remoteTempWorkspacePath);

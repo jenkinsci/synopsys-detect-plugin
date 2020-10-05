@@ -153,7 +153,7 @@ public class DetectGlobalConfig extends GlobalConfiguration implements Serializa
     }
 
     public DetectDownloadStrategy getDownloadStrategy() {
-        return downloadStrategy;
+        return (downloadStrategy != null) ? downloadStrategy : getDefaultDownloadStrategy();
     }
 
     @DataBoundSetter

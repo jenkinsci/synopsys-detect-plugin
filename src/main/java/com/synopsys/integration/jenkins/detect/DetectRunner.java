@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.util.List;
 
 import com.synopsys.integration.exception.IntegrationException;
+import com.synopsys.integration.jenkins.detect.extensions.DetectDownloadStrategy;
 import com.synopsys.integration.jenkins.detect.service.DetectArgumentService;
 import com.synopsys.integration.jenkins.detect.service.DetectEnvironmentService;
 import com.synopsys.integration.jenkins.detect.service.strategy.DetectExecutionStrategy;
@@ -47,16 +48,16 @@ public class DetectRunner {
         this.detectArgumentService = detectArgumentService;
     }
 
-    public int runDetect(String remoteJdkHome, String detectArgumentString) throws IOException, InterruptedException, IntegrationException {
+    public int runDetect(String remoteJdkHome, String detectArgumentString, DetectDownloadStrategy detectDownloadStrategy) throws IOException, InterruptedException, IntegrationException {
         IntEnvironmentVariables intEnvironmentVariables = detectEnvironmentService.createDetectEnvironment();
         OperatingSystemType operatingSystemType = remotingService.getRemoteOperatingSystemType();
-        DetectExecutionStrategy detectExecutionStrategy = detectStrategyService.getExecutionStrategy(intEnvironmentVariables, operatingSystemType, remoteJdkHome);
+        DetectExecutionStrategy detectExecutionStrategy = detectStrategyService.getExecutionStrategy(intEnvironmentVariables, operatingSystemType, remoteJdkHome, detectDownloadStrategy);
 
         String setupResponse = remotingService.call(detectExecutionStrategy.getSetupCallable());
         List<String> initialArguments = detectExecutionStrategy.getInitialArguments(setupResponse);
 
-        List<String> detectCmds = detectArgumentService.getDetectArguments(intEnvironmentVariables, detectExecutionStrategy.getArgumentEscaper(), initialArguments, detectArgumentString);
+        List<String> detectCommands = detectArgumentService.getDetectArguments(intEnvironmentVariables, detectExecutionStrategy.getArgumentEscaper(), initialArguments, detectArgumentString);
 
-        return remotingService.launch(intEnvironmentVariables, detectCmds);
+        return remotingService.launch(intEnvironmentVariables, detectCommands);
     }
 }

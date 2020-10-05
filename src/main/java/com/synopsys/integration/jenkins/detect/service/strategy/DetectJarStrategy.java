@@ -106,7 +106,7 @@ public class DetectJarStrategy extends DetectExecutionStrategy {
                 try {
                     javaExecutablePath = remoteJdkJava.getCanonicalPath();
                 } catch (IOException e) {
-                    logger.warn("Dtect could not get Java Home from configured JDK, falling back to java on path: " + e.getMessage());
+                    logger.warn("Detect could not get Java Home from configured JDK, falling back to java on path: " + e.getMessage());
                 }
             }
             return javaExecutablePath;

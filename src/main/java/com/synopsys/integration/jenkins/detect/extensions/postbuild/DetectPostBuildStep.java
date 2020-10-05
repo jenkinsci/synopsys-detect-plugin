@@ -34,6 +34,7 @@ import org.kohsuke.stapler.DataBoundSetter;
 import com.synopsys.integration.jenkins.annotations.HelpMarkdown;
 import com.synopsys.integration.jenkins.detect.extensions.DetectDownloadStrategy;
 import com.synopsys.integration.jenkins.detect.extensions.InheritFromGlobalDownloadStrategy;
+import com.synopsys.integration.jenkins.detect.extensions.global.DetectGlobalConfig;
 import com.synopsys.integration.jenkins.detect.service.DetectCommandsFactory;
 
 import hudson.Extension;
@@ -91,8 +92,18 @@ public class DetectPostBuildStep extends Recorder {
     @Override
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
         DetectCommandsFactory.fromPostBuild(build, launcher, listener)
-            .runDetect(detectProperties);
+            .runDetect(detectProperties, getDetectDownloadStrategy());
         return true;
+    }
+
+    private DetectDownloadStrategy getDetectDownloadStrategy() {
+        DetectDownloadStrategy detectDownloadStrategy = downloadStrategyOverride;
+
+        if (detectDownloadStrategy == null || detectDownloadStrategy instanceof InheritFromGlobalDownloadStrategy) {
+            detectDownloadStrategy = new DetectGlobalConfig().getDownloadStrategy();
+        }
+
+        return detectDownloadStrategy;
     }
 
     @Extension
