@@ -42,7 +42,6 @@ import org.kohsuke.stapler.DataBoundSetter;
 import com.synopsys.integration.jenkins.annotations.HelpMarkdown;
 import com.synopsys.integration.jenkins.detect.extensions.DetectDownloadStrategy;
 import com.synopsys.integration.jenkins.detect.extensions.InheritFromGlobalDownloadStrategy;
-import com.synopsys.integration.jenkins.detect.extensions.global.DetectGlobalConfig;
 import com.synopsys.integration.jenkins.detect.service.DetectCommandsFactory;
 
 import hudson.EnvVars;
@@ -86,16 +85,6 @@ public class DetectPipelineStep extends Step implements Serializable {
 
     public DetectDownloadStrategy getDefaultDownloadStrategyOverride() {
         return new InheritFromGlobalDownloadStrategy();
-    }
-
-    private DetectDownloadStrategy getDetectDownloadStrategy() {
-        DetectDownloadStrategy detectDownloadStrategy = downloadStrategyOverride;
-
-        if (detectDownloadStrategy == null || detectDownloadStrategy instanceof InheritFromGlobalDownloadStrategy) {
-            detectDownloadStrategy = new DetectGlobalConfig().getDownloadStrategy();
-        }
-
-        return detectDownloadStrategy;
     }
 
     public boolean getReturnStatus() {
@@ -152,7 +141,7 @@ public class DetectPipelineStep extends Step implements Serializable {
         @Override
         protected Integer run() throws Exception {
             return DetectCommandsFactory.fromPipeline(listener, envVars, launcher, node, workspace)
-                       .runDetect(returnStatus, detectProperties, getDetectDownloadStrategy());
+                       .runDetect(returnStatus, detectProperties, downloadStrategyOverride);
         }
 
     }

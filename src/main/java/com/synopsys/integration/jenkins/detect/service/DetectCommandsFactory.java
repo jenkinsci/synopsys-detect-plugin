@@ -82,7 +82,7 @@ public class DetectCommandsFactory {
     }
 
     private DetectRunner createDetectRunner(JenkinsConfigService jenkinsConfigService, JenkinsRemotingService jenkinsRemotingService) throws AbortException {
-        return new DetectRunner(createDetectEnvironmentService(jenkinsConfigService), jenkinsRemotingService, createDetectStrategyService(), createDetectArgumentService());
+        return new DetectRunner(createDetectEnvironmentService(jenkinsConfigService), jenkinsRemotingService, createDetectStrategyService(jenkinsConfigService), createDetectArgumentService());
     }
 
     private DetectArgumentService createDetectArgumentService() {
@@ -93,11 +93,11 @@ public class DetectCommandsFactory {
         return new DetectEnvironmentService(getLogger(), jenkinsWrapper.getProxyHelper(), jenkinsWrapper.getVersionHelper(), jenkinsWrapper.getCredentialsHelper(), jenkinsConfigService, envVars);
     }
 
-    private DetectStrategyService createDetectStrategyService() throws AbortException {
+    private DetectStrategyService createDetectStrategyService(JenkinsConfigService jenkinsConfigService) throws AbortException {
         FilePath workspace = validatedWorkspace.get();
         FilePath workspaceTempDir = WorkspaceList.tempDir(workspace);
 
-        return new DetectStrategyService(getLogger(), jenkinsWrapper.getProxyHelper(), workspaceTempDir.getRemote());
+        return new DetectStrategyService(getLogger(), jenkinsWrapper.getProxyHelper(), workspaceTempDir.getRemote(), jenkinsConfigService);
     }
 
     private JenkinsIntLogger getLogger() {
