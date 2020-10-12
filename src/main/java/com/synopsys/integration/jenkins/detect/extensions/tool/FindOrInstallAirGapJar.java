@@ -23,12 +23,9 @@
 package com.synopsys.integration.jenkins.detect.extensions.tool;
 
 import java.io.File;
+import java.io.FileFilter;
 import java.io.IOException;
-import java.util.Collection;
 import java.util.Optional;
-
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.filefilter.PrefixFileFilter;
 
 import com.synopsys.integration.jenkins.detect.exception.DetectJenkinsException;
 import com.synopsys.integration.jenkins.detect.extensions.AirGapDownloadStrategy;
@@ -38,6 +35,7 @@ import com.synopsys.integration.jenkins.service.JenkinsConfigService;
 
 public class FindOrInstallAirGapJar {
     public static final String DETECT_JAR_PREFIX = "synopsys-detect-";
+    public static final String DETECT_JAR_SUFFIX = ".jar";
     private final JenkinsIntLogger logger;
     private final JenkinsConfigService jenkinsConfigService;
 
@@ -64,12 +62,20 @@ public class FindOrInstallAirGapJar {
             throw new DetectJenkinsException("Detect AirGap installation directory is null.");
         }
 
-        Collection<File> foundJars = FileUtils.listFiles(new File(baseDir), new PrefixFileFilter(DETECT_JAR_PREFIX), null);
+        File[] foundJars = new File(baseDir).listFiles(jarFileFilter);
 
-        if (foundJars.size() != 1) {
-            throw new DetectJenkinsException(String.format("Unable to identify Detect AirGap jar. Expected to find 1 file, found %d instead.", foundJars.size()));
+        if (foundJars == null || foundJars.length != 1) {
+            throw new DetectJenkinsException(String.format("Unable to identify Detect AirGap jar in directory %s", baseDir));
         }
 
-        return foundJars.iterator().next().toString();
+        return foundJars[0].toString();
     }
+
+    FileFilter jarFileFilter = new FileFilter() {
+        @Override
+        public boolean accept(File file) {
+            String fileName = file.getName();
+            return fileName.endsWith(DETECT_JAR_SUFFIX) && fileName.startsWith(DETECT_JAR_PREFIX);
+        }
+    };
 }
