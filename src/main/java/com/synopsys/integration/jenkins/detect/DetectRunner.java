@@ -53,8 +53,7 @@ public class DetectRunner {
         OperatingSystemType operatingSystemType = remotingService.getRemoteOperatingSystemType();
         DetectExecutionStrategy detectExecutionStrategy = detectStrategyService.getExecutionStrategy(intEnvironmentVariables, operatingSystemType, remoteJdkHome, detectDownloadStrategy);
 
-        String setupResponse = remotingService.call(detectExecutionStrategy.getSetupCallable());
-        List<String> initialArguments = detectExecutionStrategy.getInitialArguments(setupResponse);
+        List<String> initialArguments = remotingService.call(detectExecutionStrategy.getSetupCallable());
 
         List<String> detectCommands = detectArgumentService.getDetectArguments(intEnvironmentVariables, detectExecutionStrategy.getArgumentEscaper(), initialArguments, detectArgumentString);
 

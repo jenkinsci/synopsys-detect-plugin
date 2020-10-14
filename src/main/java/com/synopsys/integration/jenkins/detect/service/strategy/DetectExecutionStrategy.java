@@ -22,7 +22,8 @@
  */
 package com.synopsys.integration.jenkins.detect.service.strategy;
 
-import java.util.List;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.function.Function;
 
 import com.synopsys.integration.exception.IntegrationException;
@@ -30,9 +31,7 @@ import com.synopsys.integration.exception.IntegrationException;
 import jenkins.security.MasterToSlaveCallable;
 
 public abstract class DetectExecutionStrategy {
-    public abstract MasterToSlaveCallable<String, IntegrationException> getSetupCallable() throws IntegrationException;
+    public abstract MasterToSlaveCallable<ArrayList<String>, IntegrationException> getSetupCallable() throws IntegrationException, IOException, InterruptedException;
 
     public abstract Function<String, String> getArgumentEscaper();
-
-    public abstract List<String> getInitialArguments(String setupResponse);
 }

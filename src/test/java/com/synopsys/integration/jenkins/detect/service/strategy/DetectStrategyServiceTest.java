@@ -59,7 +59,7 @@ public class DetectStrategyServiceTest {
 
     public DetectExecutionStrategy testGetExecutionStrategy(IntEnvironmentVariables intEnvironmentVariables, ScriptOrJarDownloadStrategy downloadStrategy) {
         JenkinsConfigService jenkinsConfigService = Mockito.mock(JenkinsConfigService.class);
-        DetectStrategyService detectStrategyService = new DetectStrategyService(logger, null, null, jenkinsConfigService);
+        DetectStrategyService detectStrategyService = new DetectStrategyService(logger, null, null, jenkinsConfigService, jenkinsRemotingService);
 
         DetectExecutionStrategy executionStrategy = null;
         try {

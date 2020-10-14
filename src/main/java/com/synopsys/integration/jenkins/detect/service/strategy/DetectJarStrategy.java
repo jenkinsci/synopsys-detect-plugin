@@ -22,20 +22,13 @@
  */
 package com.synopsys.integration.jenkins.detect.service.strategy;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.SystemUtils;
-
 import com.synopsys.integration.exception.IntegrationException;
 import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
-import com.synopsys.integration.log.LogLevel;
 import com.synopsys.integration.util.IntEnvironmentVariables;
 
 import jenkins.security.MasterToSlaveCallable;
@@ -59,16 +52,11 @@ public class DetectJarStrategy extends DetectExecutionStrategy {
     }
 
     @Override
-    public List<String> getInitialArguments(String javaExecutablePath) {
-        return new ArrayList<>(Arrays.asList(javaExecutablePath, "-jar", detectJarPath));
-    }
-
-    @Override
-    public MasterToSlaveCallable<String, IntegrationException> getSetupCallable() {
+    public MasterToSlaveCallable<ArrayList<String>, IntegrationException> getSetupCallable() {
         return new SetupCallableImpl(logger, intEnvironmentVariables.getVariables(), detectJarPath, remoteJdkHome);
     }
 
-    public static class SetupCallableImpl extends MasterToSlaveCallable<String, IntegrationException> {
+    public static class SetupCallableImpl extends MasterToSlaveCallable<ArrayList<String>, IntegrationException> {
         private static final long serialVersionUID = -8326836838838706367L;
         private final JenkinsIntLogger logger;
         private final Map<String, String> environmentVariables;
@@ -83,53 +71,14 @@ public class DetectJarStrategy extends DetectExecutionStrategy {
         }
 
         @Override
-        public String call() {
-            String javaExecutablePath = this.calculateJavaExecutablePath();
+        public ArrayList<String> call() {
+            RemoteJavaService remoteJavaService = new RemoteJavaService(logger, remoteJdkHome, environmentVariables);
+            String javaExecutablePath = remoteJavaService.calculateJavaExecutablePath();
 
-            logger.info("Running with JAVA: " + javaExecutablePath);
             logger.info("Detect configured: " + detectJarPath);
-            this.logDebugData(javaExecutablePath);
+            remoteJavaService.logDebugData(javaExecutablePath);
 
-            return javaExecutablePath;
-        }
-
-        private String calculateJavaExecutablePath() {
-            String javaExecutablePath = "java";
-            if (remoteJdkHome != null) {
-                File remoteJdkJava = new File(remoteJdkHome);
-                remoteJdkJava = new File(remoteJdkJava, "bin");
-                if (SystemUtils.IS_OS_WINDOWS) {
-                    remoteJdkJava = new File(remoteJdkJava, "java.exe");
-                } else {
-                    remoteJdkJava = new File(remoteJdkJava, "java");
-                }
-                try {
-                    javaExecutablePath = remoteJdkJava.getCanonicalPath();
-                } catch (IOException e) {
-                    logger.warn("Detect could not get Java Home from configured JDK, falling back to java on path: " + e.getMessage());
-                }
-            }
-            return javaExecutablePath;
-        }
-
-        private void logDebugData(String javaExecutablePath) {
-            if (logger.getLogLevel().isLoggable(LogLevel.DEBUG)) {
-                try {
-                    logger.debug("PATH: " + environmentVariables.get("PATH"));
-                    ProcessBuilder processBuilder = new ProcessBuilder(Arrays.asList(javaExecutablePath, "-version"));
-                    processBuilder.environment().putAll(environmentVariables);
-                    Process process = processBuilder.start();
-                    process.waitFor();
-                    logger.debug("Java version: ");
-                    IOUtils.copy(process.getErrorStream(), logger.getTaskListener().getLogger());
-                    IOUtils.copy(process.getInputStream(), logger.getTaskListener().getLogger());
-                } catch (IOException e) {
-                    logger.debug("Error printing the JAVA version: " + e.getMessage(), e);
-                } catch (InterruptedException e) {
-                    logger.debug("Error printing the JAVA version: " + e.getMessage(), e);
-                    Thread.currentThread().interrupt();
-                }
-            }
+            return new ArrayList<>(Arrays.asList(javaExecutablePath, "-jar", detectJarPath));
         }
     }
 

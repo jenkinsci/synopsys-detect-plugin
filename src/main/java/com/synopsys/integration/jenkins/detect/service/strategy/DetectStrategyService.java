@@ -22,18 +22,15 @@
  */
 package com.synopsys.integration.jenkins.detect.service.strategy;
 
-import java.io.IOException;
-import java.util.Optional;
-
 import org.apache.commons.lang3.StringUtils;
 
+import com.synopsys.integration.exception.IntegrationException;
 import com.synopsys.integration.jenkins.detect.DetectJenkinsEnvironmentVariable;
 import com.synopsys.integration.jenkins.detect.exception.DetectJenkinsException;
 import com.synopsys.integration.jenkins.detect.extensions.AirGapDownloadStrategy;
 import com.synopsys.integration.jenkins.detect.extensions.DetectDownloadStrategy;
 import com.synopsys.integration.jenkins.detect.extensions.InheritFromGlobalDownloadStrategy;
 import com.synopsys.integration.jenkins.detect.extensions.global.DetectGlobalConfig;
-import com.synopsys.integration.jenkins.detect.extensions.tool.FindOrInstallAirGapJar;
 import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
 import com.synopsys.integration.jenkins.service.JenkinsConfigService;
 import com.synopsys.integration.jenkins.wrapper.JenkinsProxyHelper;
@@ -54,25 +51,20 @@ public class DetectStrategyService {
     }
 
     public DetectExecutionStrategy getExecutionStrategy(IntEnvironmentVariables intEnvironmentVariables, OperatingSystemType operatingSystemType, String remoteJdkHome, DetectDownloadStrategy detectDownloadStrategy)
-        throws IOException, InterruptedException, DetectJenkinsException {
+        throws IntegrationException {
         if (detectDownloadStrategy == null || detectDownloadStrategy instanceof InheritFromGlobalDownloadStrategy) {
-            Optional<DetectGlobalConfig> globalConfiguration = jenkinsConfigService.getGlobalConfiguration(DetectGlobalConfig.class);
-
-            if (!globalConfiguration.isPresent()) {
-                throw new DetectJenkinsException("Unable to identify Detect Global Configuration.");
-            }
-
-            detectDownloadStrategy = globalConfiguration.get().getDownloadStrategy();
+            DetectGlobalConfig detectGlobalConfig = jenkinsConfigService.getGlobalConfiguration(DetectGlobalConfig.class)
+                                                        .orElseThrow(() -> new DetectJenkinsException("Unable to identify Detect Global Configuration."));
+            detectDownloadStrategy = detectGlobalConfig.getDownloadStrategy();
         }
 
-        logger.info("Running Detect using strategy: " + detectDownloadStrategy);
+        logger.info("Running Detect using strategy: " + (detectDownloadStrategy != null ? detectDownloadStrategy.getClass().getSimpleName() : null));
 
         String detectJarPath = intEnvironmentVariables.getValue(DetectJenkinsEnvironmentVariable.USER_PROVIDED_JAR_PATH.stringValue());
         DetectExecutionStrategy detectExecutionStrategy;
 
         if (detectDownloadStrategy instanceof AirGapDownloadStrategy) {
-            String airGapJarPath = new FindOrInstallAirGapJar(logger, jenkinsConfigService).getOrDownloadAirGapJar(detectDownloadStrategy);
-            detectExecutionStrategy = new DetectJarStrategy(logger, intEnvironmentVariables, remoteJdkHome, airGapJarPath);
+            detectExecutionStrategy = new DetectAirGapJarStrategy(logger, intEnvironmentVariables, remoteJdkHome, jenkinsConfigService, (AirGapDownloadStrategy) detectDownloadStrategy);
         } else if (StringUtils.isNotBlank(detectJarPath)) {
             detectExecutionStrategy = new DetectJarStrategy(logger, intEnvironmentVariables, remoteJdkHome, detectJarPath);
         } else {
