@@ -76,7 +76,6 @@ public class DetectJarStrategy extends DetectExecutionStrategy {
             String javaExecutablePath = remoteJavaService.calculateJavaExecutablePath();
 
             logger.info("Detect configured: " + detectJarPath);
-            remoteJavaService.logDebugData(javaExecutablePath);
 
             return new ArrayList<>(Arrays.asList(javaExecutablePath, "-jar", detectJarPath));
         }

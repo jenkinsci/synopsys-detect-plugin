@@ -52,13 +52,22 @@ public class DetectStrategyService {
 
     public DetectExecutionStrategy getExecutionStrategy(IntEnvironmentVariables intEnvironmentVariables, OperatingSystemType operatingSystemType, String remoteJdkHome, DetectDownloadStrategy detectDownloadStrategy)
         throws IntegrationException {
+        String loggingMessage = "Running Detect using configured strategy: ";
+
         if (detectDownloadStrategy == null || detectDownloadStrategy instanceof InheritFromGlobalDownloadStrategy) {
             DetectGlobalConfig detectGlobalConfig = jenkinsConfigService.getGlobalConfiguration(DetectGlobalConfig.class)
-                                                        .orElseThrow(() -> new DetectJenkinsException("Unable to identify Detect Global Configuration."));
+                                                        .orElseThrow(() -> new DetectJenkinsException("Could not find Detect configuration. Check Jenkins System Configuration to ensure Detect is configured correctly."));
             detectDownloadStrategy = detectGlobalConfig.getDownloadStrategy();
+
+            if (detectDownloadStrategy == null) {
+                detectDownloadStrategy = detectGlobalConfig.getDefaultDownloadStrategy();
+                loggingMessage = "System configured strategy not found, running Detect using default configured system strategy: ";
+            } else {
+                loggingMessage = "Running Detect using configured system strategy: ";
+            }
         }
 
-        logger.info("Running Detect using strategy: " + (detectDownloadStrategy != null ? detectDownloadStrategy.getClass().getSimpleName() : null));
+        logger.info(loggingMessage + detectDownloadStrategy.getDisplayName());
 
         String detectJarPath = intEnvironmentVariables.getValue(DetectJenkinsEnvironmentVariable.USER_PROVIDED_JAR_PATH.stringValue());
         DetectExecutionStrategy detectExecutionStrategy;

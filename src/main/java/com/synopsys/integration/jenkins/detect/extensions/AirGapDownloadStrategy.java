@@ -62,6 +62,11 @@ public class AirGapDownloadStrategy extends DetectDownloadStrategy {
         this.airGapInstallationName = airGapInstallationName;
     }
 
+    @Override
+    public String getDisplayName() {
+        return DISPLAY_NAME;
+    }
+
     @Extension
     public static class DescriptorImpl extends DetectDownloadStrategy.DownloadStrategyDescriptor {
         public DescriptorImpl() {

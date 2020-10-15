@@ -24,6 +24,7 @@ package com.synopsys.integration.jenkins.detect.service.strategy;
 
 import java.io.File;
 import java.io.FileFilter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Map;
@@ -85,43 +86,48 @@ public class DetectAirGapJarStrategy extends DetectExecutionStrategy {
         }
 
         @Override
-        public ArrayList<String> call() throws IntegrationException {
+        public ArrayList<String> call() throws DetectJenkinsException {
             String airGapJarPath = getOrDownloadAirGapJar();
             RemoteJavaService remoteJavaService = new RemoteJavaService(logger, remoteJdkHome, environmentVariables);
             String javaExecutablePath = remoteJavaService.calculateJavaExecutablePath();
-            remoteJavaService.logDebugData(javaExecutablePath);
 
             logger.info("Detect configured: " + airGapJarPath);
 
             return new ArrayList<>(Arrays.asList(javaExecutablePath, "-jar", airGapJarPath));
         }
 
-        private String getOrDownloadAirGapJar() throws IntegrationException {
+        private String getOrDownloadAirGapJar() throws DetectJenkinsException {
             DetectAirGapInstallation airGapInstallation;
             try {
-                airGapInstallation = jenkinsConfigService.getInstallationForNodeAndEnvironment(DetectAirGapInstallation.DescriptorImpl.class, airGapDownloadStrategy.getAirGapInstallationName()).get();
-            } catch (Exception e) {
-                throw new DetectJenkinsException(
-                    String.format("Problem encountered getting Detect Air Gap tool with the name %s from global tool configuration. Check your plugin and tool configuration.", airGapDownloadStrategy.getAirGapInstallationName()), e);
+                airGapInstallation = jenkinsConfigService.getInstallationForNodeAndEnvironment(DetectAirGapInstallation.DescriptorImpl.class, airGapDownloadStrategy.getAirGapInstallationName())
+                                         .orElseThrow(() -> new DetectJenkinsException(String.format(
+                                             "Problem encountered getting Detect Air Gap tool with the name %s from global tool configuration. Check Jenkins plugin and tool configuration.",
+                                             airGapDownloadStrategy.getAirGapInstallationName())));
+            } catch (IOException e) {
+                throw new DetectJenkinsException("Problem encountered while interacting with Jenkins environment. Check Jenkins and environment.", e);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new DetectJenkinsException("Getting Detect Air Gap tool was interrupted. Check Jenkins and environment.", e);
             }
 
             String airGapBaseDir = airGapInstallation.getHome();
 
             if (airGapBaseDir == null) {
-                throw new DetectJenkinsException("Detect AirGap installation directory is null. Check your plugin and tool configuration.");
+                throw new DetectJenkinsException("Detect AirGap installation directory is null. Check Jenkins tool configuration for installation directory.");
             }
 
             return getAirGapJar(airGapBaseDir);
         }
 
-        private String getAirGapJar(String airGapBaseDir) throws IntegrationException {
+        private String getAirGapJar(String airGapBaseDir) throws DetectJenkinsException {
             FileFilter fileFilter = file -> file.getName().startsWith(DETECT_JAR_PREFIX) && file.getName().endsWith(DETECT_JAR_SUFFIX);
             File[] foundAirGapJars = new File(airGapBaseDir).listFiles(fileFilter);
 
             if (foundAirGapJars == null || foundAirGapJars.length == 0) {
-                throw new DetectJenkinsException(String.format("No Detect AirGap jar was found in installation directory %s. Check your plugin and tool configuration.", airGapBaseDir));
+                throw new DetectJenkinsException(String.format("Expected 1 jar from Detect Air Gap tool installation at %s and did not find any. Check your Jenkins plugin and tool configuration.", airGapBaseDir));
             } else if (foundAirGapJars.length > 1) {
-                throw new DetectJenkinsException(String.format("Multiple Detect AirGap jars were found in installation directory %s. Check your plugin and tool configuration.", airGapBaseDir));
+                throw new DetectJenkinsException(
+                    String.format("Expected 1 jar from Detect Air Gap tool installation at %s and instead found %d jars. Check your Jenkins plugin and tool configuration.", airGapBaseDir, foundAirGapJars.length));
             } else {
                 return foundAirGapJars[0].toString();
             }

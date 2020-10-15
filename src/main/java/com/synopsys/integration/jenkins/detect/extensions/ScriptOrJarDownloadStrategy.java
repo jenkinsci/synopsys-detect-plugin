@@ -42,6 +42,11 @@ public class ScriptOrJarDownloadStrategy extends DetectDownloadStrategy {
         return (DescriptorImpl) super.getDescriptor();
     }
 
+    @Override
+    public String getDisplayName() {
+        return DISPLAY_NAME;
+    }
+
     @Extension
     public static class DescriptorImpl extends DetectDownloadStrategy.DownloadStrategyDescriptor {
         public DescriptorImpl() {

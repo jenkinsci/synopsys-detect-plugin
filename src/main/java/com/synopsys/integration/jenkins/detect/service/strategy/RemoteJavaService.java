@@ -61,10 +61,12 @@ public class RemoteJavaService {
                 logger.warn("Detect could not get Java Home from configured JDK, falling back to java on path: " + e.getMessage());
             }
         }
+
+        logDebugData(javaExecutablePath);
         return javaExecutablePath;
     }
 
-    public void logDebugData(String javaExecutablePath) {
+    private void logDebugData(String javaExecutablePath) {
         if (logger.getLogLevel().isLoggable(LogLevel.DEBUG)) {
             try {
                 logger.debug("PATH: " + environmentVariables.get("PATH"));

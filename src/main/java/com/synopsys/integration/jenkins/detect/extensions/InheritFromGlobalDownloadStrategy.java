@@ -42,6 +42,11 @@ public class InheritFromGlobalDownloadStrategy extends DetectDownloadStrategy {
         return (DescriptorImpl) super.getDescriptor();
     }
 
+    @Override
+    public String getDisplayName() {
+        return DISPLAY_NAME;
+    }
+
     @Extension
     public static class DescriptorImpl extends DownloadStrategyDescriptor {
         public DescriptorImpl() {
