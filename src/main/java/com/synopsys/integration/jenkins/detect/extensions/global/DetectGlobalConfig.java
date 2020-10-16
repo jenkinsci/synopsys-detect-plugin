@@ -170,11 +170,11 @@ public class DetectGlobalConfig extends GlobalConfiguration implements Serializa
         return Arrays.asList(jenkins.getDescriptor(AirGapDownloadStrategy.class), jenkins.getDescriptor(ScriptOrJarDownloadStrategy.class));
     }
 
-    public BlackDuckServerConfig getBlackDuckServerConfig(JenkinsProxyHelper jenkinsProxyHelper, SynopsysCredentialsHelper synopsysCredentialsHelper) throws IllegalArgumentException {
+    public BlackDuckServerConfig getBlackDuckServerConfig(JenkinsProxyHelper jenkinsProxyHelper, SynopsysCredentialsHelper synopsysCredentialsHelper) {
         return getBlackDuckServerConfigBuilder(jenkinsProxyHelper, synopsysCredentialsHelper).build();
     }
 
-    public BlackDuckServerConfigBuilder getBlackDuckServerConfigBuilder(JenkinsProxyHelper jenkinsProxyHelper, SynopsysCredentialsHelper synopsysCredentialsHelper) throws IllegalArgumentException {
+    public BlackDuckServerConfigBuilder getBlackDuckServerConfigBuilder(JenkinsProxyHelper jenkinsProxyHelper, SynopsysCredentialsHelper synopsysCredentialsHelper) {
         return createBlackDuckServerConfigBuilder(jenkinsProxyHelper, synopsysCredentialsHelper, blackDuckUrl, blackDuckCredentialsId, blackDuckTimeout, trustBlackDuckCertificates);
     }
 
