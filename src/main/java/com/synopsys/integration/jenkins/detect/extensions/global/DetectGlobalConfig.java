@@ -209,13 +209,7 @@ public class DetectGlobalConfig extends GlobalConfiguration implements Serializa
             if (connectionResult.isFailure()) {
                 int statusCode = connectionResult.getHttpStatusCode();
                 String validationMessage;
-                try {
-                    String statusPhrase = EnglishReasonPhraseCatalog.INSTANCE.getReason(statusCode, Locale.ENGLISH);
-                    validationMessage = String.format("ERROR: Connection attempt returned %s %s", statusCode, statusPhrase);
-                } catch (IllegalArgumentException ignored) {
-                    // EnglishReasonPhraseCatalog throws an IllegalArgumentException if the status code is outside of the 100-600 range --rotte AUG 2020
-                    validationMessage = "ERROR: Connection could not be established.";
-                }
+                validationMessage = getInstanceStatusPhrase(statusCode);
 
                 // This is how Jenkins constructs an error with an exception stack trace, we're using it here because often a status code and phrase are not enough, but also (especially with proxies) the failure message can be too much.
                 String moreDetailsHtml = connectionResult.getFailureMessage()
@@ -230,6 +224,18 @@ public class DetectGlobalConfig extends GlobalConfiguration implements Serializa
         }
 
         return FormValidation.ok("Connection successful.");
+    }
+
+    private String getInstanceStatusPhrase(int statusCode) {
+        String validationMessage;
+        try {
+            String statusPhrase = EnglishReasonPhraseCatalog.INSTANCE.getReason(statusCode, Locale.ENGLISH);
+            validationMessage = String.format("ERROR: Connection attempt returned %s %s", statusCode, statusPhrase);
+        } catch (IllegalArgumentException ignored) {
+            // EnglishReasonPhraseCatalog throws an IllegalArgumentException if the status code is outside of the 100-600 range --rotte AUG 2020
+            validationMessage = "ERROR: Connection could not be established.";
+        }
+        return validationMessage;
     }
 
     // EX: http://localhost:8080/descriptorByName/com.synopsys.integration.jenkins.detect.extensions.global.DetectGlobalConfig/config.xml
