@@ -75,20 +75,20 @@ public class DetectScriptStrategy extends DetectExecutionStrategy {
 
     @Override
     public MasterToSlaveCallable<ArrayList<String>, IntegrationException> getSetupCallable() throws IntegrationException {
-        HttpUrl httpUrl;
+        String scriptUrl;
         String scriptFileName;
         if (operatingSystemType == OperatingSystemType.WINDOWS) {
-            httpUrl = new HttpUrl(LATEST_POWERSHELL_SCRIPT_URL);
+            scriptUrl = LATEST_POWERSHELL_SCRIPT_URL;
             scriptFileName = POWERSHELL_SCRIPT_FILENAME;
         } else {
-            httpUrl = new HttpUrl(LATEST_SHELL_SCRIPT_URL);
+            scriptUrl = LATEST_SHELL_SCRIPT_URL;
             scriptFileName = SHELL_SCRIPT_FILENAME;
         }
 
         // ProxyInfo itself isn't serializable, so we unpack it into serializable pieces and rebuild it later when we download the script. -- rotte JUL 2020
         ProxyInfo proxyInfo;
         try {
-            proxyInfo = jenkinsProxyHelper.getProxyInfo(httpUrl.string());
+            proxyInfo = jenkinsProxyHelper.getProxyInfo(scriptUrl);
         } catch (IllegalArgumentException e) {
             logger.warn("Synopsys Detect for Jenkins could not resolve proxy info from Jenkins because: " + e.getMessage());
             logger.warn("Continuing without proxy...");
@@ -102,14 +102,14 @@ public class DetectScriptStrategy extends DetectExecutionStrategy {
         String proxyPassword = proxyInfo.getPassword().orElse(null);
         String proxyNtlmDomain = proxyInfo.getNtlmDomain().orElse(null);
         String proxyNtlmWorkstation = proxyInfo.getNtlmWorkstation().orElse(null);
-        return new SetupCallableImpl(logger, toolsDirectory, httpUrl, scriptFileName, proxyHost, proxyPort, proxyUsername, proxyPassword, proxyNtlmDomain, proxyNtlmWorkstation);
+        return new SetupCallableImpl(logger, toolsDirectory, scriptUrl, scriptFileName, proxyHost, proxyPort, proxyUsername, proxyPassword, proxyNtlmDomain, proxyNtlmWorkstation);
     }
 
     public static class SetupCallableImpl extends MasterToSlaveCallable<ArrayList<String>, IntegrationException> {
         private static final long serialVersionUID = -4954105356640324485L;
         private final JenkinsIntLogger logger;
         private final String toolsDirectory;
-        private final HttpUrl httpUrl;
+        private final String scriptUrl;
         private final String proxyHost;
         private final int proxyPort;
         private final String proxyUsername;
@@ -118,11 +118,11 @@ public class DetectScriptStrategy extends DetectExecutionStrategy {
         private final String proxyNtlmWorkstation;
         private final String scriptFileName;
 
-        public SetupCallableImpl(JenkinsIntLogger logger, String toolsDirectory, HttpUrl httpUrl, String scriptFileName, String proxyHost, int proxyPort, String proxyUsername, String proxyPassword,
+        public SetupCallableImpl(JenkinsIntLogger logger, String toolsDirectory, String scriptUrl, String scriptFileName, String proxyHost, int proxyPort, String proxyUsername, String proxyPassword,
             String proxyNtlmDomain, String proxyNtlmWorkstation) {
             this.logger = logger;
             this.toolsDirectory = toolsDirectory;
-            this.httpUrl = httpUrl;
+            this.scriptUrl = scriptUrl;
             this.scriptFileName = scriptFileName;
             this.proxyHost = proxyHost;
             this.proxyPort = proxyPort;
@@ -145,10 +145,10 @@ public class DetectScriptStrategy extends DetectExecutionStrategy {
                 if (detectScriptPath.toFile().exists()) {
                     logger.info("Running already installed Detect script " + detectScriptPath);
                 } else {
-                    logger.info(String.format("Downloading Detect script from %s to %s", httpUrl.string(), detectScriptPath));
+                    logger.info(String.format("Downloading Detect script from %s to %s", scriptUrl, detectScriptPath));
 
                     IntHttpClient intHttpClient = new IntHttpClient(logger, 120, true, rebuildProxyInfo());
-                    Request request = new Request.Builder().url(httpUrl).build();
+                    Request request = new Request.Builder().url(new HttpUrl(scriptUrl)).build();
 
                     try (Response response = intHttpClient.execute(request)) {
                         response.throwExceptionForError();
