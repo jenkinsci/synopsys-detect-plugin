@@ -23,6 +23,7 @@
 package com.synopsys.integration.jenkins.detect;
 
 import com.synopsys.integration.exception.IntegrationException;
+import com.synopsys.integration.jenkins.detect.extensions.DetectDownloadStrategy;
 import com.synopsys.integration.jenkins.service.JenkinsBuildService;
 
 public class DetectFreestyleCommands {
@@ -34,10 +35,10 @@ public class DetectFreestyleCommands {
         this.detectRunner = detectRunner;
     }
 
-    public void runDetect(String detectArgumentString) {
+    public void runDetect(String detectArgumentString, DetectDownloadStrategy detectDownloadStrategy) {
         try {
             String remoteJdkHome = jenkinsBuildService.getJDKRemoteHomeOrEmpty().orElse(null);
-            int exitCode = detectRunner.runDetect(remoteJdkHome, detectArgumentString);
+            int exitCode = detectRunner.runDetect(remoteJdkHome, detectArgumentString, detectDownloadStrategy);
             if (exitCode > 0) {
                 jenkinsBuildService.markBuildFailed("Detect failed with exit code " + exitCode);
             }

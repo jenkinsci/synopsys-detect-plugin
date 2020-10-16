@@ -141,7 +141,7 @@ public class DetectPipelineStep extends Step implements Serializable {
         @Override
         protected Integer run() throws Exception {
             return DetectCommandsFactory.fromPipeline(listener, envVars, launcher, node, workspace)
-                       .runDetect(returnStatus, detectProperties);
+                       .runDetect(returnStatus, detectProperties, downloadStrategyOverride);
         }
 
     }

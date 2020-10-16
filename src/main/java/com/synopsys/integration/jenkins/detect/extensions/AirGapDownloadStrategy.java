@@ -38,6 +38,7 @@ import hudson.tools.ToolInstallation;
 import hudson.util.ListBoxModel;
 
 public class AirGapDownloadStrategy extends DetectDownloadStrategy {
+    private static final long serialVersionUID = -8683774675699706747L;
     public static String DISPLAY_NAME = "Install AirGapped Detect as a Tool Installation";
     @Nullable
     private String airGapInstallationName;
@@ -61,6 +62,11 @@ public class AirGapDownloadStrategy extends DetectDownloadStrategy {
         this.airGapInstallationName = airGapInstallationName;
     }
 
+    @Override
+    public String getDisplayName() {
+        return DISPLAY_NAME;
+    }
+
     @Extension
     public static class DescriptorImpl extends DetectDownloadStrategy.DownloadStrategyDescriptor {
         public DescriptorImpl() {
@@ -68,7 +74,7 @@ public class AirGapDownloadStrategy extends DetectDownloadStrategy {
             load();
         }
 
-        public ListBoxModel doFillAirGapInstallationItems() {
+        public ListBoxModel doFillAirGapInstallationNameItems() {
             DetectAirGapInstallation.DescriptorImpl detectAirGapInstallationDescriptor = ToolInstallation.all().get(DetectAirGapInstallation.DescriptorImpl.class);
 
             if (detectAirGapInstallationDescriptor == null) {

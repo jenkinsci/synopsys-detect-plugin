@@ -91,7 +91,7 @@ public class DetectPostBuildStep extends Recorder {
     @Override
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
         DetectCommandsFactory.fromPostBuild(build, launcher, listener)
-            .runDetect(detectProperties);
+            .runDetect(detectProperties, downloadStrategyOverride);
         return true;
     }
 

@@ -29,6 +29,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import hudson.Extension;
 
 public class InheritFromGlobalDownloadStrategy extends DetectDownloadStrategy {
+    private static final long serialVersionUID = -4187483154317201511L;
     public static String DISPLAY_NAME = "Inherit behavior from system configuration";
 
     @DataBoundConstructor
@@ -39,6 +40,11 @@ public class InheritFromGlobalDownloadStrategy extends DetectDownloadStrategy {
     @Override
     public DescriptorImpl getDescriptor() {
         return (DescriptorImpl) super.getDescriptor();
+    }
+
+    @Override
+    public String getDisplayName() {
+        return DISPLAY_NAME;
     }
 
     @Extension

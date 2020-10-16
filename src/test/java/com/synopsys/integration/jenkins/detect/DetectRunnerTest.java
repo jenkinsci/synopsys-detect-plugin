@@ -17,6 +17,7 @@ import org.mockito.Mockito;
 
 import com.synopsys.integration.blackduck.configuration.BlackDuckServerConfigBuilder;
 import com.synopsys.integration.builder.BuilderPropertyKey;
+import com.synopsys.integration.jenkins.detect.extensions.ScriptOrJarDownloadStrategy;
 import com.synopsys.integration.jenkins.detect.extensions.global.DetectGlobalConfig;
 import com.synopsys.integration.jenkins.detect.service.DetectArgumentService;
 import com.synopsys.integration.jenkins.detect.service.DetectEnvironmentService;
@@ -39,6 +40,7 @@ public class DetectRunnerTest {
     private static final String DETECT_JAR_PATH = "/tmp/detect.jar";
     private static final String DETECT_SHELL_PATH = "/tmp/detect.sh";
     private static final String DETECT_POWERSHELL_PATH = "/tmp/detect.ps1";
+    private final ScriptOrJarDownloadStrategy DOWNLOAD_STRATEGY = new ScriptOrJarDownloadStrategy();
 
     @Test
     public void testRunDetectJar() {
@@ -134,12 +136,12 @@ public class DetectRunnerTest {
 
             DetectEnvironmentService detectEnvironmentService = new DetectEnvironmentService(jenkinsIntLogger, blankProxyHelper, mockedVersionHelper, mockedCredentialsHelper, jenkinsConfigService, environmentVariables);
             DetectArgumentService detectArgumentService = new DetectArgumentService(jenkinsIntLogger, mockedVersionHelper);
-            DetectStrategyService detectStrategyService = new DetectStrategyService(jenkinsIntLogger, blankProxyHelper, WORKSPACE_TMP_REL_PATH);
+            DetectStrategyService detectStrategyService = new DetectStrategyService(jenkinsIntLogger, blankProxyHelper, WORKSPACE_TMP_REL_PATH, jenkinsConfigService, jenkinsRemotingService);
 
             DetectRunner detectRunner = new DetectRunner(detectEnvironmentService, mockedRemotingService, detectStrategyService, detectArgumentService);
 
             // run the method we're testing
-            detectRunner.runDetect(null, DETECT_PROPERTY_INPUT);
+            detectRunner.runDetect(null, DETECT_PROPERTY_INPUT, DOWNLOAD_STRATEGY);
 
             // get the Detect command line that was constructed to return to calling test for validation
             ArgumentCaptor<List<String>> cmdsArgCapture = ArgumentCaptor.forClass(List.class);

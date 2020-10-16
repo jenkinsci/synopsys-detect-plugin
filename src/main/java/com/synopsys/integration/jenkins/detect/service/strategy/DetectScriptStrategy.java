@@ -27,7 +27,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.function.Function;
 
 import com.synopsys.integration.IntegrationEscapeUtils;
@@ -75,15 +74,7 @@ public class DetectScriptStrategy extends DetectExecutionStrategy {
     }
 
     @Override
-    public List<String> getInitialArguments(String remoteExecutablePath) {
-        if (operatingSystemType == OperatingSystemType.WINDOWS) {
-            return new ArrayList<>(Arrays.asList("powershell", String.format("\"Import-Module '%s'; detect\"", remoteExecutablePath)));
-        }
-        return new ArrayList<>(Arrays.asList("bash", remoteExecutablePath));
-    }
-
-    @Override
-    public MasterToSlaveCallable<String, IntegrationException> getSetupCallable() throws IntegrationException {
+    public MasterToSlaveCallable<ArrayList<String>, IntegrationException> getSetupCallable() throws IntegrationException {
         HttpUrl httpUrl;
         String scriptFileName;
         if (operatingSystemType == OperatingSystemType.WINDOWS) {
@@ -114,7 +105,7 @@ public class DetectScriptStrategy extends DetectExecutionStrategy {
         return new SetupCallableImpl(logger, toolsDirectory, httpUrl, scriptFileName, proxyHost, proxyPort, proxyUsername, proxyPassword, proxyNtlmDomain, proxyNtlmWorkstation);
     }
 
-    public static class SetupCallableImpl extends MasterToSlaveCallable<String, IntegrationException> {
+    public static class SetupCallableImpl extends MasterToSlaveCallable<ArrayList<String>, IntegrationException> {
         private static final long serialVersionUID = -4954105356640324485L;
         private final JenkinsIntLogger logger;
         private final String toolsDirectory;
@@ -142,7 +133,7 @@ public class DetectScriptStrategy extends DetectExecutionStrategy {
         }
 
         @Override
-        public String call() throws IntegrationException {
+        public ArrayList<String> call() throws IntegrationException {
             String scriptRemotePath;
 
             try {
@@ -170,7 +161,10 @@ public class DetectScriptStrategy extends DetectExecutionStrategy {
                 throw new DetectJenkinsException("[ERROR] The Detect script was not downloaded successfully: " + e.getMessage(), e);
             }
 
-            return scriptRemotePath;
+            if (OperatingSystemType.determineFromSystem() == OperatingSystemType.WINDOWS) {
+                return new ArrayList<>(Arrays.asList("powershell", String.format("\"Import-Module '%s'; detect\"", scriptRemotePath)));
+            }
+            return new ArrayList<>(Arrays.asList("bash", scriptRemotePath));
         }
 
         private ProxyInfo rebuildProxyInfo() {

@@ -26,6 +26,7 @@ import java.io.IOException;
 
 import com.synopsys.integration.exception.IntegrationException;
 import com.synopsys.integration.jenkins.detect.exception.DetectJenkinsException;
+import com.synopsys.integration.jenkins.detect.extensions.DetectDownloadStrategy;
 import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
 
 public class DetectPipelineCommands {
@@ -37,8 +38,8 @@ public class DetectPipelineCommands {
         this.logger = logger;
     }
 
-    public int runDetect(boolean returnStatus, String detectArgumentString) throws IOException, IntegrationException, InterruptedException {
-        int exitCode = detectRunner.runDetect(null, detectArgumentString);
+    public int runDetect(boolean returnStatus, String detectArgumentString, DetectDownloadStrategy detectDownloadStrategy) throws IOException, IntegrationException, InterruptedException {
+        int exitCode = detectRunner.runDetect(null, detectArgumentString, detectDownloadStrategy);
         if (exitCode > 0) {
             String errorMsg = "Detect failed with exit code " + exitCode;
             if (returnStatus) {
