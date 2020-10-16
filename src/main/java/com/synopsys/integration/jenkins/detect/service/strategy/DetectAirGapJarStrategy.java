@@ -91,7 +91,7 @@ public class DetectAirGapJarStrategy extends DetectExecutionStrategy {
             RemoteJavaService remoteJavaService = new RemoteJavaService(logger, remoteJdkHome, environmentVariables);
             String javaExecutablePath = remoteJavaService.calculateJavaExecutablePath();
 
-            logger.info("Detect configured: " + airGapJarPath);
+            logger.info("Detect AirGap jar configured: " + airGapJarPath);
 
             return new ArrayList<>(Arrays.asList(javaExecutablePath, "-jar", airGapJarPath));
         }
@@ -99,10 +99,10 @@ public class DetectAirGapJarStrategy extends DetectExecutionStrategy {
         private String getOrDownloadAirGapJar() throws DetectJenkinsException {
             DetectAirGapInstallation airGapInstallation;
             try {
-                airGapInstallation = jenkinsConfigService.getInstallationForNodeAndEnvironment(DetectAirGapInstallation.DescriptorImpl.class, airGapDownloadStrategy.getAirGapInstallationName())
-                                         .orElseThrow(() -> new DetectJenkinsException(String.format(
-                                             "Problem encountered getting Detect Air Gap tool with the name %s from global tool configuration. Check Jenkins plugin and tool configuration.",
-                                             airGapDownloadStrategy.getAirGapInstallationName())));
+                String airGapInstallationName = airGapDownloadStrategy.getAirGapInstallationName();
+                airGapInstallation = jenkinsConfigService.getInstallationForNodeAndEnvironment(DetectAirGapInstallation.DescriptorImpl.class, airGapInstallationName).orElseThrow(
+                    () -> new DetectJenkinsException(
+                        String.format("Problem encountered getting Detect Air Gap tool with the name %s from global tool configuration. Check Jenkins plugin and tool configuration.", airGapInstallationName)));
             } catch (IOException e) {
                 throw new DetectJenkinsException("Problem encountered while interacting with Jenkins environment. Check Jenkins and environment.", e);
             } catch (InterruptedException e) {

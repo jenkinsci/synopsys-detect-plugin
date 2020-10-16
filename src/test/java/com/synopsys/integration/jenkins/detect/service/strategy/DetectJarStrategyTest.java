@@ -9,7 +9,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Files;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -63,12 +63,6 @@ public class DetectJarStrategyTest {
         assertEquals(Function.identity(), detectJarStrategy.getArgumentEscaper());
     }
 
-    @Test
-    public void testInvocationParameters() {
-        DetectJarStrategy detectJarStrategy = new DetectJarStrategy(logger, environmentVariables, remoteJdkHome, detectJarPath);
-        assertEquals(Arrays.asList(expectedJdkJavaPath, "-jar", detectJarPath), detectJarStrategy.getInitialArguments(expectedJdkJavaPath));
-    }
-
     @ParameterizedTest
     @MethodSource("testSetupCallableJavaHomeSource")
     public void testSetupCallableJavaHome(String javaHome, String expectedJavaPath) {
@@ -79,7 +73,7 @@ public class DetectJarStrategyTest {
     public void testSetupCallableWarnLogging() {
         logger.setLogLevel(LogLevel.WARN);
         this.executeAndValidateSetupCallable(remoteJdkHome, expectedJdkJavaPath);
-        this.validateLogsNotPresentInfo(expectedJdkJavaPath);
+        this.validateLogsNotPresentInfo();
         this.validateLogsNotPresentDebug();
     }
 
@@ -87,7 +81,7 @@ public class DetectJarStrategyTest {
     public void testSetupCallableInfoLogging() {
         logger.setLogLevel(LogLevel.INFO);
         this.executeAndValidateSetupCallable(remoteJdkHome, expectedJdkJavaPath);
-        this.validateLogsPresentInfo(expectedJdkJavaPath);
+        this.validateLogsPresentInfo();
         this.validateLogsNotPresentDebug();
     }
 
@@ -95,7 +89,7 @@ public class DetectJarStrategyTest {
     public void testSetupCallableDebugLogging() {
         logger.setLogLevel(LogLevel.DEBUG);
         this.executeAndValidateSetupCallable(remoteJdkHome, expectedJdkJavaPath);
-        this.validateLogsPresentInfo(expectedJdkJavaPath);
+        this.validateLogsPresentInfo();
         this.validateLogsPresentDebug();
     }
 
@@ -103,7 +97,7 @@ public class DetectJarStrategyTest {
     public void testSetupCallableTraceLogging() {
         logger.setLogLevel(LogLevel.TRACE);
         this.executeAndValidateSetupCallable(remoteJdkHome, expectedJdkJavaPath);
-        this.validateLogsPresentInfo(expectedJdkJavaPath);
+        this.validateLogsPresentInfo();
         this.validateLogsPresentDebug();
     }
 
@@ -132,31 +126,35 @@ public class DetectJarStrategyTest {
     private void executeAndValidateSetupCallable(String javaHomeInput, String expectedJavaPath) {
         try {
             DetectJarStrategy detectJarStrategy = new DetectJarStrategy(logger, environmentVariables, javaHomeInput, detectJarPath);
-            MasterToSlaveCallable<String, IntegrationException> setupCallable = detectJarStrategy.getSetupCallable();
+            MasterToSlaveCallable<ArrayList<String>, IntegrationException> setupCallable = detectJarStrategy.getSetupCallable();
 
-            String actualJavaPath = setupCallable.call();
-            assertEquals(expectedJavaPath, actualJavaPath);
+            ArrayList<String> jarExecutionElements = setupCallable.call();
+            assertEquals(expectedJavaPath, jarExecutionElements.get(0));
+            assertEquals("-jar", jarExecutionElements.get(1));
+            assertEquals(detectJarPath, jarExecutionElements.get(2));
         } catch (IntegrationException e) {
             fail("An unexpected exception occurred: ", e);
         }
     }
 
-    private void validateLogsNotPresentInfo(String javaPath) {
-        assertFalse(byteArrayOutputStream.toString().contains("Running with JAVA: " + javaPath), "Log contains entry for JAVA path and shouldn't.");
-        assertFalse(byteArrayOutputStream.toString().contains("Detect configured: " + detectJarPath), "Log contains entry for Detect path and shouldn't.");
+    private void validateLogsNotPresentInfo() {
+        assertFalse(byteArrayOutputStream.toString().contains("Running with JAVA: "), "Log contains entry for JAVA path and shouldn't.");
+        assertFalse(byteArrayOutputStream.toString().contains("Detect configured: "), "Log contains entry for Detect path and shouldn't.");
     }
 
     private void validateLogsNotPresentDebug() {
-        assertFalse(byteArrayOutputStream.toString().contains("PATH: " + expectedPath), "Log contains entry for PATH environment variable and shouldn't.");
+        assertFalse(byteArrayOutputStream.toString().contains("PATH: "), "Log contains entry for PATH environment variable and shouldn't.");
     }
 
-    private void validateLogsPresentInfo(String javaPath) {
-        assertTrue(byteArrayOutputStream.toString().contains("Running with JAVA: " + javaPath), "Log does not contain entry for JAVA path.");
-        assertTrue(byteArrayOutputStream.toString().contains("Detect configured: " + detectJarPath), "Log does not contain entry for Detect path.");
+    private void validateLogsPresentInfo() {
+        System.out.println(byteArrayOutputStream.toString());
+
+        assertTrue(byteArrayOutputStream.toString().contains("Running with JAVA: "), "Log does not contain entry for JAVA path.");
+        assertTrue(byteArrayOutputStream.toString().contains("Detect jar configured: "), "Log does not contain entry for Detect path.");
     }
 
     private void validateLogsPresentDebug() {
-        assertTrue(byteArrayOutputStream.toString().contains("PATH: " + expectedPath), "Log does not contain entry for PATH environment variable.");
+        assertTrue(byteArrayOutputStream.toString().contains("PATH: "), "Log does not contain entry for PATH environment variable.");
     }
 
 }
