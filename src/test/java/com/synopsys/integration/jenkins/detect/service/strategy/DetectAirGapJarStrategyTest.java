@@ -42,6 +42,7 @@ public class DetectAirGapJarStrategyTest {
     private static final String REMOTE_JDK_HOME = "/test/java/home/path";
     private static final String EXPECTED_JDK_JAVA_PATH = REMOTE_JDK_HOME + "/bin/java";
     private static final String EXPECTED_PATH = "/test/path/env";
+    private static final String EXPECTED_ONE_JAR_ERROR_MSG = "Expected 1 jar from Detect Air Gap tool installation at <%s>";
 
     private static final AirGapDownloadStrategy AIRGAP_DOWNLOAD_STRATEGY = new AirGapDownloadStrategy();
 
@@ -73,7 +74,7 @@ public class DetectAirGapJarStrategyTest {
         logger = new JenkinsIntLogger(taskListener);
 
         tempJarDirectoryPathName = createTempAirGapDirectory().getPath();
-        tempAirGapJar = createTempAirGapJar();
+        tempAirGapJar = createTempAirGapJar(DETECT_JAR_PREFIX, DETECT_JAR_SUFFIX);
 
         Mockito.doReturn(Optional.of(detectAirGapInstallationMock)).when(jenkinsConfigServiceMock).getInstallationForNodeAndEnvironment(DetectAirGapInstallation.DescriptorImpl.class, AIRGAP_TOOL_NAME);
     }
@@ -152,7 +153,8 @@ public class DetectAirGapJarStrategyTest {
             fail("Test should have thrown exception");
         } catch (IntegrationException | InterruptedException | IOException e) {
             assertTrue(e instanceof DetectJenkinsException, "Expected a DetectJenkinsException to be thrown");
-            assertTrue(e.getMessage().contains(String.format("Problem encountered getting Detect Air Gap tool with the name %s from global tool configuration.", AIRGAP_TOOL_NAME)), "Stacktrace does not contain expected message.");
+            assertTrue(e.getMessage().contains(String.format("Problem encountered getting Detect Air Gap tool with the name %s from global tool configuration.", AIRGAP_TOOL_NAME)),
+                "Stacktrace does not contain expected message: " + e.getMessage());
         }
     }
 
@@ -164,7 +166,7 @@ public class DetectAirGapJarStrategyTest {
             fail("Test should have thrown exception");
         } catch (IntegrationException | InterruptedException | IOException e) {
             assertTrue(e.getCause() instanceof IOException, "Expected an IOException to be thrown");
-            assertTrue(e.getMessage().contains("Problem encountered while interacting with Jenkins environment."), "Stacktrace does not contain expected message.");
+            assertTrue(e.getMessage().contains("Problem encountered while interacting with Jenkins environment."), "Stacktrace does not contain expected message: " + e.getMessage());
         }
     }
 
@@ -176,7 +178,7 @@ public class DetectAirGapJarStrategyTest {
             fail("Test should have thrown exception");
         } catch (IntegrationException | InterruptedException | IOException e) {
             assertTrue(e.getCause() instanceof InterruptedException, "Expected an InterruptedException to be thrown");
-            assertTrue(e.getMessage().contains("Getting Detect Air Gap tool was interrupted."), "Stacktrace does not contain expected message.");
+            assertTrue(e.getMessage().contains("Getting Detect Air Gap tool was interrupted."), "Stacktrace does not contain expected message: " + e.getMessage());
         }
     }
 
@@ -192,6 +194,18 @@ public class DetectAirGapJarStrategyTest {
     }
 
     @Test
+    public void testEmptyAirGapHome() {
+        try {
+            configureCallable(REMOTE_JDK_HOME, "").getSetupCallable().call();
+            fail("Test should have thrown exception");
+        } catch (IntegrationException e) {
+            assertTrue(e instanceof DetectJenkinsException, "Expected a DetectJenkinsException to be thrown");
+            assertTrue(e.getMessage().contains(String.format(EXPECTED_ONE_JAR_ERROR_MSG, "")), "Stacktrace does not contain expected message: " + e.getMessage());
+        }
+
+    }
+
+    @Test
     public void testNoJarFound() {
         assertTrue(tempAirGapJar.delete(), "Pre-clean for no jar found test failed");
 
@@ -200,22 +214,50 @@ public class DetectAirGapJarStrategyTest {
             fail("Test should have thrown exception");
         } catch (IntegrationException e) {
             assertTrue(e instanceof DetectJenkinsException, "Expected a DetectJenkinsException to be thrown");
-            System.out.println(e.getMessage());
-            assertTrue(e.getMessage().contains(String.format("Expected 1 jar from Detect Air Gap tool installation at %s", tempJarDirectoryPathName)), "Stacktrace does not contain expected message.");
+            assertTrue(e.getMessage().contains(String.format(EXPECTED_ONE_JAR_ERROR_MSG, tempJarDirectoryPathName)), "Stacktrace does not contain expected message: " + e.getMessage());
         }
     }
 
     @Test
-    public void testMultipleJarsFound() {
-        // Single jar file was created during setup()
-        createTempAirGapJar();
+    public void testNoJarPrefixFound() {
+        assertTrue(tempAirGapJar.delete(), "Pre-clean for no jar (prefix) found test failed");
+        createTempAirGapJar("dummy-", DETECT_JAR_SUFFIX);
 
         try {
             configureCallable(REMOTE_JDK_HOME, tempJarDirectoryPathName).getSetupCallable().call();
             fail("Test should have thrown exception");
         } catch (IntegrationException e) {
             assertTrue(e instanceof DetectJenkinsException, "Expected a DetectJenkinsException to be thrown");
-            assertTrue(e.getMessage().contains(String.format("Expected 1 jar from Detect Air Gap tool installation at %s and instead found %d jars", tempJarDirectoryPathName, 2)), "Stacktrace does not contain expected message.");
+            assertTrue(e.getMessage().contains(String.format(EXPECTED_ONE_JAR_ERROR_MSG, tempJarDirectoryPathName)), "Stacktrace does not contain expected message: " + e.getMessage());
+        }
+    }
+
+    @Test
+    public void testNoJarSuffixFound() {
+        assertTrue(tempAirGapJar.delete(), "Pre-clean for no jar (suffix) found test failed");
+        createTempAirGapJar(DETECT_JAR_PREFIX, ".dummy");
+
+        try {
+            configureCallable(REMOTE_JDK_HOME, tempJarDirectoryPathName).getSetupCallable().call();
+            fail("Test should have thrown exception");
+        } catch (IntegrationException e) {
+            assertTrue(e instanceof DetectJenkinsException, "Expected a DetectJenkinsException to be thrown");
+            assertTrue(e.getMessage().contains(String.format(EXPECTED_ONE_JAR_ERROR_MSG, tempJarDirectoryPathName)), "Stacktrace does not contain expected message: " + e.getMessage());
+        }
+    }
+
+    @Test
+    public void testMultipleJarsFound() {
+        // Single jar file was created during setup()
+        createTempAirGapJar(DETECT_JAR_PREFIX, DETECT_JAR_SUFFIX);
+
+        try {
+            configureCallable(REMOTE_JDK_HOME, tempJarDirectoryPathName).getSetupCallable().call();
+            fail("Test should have thrown exception");
+        } catch (IntegrationException e) {
+            assertTrue(e instanceof DetectJenkinsException, "Expected a DetectJenkinsException to be thrown");
+            assertTrue(e.getMessage().contains(String.format(EXPECTED_ONE_JAR_ERROR_MSG + " and instead found %d jars", tempJarDirectoryPathName, 2)),
+                "Stacktrace does not contain expected message: " + e.getMessage());
         }
     }
 
@@ -270,10 +312,10 @@ public class DetectAirGapJarStrategyTest {
         return tempJarDirectory;
     }
 
-    private File createTempAirGapJar() {
+    private File createTempAirGapJar(String prefix, String suffix) {
         File tempAirGapJar = null;
         try {
-            tempAirGapJar = File.createTempFile(DETECT_JAR_PREFIX, DETECT_JAR_SUFFIX, new File(tempJarDirectoryPathName));
+            tempAirGapJar = File.createTempFile(prefix, suffix, new File(tempJarDirectoryPathName));
             tempAirGapJar.deleteOnExit();
             System.out.println(String.format("Test jar created: %s", tempAirGapJar.getName()));
         } catch (IOException e) {
