@@ -67,6 +67,14 @@ public class DetectJarStrategyTest {
     @MethodSource("testSetupCallableJavaHomeSource")
     public void testSetupCallableJavaHome(String javaHome, String expectedJavaPath) {
         this.executeAndValidateSetupCallable(javaHome, expectedJavaPath);
+        this.validateLogsPresentInfo();
+    }
+
+    @Test
+    public void testSetupCallableInvalidJdkHome() {
+        this.executeAndValidateSetupCallable("\u0000", "java");
+        assertTrue(byteArrayOutputStream.toString().contains("Detect could not get Java Home from configured JDK,"), "Log does not contain message from IOException.");
+        this.validateLogsPresentInfo();
     }
 
     @Test
@@ -139,7 +147,7 @@ public class DetectJarStrategyTest {
 
     private void validateLogsNotPresentInfo() {
         assertFalse(byteArrayOutputStream.toString().contains("Running with JAVA: "), "Log contains entry for JAVA path and shouldn't.");
-        assertFalse(byteArrayOutputStream.toString().contains("Detect configured: "), "Log contains entry for Detect path and shouldn't.");
+        assertFalse(byteArrayOutputStream.toString().contains("Detect jar configured: "), "Log contains entry for Detect path and shouldn't.");
     }
 
     private void validateLogsNotPresentDebug() {
@@ -147,8 +155,6 @@ public class DetectJarStrategyTest {
     }
 
     private void validateLogsPresentInfo() {
-        System.out.println(byteArrayOutputStream.toString());
-
         assertTrue(byteArrayOutputStream.toString().contains("Running with JAVA: "), "Log does not contain entry for JAVA path.");
         assertTrue(byteArrayOutputStream.toString().contains("Detect jar configured: "), "Log does not contain entry for Detect path.");
     }
