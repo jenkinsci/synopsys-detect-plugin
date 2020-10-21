@@ -147,8 +147,6 @@ public class DetectJarStrategyTest {
     }
 
     private void validateLogsPresentInfo() {
-        System.out.println(byteArrayOutputStream.toString());
-
         assertTrue(byteArrayOutputStream.toString().contains("Running with JAVA: "), "Log does not contain entry for JAVA path.");
         assertTrue(byteArrayOutputStream.toString().contains("Detect jar configured: "), "Log does not contain entry for Detect path.");
     }
