@@ -17,7 +17,7 @@ import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
 public class DetectPipelineCommandsTest {
     private JenkinsIntLogger mockedLogger;
     private DetectRunner mockedDetectRunner;
-    private final ScriptOrJarDownloadStrategy DOWNLOAD_STRATEGY = new ScriptOrJarDownloadStrategy();
+    private static final ScriptOrJarDownloadStrategy DOWNLOAD_STRATEGY = new ScriptOrJarDownloadStrategy();
 
     @BeforeEach
     public void setupMocks() {
