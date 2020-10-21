@@ -35,8 +35,6 @@ import hudson.model.TaskListener;
 import jenkins.security.MasterToSlaveCallable;
 
 public class DetectAirGapJarStrategyTest {
-    private static final String DETECT_JAR_PREFIX = "synopsys-detect-";
-    private static final String DETECT_JAR_SUFFIX = ".jar";
     private static final String TEST_TEMPDIR_PREFIX = "Test-AirGapJar-Strategy";
     private static final String AIRGAP_TOOL_NAME = "DetectAirGapTool";
     private static final String REMOTE_JDK_HOME = "/test/java/home/path";
@@ -74,7 +72,7 @@ public class DetectAirGapJarStrategyTest {
         logger = new JenkinsIntLogger(taskListener);
 
         tempJarDirectoryPathName = createTempAirGapDirectory().getPath();
-        tempAirGapJar = createTempAirGapJar(DETECT_JAR_PREFIX, DETECT_JAR_SUFFIX);
+        tempAirGapJar = createTempAirGapJar(DetectAirGapJarStrategy.DETECT_JAR_PREFIX, DetectAirGapJarStrategy.DETECT_JAR_PREFIX);
 
         Mockito.doReturn(Optional.of(detectAirGapInstallationMock)).when(jenkinsConfigServiceMock).getInstallationForNodeAndEnvironment(DetectAirGapInstallation.DescriptorImpl.class, AIRGAP_TOOL_NAME);
     }
@@ -221,7 +219,7 @@ public class DetectAirGapJarStrategyTest {
     @Test
     public void testNoJarPrefixFound() {
         assertTrue(tempAirGapJar.delete(), "Pre-clean for no jar (prefix) found test failed");
-        createTempAirGapJar("dummy-", DETECT_JAR_SUFFIX);
+        createTempAirGapJar("dummy-", DetectAirGapJarStrategy.DETECT_JAR_SUFFIX);
 
         try {
             configureCallable(REMOTE_JDK_HOME, tempJarDirectoryPathName).getSetupCallable().call();
@@ -235,7 +233,7 @@ public class DetectAirGapJarStrategyTest {
     @Test
     public void testNoJarSuffixFound() {
         assertTrue(tempAirGapJar.delete(), "Pre-clean for no jar (suffix) found test failed");
-        createTempAirGapJar(DETECT_JAR_PREFIX, ".dummy");
+        createTempAirGapJar(DetectAirGapJarStrategy.DETECT_JAR_PREFIX, ".dummy");
 
         try {
             configureCallable(REMOTE_JDK_HOME, tempJarDirectoryPathName).getSetupCallable().call();
@@ -249,7 +247,7 @@ public class DetectAirGapJarStrategyTest {
     @Test
     public void testMultipleJarsFound() {
         // Single jar file was created during setup()
-        createTempAirGapJar(DETECT_JAR_PREFIX, DETECT_JAR_SUFFIX);
+        createTempAirGapJar(DetectAirGapJarStrategy.DETECT_JAR_PREFIX, DetectAirGapJarStrategy.DETECT_JAR_SUFFIX);
 
         try {
             configureCallable(REMOTE_JDK_HOME, tempJarDirectoryPathName).getSetupCallable().call();
