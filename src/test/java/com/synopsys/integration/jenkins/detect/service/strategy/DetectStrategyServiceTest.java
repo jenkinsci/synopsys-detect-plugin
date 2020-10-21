@@ -41,7 +41,7 @@ public class DetectStrategyServiceTest {
 
         DetectExecutionStrategy detectExecutionStrategy = testGetExecutionStrategy(intEnvironmentVariables, DOWNLOAD_STRATEGY);
         assertEquals(DetectJarStrategy.class, detectExecutionStrategy.getClass());
-        assertTrue(byteArrayOutputStream.toString().contains("ScriptOrJarDownloadStrategy"), "Log does not contain message with correct download strategy.");
+        assertTrue(byteArrayOutputStream.toString().contains(ScriptOrJarDownloadStrategy.DISPLAY_NAME), "Log does not contain message with correct download strategy.");
 
         System.out.println(byteArrayOutputStream.toString());
     }
@@ -51,15 +51,16 @@ public class DetectStrategyServiceTest {
         IntEnvironmentVariables intEnvironmentVariables = IntEnvironmentVariables.empty();
 
         DetectExecutionStrategy detectExecutionStrategy = testGetExecutionStrategy(intEnvironmentVariables, DOWNLOAD_STRATEGY);
+        System.out.println(byteArrayOutputStream.toString());
         assertEquals(DetectScriptStrategy.class, detectExecutionStrategy.getClass());
-        assertTrue(byteArrayOutputStream.toString().contains("ScriptOrJarDownloadStrategy"), "Log does not contain message with correct download strategy.");
+        assertTrue(byteArrayOutputStream.toString().contains(ScriptOrJarDownloadStrategy.DISPLAY_NAME), "Log does not contain message with correct download strategy.");
 
         System.out.println(byteArrayOutputStream.toString());
     }
 
     public DetectExecutionStrategy testGetExecutionStrategy(IntEnvironmentVariables intEnvironmentVariables, ScriptOrJarDownloadStrategy downloadStrategy) {
         JenkinsConfigService jenkinsConfigService = Mockito.mock(JenkinsConfigService.class);
-        DetectStrategyService detectStrategyService = new DetectStrategyService(logger, null, null, jenkinsConfigService, jenkinsRemotingService);
+        DetectStrategyService detectStrategyService = new DetectStrategyService(logger, null, null, jenkinsConfigService);
 
         DetectExecutionStrategy executionStrategy = null;
         try {

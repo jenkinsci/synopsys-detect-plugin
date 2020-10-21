@@ -6,8 +6,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
-import java.util.Arrays;
-import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,7 +34,7 @@ public class DetectScriptStrategyTest {
     }
 
     @Test
-    public void testNoProxyDetermineable() {
+    public void testNoProxyDeterminable() {
         String expectedExceptionMessage = "expected test message";
 
         JenkinsProxyHelper mockedProxyHelper = Mockito.mock(JenkinsProxyHelper.class);
@@ -80,33 +78,6 @@ public class DetectScriptStrategyTest {
         String escapedString = detectScriptStrategy.getArgumentEscaper().apply(unescapedSpecialCharacters);
 
         assertEquals(expectedEscapedString, escapedString);
-    }
-
-    @Test
-    public void testInitialArgumentsLinux() {
-        DetectScriptStrategy detectScriptStrategy = new DetectScriptStrategy(defaultLogger, defaultProxyHelper, OperatingSystemType.LINUX, null);
-        String remoteExecutablePath = "/path/to/detect.sh";
-
-        List<String> expectedInitialArguments = Arrays.asList("bash", remoteExecutablePath);
-        assertEquals(expectedInitialArguments, detectScriptStrategy.getInitialArguments(remoteExecutablePath));
-    }
-
-    @Test
-    public void testInitialArgumentsMac() {
-        DetectScriptStrategy detectScriptStrategy = new DetectScriptStrategy(defaultLogger, defaultProxyHelper, OperatingSystemType.MAC, null);
-        String remoteExecutablePath = "/path/to/detect.sh";
-
-        List<String> expectedInitialArguments = Arrays.asList("bash", remoteExecutablePath);
-        assertEquals(expectedInitialArguments, detectScriptStrategy.getInitialArguments(remoteExecutablePath));
-    }
-
-    @Test
-    public void testInitialArgumentsWindows() {
-        DetectScriptStrategy detectScriptStrategy = new DetectScriptStrategy(defaultLogger, defaultProxyHelper, OperatingSystemType.WINDOWS, null);
-        String remoteExecutablePath = "C:\\path\\to\\detect.ps1";
-
-        List<String> expectedInitialArguments = Arrays.asList("powershell", "\"Import-Module 'C:\\path\\to\\detect.ps1'; detect\"");
-        assertEquals(expectedInitialArguments, detectScriptStrategy.getInitialArguments(remoteExecutablePath));
     }
 
 }

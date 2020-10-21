@@ -9,7 +9,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Files;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -61,12 +61,6 @@ public class DetectJarStrategyTest {
     public void testArgumentEscaper() {
         DetectJarStrategy detectJarStrategy = new DetectJarStrategy(logger, environmentVariables, remoteJdkHome, detectJarPath);
         assertEquals(Function.identity(), detectJarStrategy.getArgumentEscaper());
-    }
-
-    @Test
-    public void testInvocationParameters() {
-        DetectJarStrategy detectJarStrategy = new DetectJarStrategy(logger, environmentVariables, remoteJdkHome, detectJarPath);
-        assertEquals(Arrays.asList(expectedJdkJavaPath, "-jar", detectJarPath), detectJarStrategy.getInitialArguments(expectedJdkJavaPath));
     }
 
     @ParameterizedTest
@@ -132,10 +126,12 @@ public class DetectJarStrategyTest {
     private void executeAndValidateSetupCallable(String javaHomeInput, String expectedJavaPath) {
         try {
             DetectJarStrategy detectJarStrategy = new DetectJarStrategy(logger, environmentVariables, javaHomeInput, detectJarPath);
-            MasterToSlaveCallable<String, IntegrationException> setupCallable = detectJarStrategy.getSetupCallable();
+            MasterToSlaveCallable<ArrayList<String>, IntegrationException> setupCallable = detectJarStrategy.getSetupCallable();
 
-            String actualJavaPath = setupCallable.call();
-            assertEquals(expectedJavaPath, actualJavaPath);
+            ArrayList<String> jarExecutionElements = setupCallable.call();
+            assertEquals(expectedJavaPath, jarExecutionElements.get(0));
+            assertEquals("-jar", jarExecutionElements.get(1));
+            assertEquals(detectJarPath, jarExecutionElements.get(2));
         } catch (IntegrationException e) {
             fail("An unexpected exception occurred: ", e);
         }

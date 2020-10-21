@@ -5,6 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -102,9 +104,15 @@ public class DetectRunnerTest {
         JenkinsRemotingService mockedRemotingService = Mockito.mock(JenkinsRemotingService.class);
 
         try {
-            Mockito.when(mockedRemotingService.call(Mockito.any(DetectJarStrategy.SetupCallableImpl.class))).thenReturn(JDK_HOME);
+            Mockito.when(mockedRemotingService.call(Mockito.any(DetectJarStrategy.SetupCallableImpl.class))).thenReturn(new ArrayList<>(Arrays.asList(JDK_HOME, "-jar", detectPath)));
+
+            if (operatingSystemType == OperatingSystemType.WINDOWS) {
+                Mockito.when(mockedRemotingService.call(Mockito.any(DetectScriptStrategy.SetupCallableImpl.class))).thenReturn(new ArrayList<>(Arrays.asList("powershell", String.format("\"Import-Module '%s'; detect\"", detectPath))));
+            } else {
+                Mockito.when(mockedRemotingService.call(Mockito.any(DetectScriptStrategy.SetupCallableImpl.class))).thenReturn(new ArrayList<>(Arrays.asList("bash", detectPath)));
+            }
+
             Mockito.when(mockedRemotingService.getRemoteOperatingSystemType()).thenReturn(operatingSystemType);
-            Mockito.when(mockedRemotingService.call(Mockito.any(DetectScriptStrategy.SetupCallableImpl.class))).thenReturn(detectPath);
             Mockito.when(mockedRemotingService.launch(Mockito.any(), Mockito.any())).thenReturn(0);
         } catch (Exception e) {
             fail("Could not mock JenkinsRemotingService due to an unexpected exception. The test code likely requires fixing: ", e);
@@ -136,7 +144,7 @@ public class DetectRunnerTest {
 
             DetectEnvironmentService detectEnvironmentService = new DetectEnvironmentService(jenkinsIntLogger, blankProxyHelper, mockedVersionHelper, mockedCredentialsHelper, jenkinsConfigService, environmentVariables);
             DetectArgumentService detectArgumentService = new DetectArgumentService(jenkinsIntLogger, mockedVersionHelper);
-            DetectStrategyService detectStrategyService = new DetectStrategyService(jenkinsIntLogger, blankProxyHelper, WORKSPACE_TMP_REL_PATH, jenkinsConfigService, jenkinsRemotingService);
+            DetectStrategyService detectStrategyService = new DetectStrategyService(jenkinsIntLogger, blankProxyHelper, WORKSPACE_TMP_REL_PATH, jenkinsConfigService);
 
             DetectRunner detectRunner = new DetectRunner(detectEnvironmentService, mockedRemotingService, detectStrategyService, detectArgumentService);
 

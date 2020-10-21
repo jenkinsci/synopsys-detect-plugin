@@ -14,6 +14,7 @@ import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterEach;
@@ -109,7 +110,8 @@ public class DetectScriptStrategyCallableTest {
             String expectedScriptPath = new File(toolsDirectoryPath, DetectScriptStrategy.DETECT_INSTALL_DIRECTORY).getPath();
 
             DetectScriptStrategy detectScriptStrategy = new DetectScriptStrategy(defaultLogger, defaultProxyHelper, operatingSystemType, toolsDirectoryPath);
-            String remoteScriptPath = detectScriptStrategy.getSetupCallable().call();
+            ArrayList<String> scriptStrategyArgs = detectScriptStrategy.getSetupCallable().call();
+            String remoteScriptPath = scriptStrategyArgs.get(scriptStrategyArgs.size() - 1);
             File remoteScriptFile = new File(remoteScriptPath);
 
             assertEquals(expectedScriptPath, remoteScriptFile.getParent(), "Script should have been downloaded to " + expectedScriptPath + " but wasn't.");
