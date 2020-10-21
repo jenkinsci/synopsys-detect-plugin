@@ -10,11 +10,13 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import com.synopsys.integration.exception.IntegrationException;
+import com.synopsys.integration.jenkins.detect.extensions.ScriptOrJarDownloadStrategy;
 import com.synopsys.integration.jenkins.service.JenkinsBuildService;
 
 public class DetectFreestyleCommandsTest {
     private JenkinsBuildService mockedBuildService;
     private DetectRunner mockedDetectRunner;
+    private final ScriptOrJarDownloadStrategy DOWNLOAD_STRATEGY = new ScriptOrJarDownloadStrategy();
 
     @BeforeEach
     public void setupMocks() {
@@ -29,13 +31,13 @@ public class DetectFreestyleCommandsTest {
     @Test
     public void testRunDetectSuccess() {
         try {
-            Mockito.when(mockedDetectRunner.runDetect(Mockito.any(), Mockito.anyString())).thenReturn(0);
+            Mockito.when(mockedDetectRunner.runDetect(Mockito.any(), Mockito.anyString(), Mockito.any(ScriptOrJarDownloadStrategy.class))).thenReturn(0);
         } catch (Exception e) {
             fail("An unexpected exception occurred in the test code: ", e);
         }
 
         DetectFreestyleCommands detectCommands = new DetectFreestyleCommands(mockedBuildService, mockedDetectRunner);
-        detectCommands.runDetect(StringUtils.EMPTY);
+        detectCommands.runDetect(StringUtils.EMPTY, DOWNLOAD_STRATEGY);
 
         Mockito.verify(mockedBuildService, Mockito.never()).markBuildAborted();
         Mockito.verify(mockedBuildService, Mockito.never()).markBuildInterrupted();
@@ -47,13 +49,13 @@ public class DetectFreestyleCommandsTest {
     @Test
     public void testRunDetectExitCodeFailure() {
         try {
-            Mockito.when(mockedDetectRunner.runDetect(Mockito.any(), Mockito.anyString())).thenReturn(1);
+            Mockito.when(mockedDetectRunner.runDetect(Mockito.any(), Mockito.anyString(), Mockito.any(ScriptOrJarDownloadStrategy.class))).thenReturn(1);
         } catch (Exception e) {
             fail("An unexpected exception occurred in the test code: ", e);
         }
 
         DetectFreestyleCommands detectCommands = new DetectFreestyleCommands(mockedBuildService, mockedDetectRunner);
-        detectCommands.runDetect(StringUtils.EMPTY);
+        detectCommands.runDetect(StringUtils.EMPTY, DOWNLOAD_STRATEGY);
 
         Mockito.verify(mockedBuildService).markBuildFailed(Mockito.any(String.class));
 
@@ -66,13 +68,13 @@ public class DetectFreestyleCommandsTest {
     @Test
     public void testRunDetectIntegrationFailure() {
         try {
-            Mockito.when(mockedDetectRunner.runDetect(Mockito.any(), Mockito.anyString())).thenThrow(new IntegrationException());
+            Mockito.when(mockedDetectRunner.runDetect(Mockito.any(), Mockito.anyString(), Mockito.any(ScriptOrJarDownloadStrategy.class))).thenThrow(new IntegrationException());
         } catch (Exception e) {
             fail("An unexpected exception occurred in the test code: ", e);
         }
 
         DetectFreestyleCommands detectCommands = new DetectFreestyleCommands(mockedBuildService, mockedDetectRunner);
-        detectCommands.runDetect(StringUtils.EMPTY);
+        detectCommands.runDetect(StringUtils.EMPTY, DOWNLOAD_STRATEGY);
 
         Mockito.verify(mockedBuildService).markBuildUnstable(Mockito.any());
 
@@ -85,13 +87,13 @@ public class DetectFreestyleCommandsTest {
     @Test
     public void testRunDetectInterrupted() {
         try {
-            Mockito.when(mockedDetectRunner.runDetect(Mockito.any(), Mockito.anyString())).thenThrow(new InterruptedException());
+            Mockito.when(mockedDetectRunner.runDetect(Mockito.any(), Mockito.anyString(), Mockito.any(ScriptOrJarDownloadStrategy.class))).thenThrow(new InterruptedException());
         } catch (Exception e) {
             fail("An unexpected exception occurred in the test code: ", e);
         }
 
         DetectFreestyleCommands detectCommands = new DetectFreestyleCommands(mockedBuildService, mockedDetectRunner);
-        detectCommands.runDetect(StringUtils.EMPTY);
+        detectCommands.runDetect(StringUtils.EMPTY, DOWNLOAD_STRATEGY);
 
         Mockito.verify(mockedBuildService).markBuildInterrupted();
 
@@ -104,13 +106,13 @@ public class DetectFreestyleCommandsTest {
     @Test
     public void testRunDetectExceptionFailure() {
         try {
-            Mockito.when(mockedDetectRunner.runDetect(Mockito.any(), Mockito.anyString())).thenThrow(new IOException());
+            Mockito.when(mockedDetectRunner.runDetect(Mockito.any(), Mockito.anyString(), Mockito.any(ScriptOrJarDownloadStrategy.class))).thenThrow(new IOException());
         } catch (Exception e) {
             fail("An unexpected exception occurred in the test code: ", e);
         }
 
         DetectFreestyleCommands detectCommands = new DetectFreestyleCommands(mockedBuildService, mockedDetectRunner);
-        detectCommands.runDetect(StringUtils.EMPTY);
+        detectCommands.runDetect(StringUtils.EMPTY, DOWNLOAD_STRATEGY);
 
         Mockito.verify(mockedBuildService).markBuildFailed(Mockito.any(Exception.class));
 

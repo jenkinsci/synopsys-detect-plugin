@@ -1,4 +1,5 @@
 <j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form">
+    <f:dropdownDescriptorSelector field="downloadStrategyOverride" title="Custom download strategy" default="${instance.defaultDownloadStrategyOverride}"/>
     <f:entry field="detectProperties" title="Detect Properties">
         <f:textarea/>
     </f:entry>

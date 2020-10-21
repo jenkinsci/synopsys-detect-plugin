@@ -26,10 +26,13 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.io.StringReader;
 import java.io.StringWriter;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Locale;
 import java.util.Optional;
 
+import javax.annotation.Nullable;
 import javax.servlet.ServletException;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -58,6 +61,9 @@ import com.cloudbees.plugins.credentials.impl.BaseStandardCredentials;
 import com.synopsys.integration.blackduck.configuration.BlackDuckServerConfig;
 import com.synopsys.integration.blackduck.configuration.BlackDuckServerConfigBuilder;
 import com.synopsys.integration.jenkins.annotations.HelpMarkdown;
+import com.synopsys.integration.jenkins.detect.extensions.AirGapDownloadStrategy;
+import com.synopsys.integration.jenkins.detect.extensions.DetectDownloadStrategy;
+import com.synopsys.integration.jenkins.detect.extensions.ScriptOrJarDownloadStrategy;
 import com.synopsys.integration.jenkins.wrapper.JenkinsProxyHelper;
 import com.synopsys.integration.jenkins.wrapper.JenkinsWrapper;
 import com.synopsys.integration.jenkins.wrapper.SynopsysCredentialsHelper;
@@ -70,6 +76,8 @@ import com.synopsys.integration.rest.proxy.ProxyInfo;
 import hudson.Extension;
 import hudson.Functions;
 import hudson.Util;
+import hudson.model.Describable;
+import hudson.model.Descriptor;
 import hudson.security.ACL;
 import hudson.util.FormValidation;
 import hudson.util.IOUtils;
@@ -95,6 +103,9 @@ public class DetectGlobalConfig extends GlobalConfiguration implements Serializa
     private boolean trustBlackDuckCertificates;
 
     private int blackDuckTimeout = 120;
+
+    @Nullable
+    private DetectDownloadStrategy downloadStrategy;
 
     @DataBoundConstructor
     public DetectGlobalConfig() {
@@ -139,6 +150,24 @@ public class DetectGlobalConfig extends GlobalConfiguration implements Serializa
     public void setTrustBlackDuckCertificates(boolean trustBlackDuckCertificates) {
         this.trustBlackDuckCertificates = trustBlackDuckCertificates;
         save();
+    }
+
+    public DetectDownloadStrategy getDownloadStrategy() {
+        return downloadStrategy;
+    }
+
+    @DataBoundSetter
+    public void setDownloadStrategy(DetectDownloadStrategy downloadStrategy) {
+        this.downloadStrategy = downloadStrategy;
+    }
+
+    public DetectDownloadStrategy getDefaultDownloadStrategy() {
+        return new ScriptOrJarDownloadStrategy();
+    }
+
+    public Collection<Descriptor<? extends Describable>> getAllowedDownloadStrategyDescriptors() {
+        Jenkins jenkins = Jenkins.get();
+        return Arrays.asList(jenkins.getDescriptor(AirGapDownloadStrategy.class), jenkins.getDescriptor(ScriptOrJarDownloadStrategy.class));
     }
 
     public BlackDuckServerConfig getBlackDuckServerConfig(JenkinsProxyHelper jenkinsProxyHelper, SynopsysCredentialsHelper synopsysCredentialsHelper) throws IllegalArgumentException {

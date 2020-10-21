@@ -20,18 +20,26 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package com.synopsys.integration.jenkins.detect.service.strategy;
+package com.synopsys.integration.jenkins.detect.extensions;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.function.Function;
+import java.io.Serializable;
 
-import com.synopsys.integration.exception.IntegrationException;
+import hudson.model.AbstractDescribableImpl;
+import hudson.model.Descriptor;
 
-import jenkins.security.MasterToSlaveCallable;
+public abstract class DetectDownloadStrategy extends AbstractDescribableImpl<DetectDownloadStrategy> implements Serializable {
+    private static final long serialVersionUID = 8059287675134866543L;
 
-public abstract class DetectExecutionStrategy {
-    public abstract MasterToSlaveCallable<ArrayList<String>, IntegrationException> getSetupCallable() throws IntegrationException, IOException, InterruptedException;
+    public abstract String getDisplayName();
 
-    public abstract Function<String, String> getArgumentEscaper();
+    @Override
+    public DownloadStrategyDescriptor getDescriptor() {
+        return (DownloadStrategyDescriptor) super.getDescriptor();
+    }
+
+    public static abstract class DownloadStrategyDescriptor extends Descriptor<DetectDownloadStrategy> {
+        public DownloadStrategyDescriptor(Class<? extends DetectDownloadStrategy> clazz) {
+            super(clazz);
+        }
+    }
 }

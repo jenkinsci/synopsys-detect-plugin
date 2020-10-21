@@ -29,6 +29,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.jenkinsci.plugins.workflow.steps.Step;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
@@ -39,14 +40,15 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
 import com.synopsys.integration.jenkins.annotations.HelpMarkdown;
+import com.synopsys.integration.jenkins.detect.extensions.DetectDownloadStrategy;
+import com.synopsys.integration.jenkins.detect.extensions.InheritFromGlobalDownloadStrategy;
 import com.synopsys.integration.jenkins.detect.service.DetectCommandsFactory;
 
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
-import hudson.model.Computer;
-import hudson.model.Run;
+import hudson.model.Node;
 import hudson.model.TaskListener;
 
 public class DetectPipelineStep extends Step implements Serializable {
@@ -60,6 +62,9 @@ public class DetectPipelineStep extends Step implements Serializable {
     @HelpMarkdown("If true (checked), returns the status code of the Detect run instead of throwing an exception")
     private boolean returnStatus = false;
 
+    @Nullable
+    private DetectDownloadStrategy downloadStrategyOverride;
+
     @DataBoundConstructor
     public DetectPipelineStep(String detectProperties) {
         this.detectProperties = detectProperties;
@@ -67,6 +72,19 @@ public class DetectPipelineStep extends Step implements Serializable {
 
     public String getDetectProperties() {
         return detectProperties;
+    }
+
+    public DetectDownloadStrategy getDownloadStrategyOverride() {
+        return downloadStrategyOverride;
+    }
+
+    @DataBoundSetter
+    public void setDownloadStrategyOverride(DetectDownloadStrategy downloadStrategyOverride) {
+        this.downloadStrategyOverride = downloadStrategyOverride;
+    }
+
+    public DetectDownloadStrategy getDefaultDownloadStrategyOverride() {
+        return new InheritFromGlobalDownloadStrategy();
     }
 
     public boolean getReturnStatus() {
@@ -87,7 +105,7 @@ public class DetectPipelineStep extends Step implements Serializable {
     public static final class DescriptorImpl extends StepDescriptor {
         @Override
         public Set<? extends Class<?>> getRequiredContext() {
-            return new HashSet<>(Arrays.asList(TaskListener.class, EnvVars.class, Computer.class, FilePath.class, Run.class));
+            return new HashSet<>(Arrays.asList(TaskListener.class, EnvVars.class, FilePath.class, Launcher.class, Node.class));
         }
 
         @Override
@@ -109,6 +127,7 @@ public class DetectPipelineStep extends Step implements Serializable {
         private final transient EnvVars envVars;
         private final transient FilePath workspace;
         private final transient Launcher launcher;
+        private final transient Node node;
 
         protected Execution(@Nonnull StepContext context) throws InterruptedException, IOException {
             super(context);
@@ -116,12 +135,13 @@ public class DetectPipelineStep extends Step implements Serializable {
             envVars = context.get(EnvVars.class);
             workspace = context.get(FilePath.class);
             launcher = context.get(Launcher.class);
+            node = context.get(Node.class);
         }
 
         @Override
         protected Integer run() throws Exception {
-            return DetectCommandsFactory.fromPipeline(listener, envVars, launcher, workspace)
-                       .runDetect(returnStatus, detectProperties);
+            return DetectCommandsFactory.fromPipeline(listener, envVars, launcher, node, workspace)
+                       .runDetect(returnStatus, detectProperties, downloadStrategyOverride);
         }
 
     }

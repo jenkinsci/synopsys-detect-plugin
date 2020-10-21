@@ -20,15 +20,14 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package com.synopsys.integration.jenkins.service;
+package com.synopsys.integration.jenkins.detect.extensions.tool;
 
-import java.util.Optional;
+import hudson.AbortException;
+import hudson.tools.ToolInstallation;
 
-import jenkins.model.GlobalConfiguration;
-
-public class JenkinsConfigService {
-    public <T extends GlobalConfiguration> Optional<T> getGlobalConfiguration(Class<T> configurationClass) {
-        T globalConfig = GlobalConfiguration.all().get(configurationClass);
-        return Optional.ofNullable(globalConfig);
+public class AbortDetectAirGapInstallException extends AbortException {
+    public AbortDetectAirGapInstallException(ToolInstallation toolInstallation, String reason) {
+        super("Cannot install Detect AirGap Installation " + toolInstallation.getName() + " because: " + reason);
     }
+
 }
