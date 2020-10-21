@@ -72,7 +72,7 @@ public class DetectAirGapJarStrategyTest {
         logger = new JenkinsIntLogger(taskListener);
 
         tempJarDirectoryPathName = createTempAirGapDirectory().getPath();
-        tempAirGapJar = createTempAirGapJar(DetectAirGapJarStrategy.DETECT_JAR_PREFIX, DetectAirGapJarStrategy.DETECT_JAR_PREFIX);
+        tempAirGapJar = createTempAirGapJar(DetectAirGapJarStrategy.DETECT_JAR_PREFIX, DetectAirGapJarStrategy.DETECT_JAR_SUFFIX);
 
         Mockito.doReturn(Optional.of(detectAirGapInstallationMock)).when(jenkinsConfigServiceMock).getInstallationForNodeAndEnvironment(DetectAirGapInstallation.DescriptorImpl.class, AIRGAP_TOOL_NAME);
     }
@@ -303,7 +303,7 @@ public class DetectAirGapJarStrategyTest {
         try {
             tempJarDirectory = Files.createTempDirectory(TEST_TEMPDIR_PREFIX).toFile();
             tempJarDirectory.deleteOnExit();
-            System.out.println(String.format("Test directory created: %s", tempJarDirectory.getName()));
+            System.out.println(String.format("Test directory created: %s", tempJarDirectory.getPath()));
         } catch (IOException e) {
             fail("Unexpected exception was thrown in test code: ", e);
         }
