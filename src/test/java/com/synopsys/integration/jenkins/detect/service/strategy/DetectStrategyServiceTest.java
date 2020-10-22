@@ -10,6 +10,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.Optional;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -50,6 +51,11 @@ public class DetectStrategyServiceTest {
         detectStrategyService = new DetectStrategyService(logger, null, null, jenkinsConfigService);
     }
 
+    @AfterEach
+    public void cleanUp() {
+        System.out.println(byteArrayOutputStream.toString());
+    }
+
     @Test
     public void testInheritFromGlobalStrategy() {
         DetectGlobalConfig mockDetectGlobalConfig = Mockito.mock(DetectGlobalConfig.class);
@@ -60,8 +66,6 @@ public class DetectStrategyServiceTest {
         DetectExecutionStrategy detectExecutionStrategy = testGetExecutionStrategy(intEnvironmentVariables, INHERIT_DOWNLOAD_STRATEGY);
         assertEquals(DetectAirGapJarStrategy.class, detectExecutionStrategy.getClass());
         assertTrue(byteArrayOutputStream.toString().contains(AirGapDownloadStrategy.DISPLAY_NAME), "Log does not contain message with correct download strategy.");
-
-        System.out.println(byteArrayOutputStream.toString());
     }
 
     @Test
@@ -75,8 +79,6 @@ public class DetectStrategyServiceTest {
         DetectExecutionStrategy detectExecutionStrategy = testGetExecutionStrategy(intEnvironmentVariables, INHERIT_DOWNLOAD_STRATEGY);
         assertEquals(DetectScriptStrategy.class, detectExecutionStrategy.getClass());
         assertTrue(byteArrayOutputStream.toString().contains(ScriptOrJarDownloadStrategy.DISPLAY_NAME), "Log does not contain message with correct download strategy.");
-
-        System.out.println(byteArrayOutputStream.toString());
     }
 
     @Test
@@ -94,8 +96,6 @@ public class DetectStrategyServiceTest {
         DetectExecutionStrategy detectExecutionStrategy = testGetExecutionStrategy(intEnvironmentVariables, AIRGAP_DOWNLOAD_STRATEGY);
         assertEquals(DetectAirGapJarStrategy.class, detectExecutionStrategy.getClass());
         assertTrue(byteArrayOutputStream.toString().contains(AirGapDownloadStrategy.DISPLAY_NAME), "Log does not contain message with correct download strategy.");
-
-        System.out.println(byteArrayOutputStream.toString());
     }
 
     @Test
@@ -105,8 +105,6 @@ public class DetectStrategyServiceTest {
         DetectExecutionStrategy detectExecutionStrategy = testGetExecutionStrategy(intEnvironmentVariables, SCRIPTJAR_DOWNLOAD_STRATEGY);
         assertEquals(DetectJarStrategy.class, detectExecutionStrategy.getClass());
         assertTrue(byteArrayOutputStream.toString().contains(ScriptOrJarDownloadStrategy.DISPLAY_NAME), "Log does not contain message with correct download strategy.");
-
-        System.out.println(byteArrayOutputStream.toString());
     }
 
     @Test
@@ -114,8 +112,6 @@ public class DetectStrategyServiceTest {
         DetectExecutionStrategy detectExecutionStrategy = testGetExecutionStrategy(intEnvironmentVariables, SCRIPTJAR_DOWNLOAD_STRATEGY);
         assertEquals(DetectScriptStrategy.class, detectExecutionStrategy.getClass());
         assertTrue(byteArrayOutputStream.toString().contains(ScriptOrJarDownloadStrategy.DISPLAY_NAME), "Log does not contain message with correct download strategy.");
-
-        System.out.println(byteArrayOutputStream.toString());
     }
 
     public DetectExecutionStrategy testGetExecutionStrategy(IntEnvironmentVariables intEnvironmentVariables, DetectDownloadStrategy downloadStrategy) {
