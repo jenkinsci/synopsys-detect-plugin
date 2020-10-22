@@ -41,8 +41,8 @@ import com.synopsys.integration.util.IntEnvironmentVariables;
 import jenkins.security.MasterToSlaveCallable;
 
 public class DetectAirGapJarStrategy extends DetectExecutionStrategy {
-    private static final String DETECT_JAR_PREFIX = "synopsys-detect-";
-    private static final String DETECT_JAR_SUFFIX = ".jar";
+    public static final String DETECT_JAR_PREFIX = "synopsys-detect-";
+    public static final String DETECT_JAR_SUFFIX = ".jar";
 
     private final JenkinsIntLogger logger;
     private final IntEnvironmentVariables intEnvironmentVariables;
