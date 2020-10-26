@@ -149,10 +149,11 @@ public class DetectAirGapJarStrategyTest {
             Mockito.doReturn(Optional.empty()).when(jenkinsConfigServiceMock).getInstallationForNodeAndEnvironment(DetectAirGapInstallation.DescriptorImpl.class, AIRGAP_TOOL_NAME);
             configureCallable(REMOTE_JDK_HOME, tempJarDirectoryPathName).getSetupCallable().call();
             fail("Test should have thrown exception");
-        } catch (IntegrationException | InterruptedException | IOException e) {
-            assertTrue(e instanceof DetectJenkinsException, "Expected a DetectJenkinsException to be thrown");
+        } catch (DetectJenkinsException e) {
             assertTrue(e.getMessage().contains(String.format("Problem encountered getting Detect Air Gap tool with the name %s from global tool configuration.", AIRGAP_TOOL_NAME)),
                 "Stacktrace does not contain expected message: " + e.getMessage());
+        } catch (Exception e) {
+            fail("Expected a DetectJenkinsException to be thrown");
         }
     }
 
@@ -162,9 +163,10 @@ public class DetectAirGapJarStrategyTest {
             Mockito.doThrow(IOException.class).when(jenkinsConfigServiceMock).getInstallationForNodeAndEnvironment(DetectAirGapInstallation.DescriptorImpl.class, AIRGAP_TOOL_NAME);
             configureCallable(REMOTE_JDK_HOME, tempJarDirectoryPathName).getSetupCallable().call();
             fail("Test should have thrown exception");
-        } catch (IntegrationException | InterruptedException | IOException e) {
-            assertTrue(e.getCause() instanceof IOException, "Expected an IOException to be thrown");
+        } catch (IOException e) {
             assertTrue(e.getMessage().contains("Problem encountered while interacting with Jenkins environment."), "Stacktrace does not contain expected message: " + e.getMessage());
+        } catch (Exception e) {
+            fail("Expected a IOException to be thrown");
         }
     }
 
@@ -174,9 +176,10 @@ public class DetectAirGapJarStrategyTest {
             Mockito.doThrow(InterruptedException.class).when(jenkinsConfigServiceMock).getInstallationForNodeAndEnvironment(DetectAirGapInstallation.DescriptorImpl.class, AIRGAP_TOOL_NAME);
             configureCallable(REMOTE_JDK_HOME, tempJarDirectoryPathName).getSetupCallable().call();
             fail("Test should have thrown exception");
-        } catch (IntegrationException | InterruptedException | IOException e) {
-            assertTrue(e.getCause() instanceof InterruptedException, "Expected an InterruptedException to be thrown");
+        } catch (InterruptedException e) {
             assertTrue(e.getMessage().contains("Getting Detect Air Gap tool was interrupted."), "Stacktrace does not contain expected message: " + e.getMessage());
+        } catch (Exception e) {
+            fail("Expected a InterruptedException to be thrown");
         }
     }
 
