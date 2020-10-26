@@ -37,7 +37,7 @@ public abstract class DetectDownloadStrategy extends AbstractDescribableImpl<Det
         return (DownloadStrategyDescriptor) super.getDescriptor();
     }
 
-    public static abstract class DownloadStrategyDescriptor extends Descriptor<DetectDownloadStrategy> {
+    public abstract static class DownloadStrategyDescriptor extends Descriptor<DetectDownloadStrategy> {
         public DownloadStrategyDescriptor(Class<? extends DetectDownloadStrategy> clazz) {
             super(clazz);
         }
