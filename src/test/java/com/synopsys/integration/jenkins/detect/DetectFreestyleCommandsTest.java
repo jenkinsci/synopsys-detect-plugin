@@ -16,7 +16,7 @@ import com.synopsys.integration.jenkins.service.JenkinsBuildService;
 public class DetectFreestyleCommandsTest {
     private JenkinsBuildService mockedBuildService;
     private DetectRunner mockedDetectRunner;
-    private final ScriptOrJarDownloadStrategy DOWNLOAD_STRATEGY = new ScriptOrJarDownloadStrategy();
+    private static final ScriptOrJarDownloadStrategy DOWNLOAD_STRATEGY = new ScriptOrJarDownloadStrategy();
 
     @BeforeEach
     public void setupMocks() {
