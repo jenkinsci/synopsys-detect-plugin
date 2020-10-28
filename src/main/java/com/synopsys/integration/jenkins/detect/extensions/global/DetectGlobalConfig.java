@@ -170,11 +170,11 @@ public class DetectGlobalConfig extends GlobalConfiguration implements Serializa
         return Arrays.asList(jenkins.getDescriptor(AirGapDownloadStrategy.class), jenkins.getDescriptor(ScriptOrJarDownloadStrategy.class));
     }
 
-    public BlackDuckServerConfig getBlackDuckServerConfig(JenkinsProxyHelper jenkinsProxyHelper, SynopsysCredentialsHelper synopsysCredentialsHelper) throws IllegalArgumentException {
+    public BlackDuckServerConfig getBlackDuckServerConfig(JenkinsProxyHelper jenkinsProxyHelper, SynopsysCredentialsHelper synopsysCredentialsHelper) {
         return getBlackDuckServerConfigBuilder(jenkinsProxyHelper, synopsysCredentialsHelper).build();
     }
 
-    public BlackDuckServerConfigBuilder getBlackDuckServerConfigBuilder(JenkinsProxyHelper jenkinsProxyHelper, SynopsysCredentialsHelper synopsysCredentialsHelper) throws IllegalArgumentException {
+    public BlackDuckServerConfigBuilder getBlackDuckServerConfigBuilder(JenkinsProxyHelper jenkinsProxyHelper, SynopsysCredentialsHelper synopsysCredentialsHelper) {
         return createBlackDuckServerConfigBuilder(jenkinsProxyHelper, synopsysCredentialsHelper, blackDuckUrl, blackDuckCredentialsId, blackDuckTimeout, trustBlackDuckCertificates);
     }
 
@@ -208,14 +208,7 @@ public class DetectGlobalConfig extends GlobalConfiguration implements Serializa
             ConnectionResult connectionResult = blackDuckServerConfig.createBlackDuckHttpClient(new PrintStreamIntLogger(System.out, LogLevel.DEBUG)).attemptConnection();
             if (connectionResult.isFailure()) {
                 int statusCode = connectionResult.getHttpStatusCode();
-                String validationMessage;
-                try {
-                    String statusPhrase = EnglishReasonPhraseCatalog.INSTANCE.getReason(statusCode, Locale.ENGLISH);
-                    validationMessage = String.format("ERROR: Connection attempt returned %s %s", statusCode, statusPhrase);
-                } catch (IllegalArgumentException ignored) {
-                    // EnglishReasonPhraseCatalog throws an IllegalArgumentException if the status code is outside of the 100-600 range --rotte AUG 2020
-                    validationMessage = "ERROR: Connection could not be established.";
-                }
+                String validationMessage = determineValidationMessage(statusCode);
 
                 // This is how Jenkins constructs an error with an exception stack trace, we're using it here because often a status code and phrase are not enough, but also (especially with proxies) the failure message can be too much.
                 String moreDetailsHtml = connectionResult.getFailureMessage()
@@ -230,6 +223,18 @@ public class DetectGlobalConfig extends GlobalConfiguration implements Serializa
         }
 
         return FormValidation.ok("Connection successful.");
+    }
+
+    private String determineValidationMessage(int statusCode) {
+        String validationMessage;
+        try {
+            String statusPhrase = EnglishReasonPhraseCatalog.INSTANCE.getReason(statusCode, Locale.ENGLISH);
+            validationMessage = String.format("ERROR: Connection attempt returned %s %s", statusCode, statusPhrase);
+        } catch (IllegalArgumentException ignored) {
+            // EnglishReasonPhraseCatalog throws an IllegalArgumentException if the status code is outside of the 100-600 range --rotte AUG 2020
+            validationMessage = "ERROR: Connection could not be established.";
+        }
+        return validationMessage;
     }
 
     // EX: http://localhost:8080/descriptorByName/com.synopsys.integration.jenkins.detect.extensions.global.DetectGlobalConfig/config.xml
