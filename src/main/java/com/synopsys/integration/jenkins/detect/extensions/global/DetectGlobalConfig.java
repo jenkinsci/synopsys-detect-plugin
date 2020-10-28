@@ -208,8 +208,7 @@ public class DetectGlobalConfig extends GlobalConfiguration implements Serializa
             ConnectionResult connectionResult = blackDuckServerConfig.createBlackDuckHttpClient(new PrintStreamIntLogger(System.out, LogLevel.DEBUG)).attemptConnection();
             if (connectionResult.isFailure()) {
                 int statusCode = connectionResult.getHttpStatusCode();
-                String validationMessage;
-                validationMessage = getInstanceStatusPhrase(statusCode);
+                String validationMessage = determineValidationMessage(statusCode);
 
                 // This is how Jenkins constructs an error with an exception stack trace, we're using it here because often a status code and phrase are not enough, but also (especially with proxies) the failure message can be too much.
                 String moreDetailsHtml = connectionResult.getFailureMessage()
@@ -226,7 +225,7 @@ public class DetectGlobalConfig extends GlobalConfiguration implements Serializa
         return FormValidation.ok("Connection successful.");
     }
 
-    private String getInstanceStatusPhrase(int statusCode) {
+    private String determineValidationMessage(int statusCode) {
         String validationMessage;
         try {
             String statusPhrase = EnglishReasonPhraseCatalog.INSTANCE.getReason(statusCode, Locale.ENGLISH);
