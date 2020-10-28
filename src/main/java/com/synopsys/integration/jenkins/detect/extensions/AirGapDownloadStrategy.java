@@ -39,7 +39,7 @@ import hudson.util.ListBoxModel;
 
 public class AirGapDownloadStrategy extends DetectDownloadStrategy {
     private static final long serialVersionUID = -8683774675699706747L;
-    public static String DISPLAY_NAME = "Install AirGapped Detect as a Tool Installation";
+    public static final String DISPLAY_NAME = "Install AirGapped Detect as a Tool Installation";
     @Nullable
     private String airGapInstallationName;
 
