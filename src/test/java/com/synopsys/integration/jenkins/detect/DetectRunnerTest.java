@@ -23,6 +23,7 @@ import com.synopsys.integration.jenkins.detect.extensions.AirGapDownloadStrategy
 import com.synopsys.integration.jenkins.detect.extensions.DetectDownloadStrategy;
 import com.synopsys.integration.jenkins.detect.extensions.ScriptOrJarDownloadStrategy;
 import com.synopsys.integration.jenkins.detect.extensions.global.DetectGlobalConfig;
+import com.synopsys.integration.jenkins.detect.extensions.tool.DetectAirGapInstallation;
 import com.synopsys.integration.jenkins.detect.service.DetectArgumentService;
 import com.synopsys.integration.jenkins.detect.service.DetectEnvironmentService;
 import com.synopsys.integration.jenkins.detect.service.strategy.DetectAirGapJarStrategy;
@@ -46,6 +47,8 @@ public class DetectRunnerTest {
     private static final String DETECT_AIRGAP_JAR_PATH = "/tmp/airgap/detect.jar";
     private static final String DETECT_SHELL_PATH = "/tmp/detect.sh";
     private static final String DETECT_POWERSHELL_PATH = "/tmp/detect.ps1";
+    private static final String AIRGAP_TOOL_NAME = "AirGap_Tool";
+    private static final String AIRGAP_TOOL_PATH = "/air/gap/tool/path";
     private static final AirGapDownloadStrategy AIRGAP_DOWNLOAD_STRATEGY = new AirGapDownloadStrategy();
     private static final ScriptOrJarDownloadStrategy SCRIPTJAR_DOWNLOAD_STRATEGY = new ScriptOrJarDownloadStrategy();
 
@@ -110,7 +113,9 @@ public class DetectRunnerTest {
         JenkinsRemotingService mockedRemotingService = getMockedRemotingService(OperatingSystemType.LINUX, DETECT_SHELL_PATH);
         HashMap<String, String> environment = new HashMap<>();
 
-        List<String> actualCommand = runDetectAndCaptureCommand(environment, mockedRemotingService, AIRGAP_DOWNLOAD_STRATEGY);
+        AirGapDownloadStrategy airGapDownloadStrategySpy = Mockito.spy(AIRGAP_DOWNLOAD_STRATEGY);
+        Mockito.when(airGapDownloadStrategySpy.getAirGapInstallationName()).thenReturn(AIRGAP_TOOL_NAME);
+        List<String> actualCommand = runDetectAndCaptureCommand(environment, mockedRemotingService, airGapDownloadStrategySpy);
 
         int i = 0;
         assertEquals(JDK_HOME, actualCommand.get(i++));
@@ -160,6 +165,11 @@ public class DetectRunnerTest {
 
             JenkinsConfigService jenkinsConfigService = Mockito.mock(JenkinsConfigService.class);
             Mockito.when(jenkinsConfigService.getGlobalConfiguration(DetectGlobalConfig.class)).thenReturn(Optional.of(detectGlobalConfig));
+
+            // Mocks specific to AirGap
+            DetectAirGapInstallation detectAirGapInstallationMock = Mockito.mock(DetectAirGapInstallation.class);
+            Mockito.when(jenkinsConfigService.getInstallationForNodeAndEnvironment(DetectAirGapInstallation.DescriptorImpl.class, AIRGAP_TOOL_NAME)).thenReturn(Optional.ofNullable(detectAirGapInstallationMock));
+            Mockito.doReturn(AIRGAP_TOOL_PATH).when(detectAirGapInstallationMock).getHome();
 
             JenkinsVersionHelper mockedVersionHelper = Mockito.mock(JenkinsVersionHelper.class);
 
