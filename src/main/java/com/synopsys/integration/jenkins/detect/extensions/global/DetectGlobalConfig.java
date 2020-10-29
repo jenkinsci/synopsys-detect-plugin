@@ -76,7 +76,6 @@ import com.synopsys.integration.rest.proxy.ProxyInfo;
 import hudson.Extension;
 import hudson.Functions;
 import hudson.Util;
-import hudson.model.Describable;
 import hudson.model.Descriptor;
 import hudson.security.ACL;
 import hudson.util.FormValidation;
@@ -165,7 +164,7 @@ public class DetectGlobalConfig extends GlobalConfiguration implements Serializa
         return new ScriptOrJarDownloadStrategy();
     }
 
-    public Collection<Descriptor<? extends Describable>> getAllowedDownloadStrategyDescriptors() {
+    public Collection<Descriptor<DetectDownloadStrategy>> getAllowedDownloadStrategyDescriptors() {
         Jenkins jenkins = Jenkins.get();
         return Arrays.asList(jenkins.getDescriptor(AirGapDownloadStrategy.class), jenkins.getDescriptor(ScriptOrJarDownloadStrategy.class));
     }
