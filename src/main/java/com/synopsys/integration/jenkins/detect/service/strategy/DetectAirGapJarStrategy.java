@@ -63,9 +63,32 @@ public class DetectAirGapJarStrategy extends DetectExecutionStrategy {
         return Function.identity();
     }
 
+    private String getOrDownloadAirGapJar() throws DetectJenkinsException {
+        DetectAirGapInstallation airGapInstallation;
+        try {
+            String airGapInstallationName = airGapDownloadStrategy.getAirGapInstallationName();
+            airGapInstallation = jenkinsConfigService.getInstallationForNodeAndEnvironment(DetectAirGapInstallation.DescriptorImpl.class, airGapInstallationName).orElseThrow(
+                () -> new DetectJenkinsException(
+                    String.format("Problem encountered getting Detect Air Gap tool with the name %s from global tool configuration. Check Jenkins plugin and tool configuration.", airGapInstallationName)));
+        } catch (IOException e) {
+            throw new DetectJenkinsException("Problem encountered while interacting with Jenkins environment. Check Jenkins and environment.", e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new DetectJenkinsException("Getting Detect Air Gap tool was interrupted. Check Jenkins and environment.", e);
+        }
+
+        return airGapInstallation.getHome();
+    }
+
     @Override
-    public MasterToSlaveCallable<ArrayList<String>, IntegrationException> getSetupCallable() {
-        return new SetupCallableImpl(logger, intEnvironmentVariables.getVariables(), remoteJdkHome, jenkinsConfigService, airGapDownloadStrategy);
+    public MasterToSlaveCallable<ArrayList<String>, IntegrationException> getSetupCallable() throws DetectJenkinsException {
+        String airGapBaseDir = getOrDownloadAirGapJar();
+
+        if (airGapBaseDir == null) {
+            throw new DetectJenkinsException("Detect AirGap installation directory is null. Check Jenkins tool configuration for installation directory.");
+        }
+
+        return new SetupCallableImpl(logger, intEnvironmentVariables.getVariables(), remoteJdkHome, airGapBaseDir);
     }
 
     public static class SetupCallableImpl extends MasterToSlaveCallable<ArrayList<String>, IntegrationException> {
@@ -74,49 +97,24 @@ public class DetectAirGapJarStrategy extends DetectExecutionStrategy {
         private final JenkinsIntLogger logger;
         private final Map<String, String> environmentVariables;
         private final String remoteJdkHome;
-        private final JenkinsConfigService jenkinsConfigService;
-        private final AirGapDownloadStrategy airGapDownloadStrategy;
+        private final String airGapBaseDir;
 
-        public SetupCallableImpl(JenkinsIntLogger logger, Map<String, String> environmentVariables, String remoteJdkHome, JenkinsConfigService jenkinsConfigService, AirGapDownloadStrategy airGapDownloadStrategy) {
+        public SetupCallableImpl(JenkinsIntLogger logger, Map<String, String> environmentVariables, String remoteJdkHome, String airGapBaseDir) {
             this.logger = logger;
             this.environmentVariables = environmentVariables;
             this.remoteJdkHome = remoteJdkHome;
-            this.jenkinsConfigService = jenkinsConfigService;
-            this.airGapDownloadStrategy = airGapDownloadStrategy;
+            this.airGapBaseDir = airGapBaseDir;
         }
 
         @Override
         public ArrayList<String> call() throws DetectJenkinsException {
-            String airGapJarPath = getOrDownloadAirGapJar();
+            String airGapJar = getAirGapJar(airGapBaseDir);
             RemoteJavaService remoteJavaService = new RemoteJavaService(logger, remoteJdkHome, environmentVariables);
             String javaExecutablePath = remoteJavaService.calculateJavaExecutablePath();
 
-            logger.info("Detect AirGap jar configured: " + airGapJarPath);
+            logger.info("Detect AirGap jar configured: " + airGapJar);
 
-            return new ArrayList<>(Arrays.asList(javaExecutablePath, "-jar", airGapJarPath));
-        }
-
-        private String getOrDownloadAirGapJar() throws DetectJenkinsException {
-            DetectAirGapInstallation airGapInstallation;
-            try {
-                String airGapInstallationName = airGapDownloadStrategy.getAirGapInstallationName();
-                airGapInstallation = jenkinsConfigService.getInstallationForNodeAndEnvironment(DetectAirGapInstallation.DescriptorImpl.class, airGapInstallationName).orElseThrow(
-                    () -> new DetectJenkinsException(
-                        String.format("Problem encountered getting Detect Air Gap tool with the name %s from global tool configuration. Check Jenkins plugin and tool configuration.", airGapInstallationName)));
-            } catch (IOException e) {
-                throw new DetectJenkinsException("Problem encountered while interacting with Jenkins environment. Check Jenkins and environment.", e);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                throw new DetectJenkinsException("Getting Detect Air Gap tool was interrupted. Check Jenkins and environment.", e);
-            }
-
-            String airGapBaseDir = airGapInstallation.getHome();
-
-            if (airGapBaseDir == null) {
-                throw new DetectJenkinsException("Detect AirGap installation directory is null. Check Jenkins tool configuration for installation directory.");
-            }
-
-            return getAirGapJar(airGapBaseDir);
+            return new ArrayList<>(Arrays.asList(javaExecutablePath, "-jar", airGapJar));
         }
 
         private String getAirGapJar(String airGapBaseDir) throws DetectJenkinsException {
