@@ -1,10 +1,10 @@
 package com.synopsys.integration.jenkins.detect;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -12,198 +12,172 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.Mock;
 import org.mockito.Mockito;
+import org.mockito.MockitoAnnotations;
 
-import com.synopsys.integration.blackduck.configuration.BlackDuckServerConfigBuilder;
-import com.synopsys.integration.builder.BuilderPropertyKey;
+import com.synopsys.integration.exception.IntegrationException;
 import com.synopsys.integration.jenkins.detect.extensions.AirGapDownloadStrategy;
 import com.synopsys.integration.jenkins.detect.extensions.DetectDownloadStrategy;
 import com.synopsys.integration.jenkins.detect.extensions.ScriptOrJarDownloadStrategy;
-import com.synopsys.integration.jenkins.detect.extensions.global.DetectGlobalConfig;
 import com.synopsys.integration.jenkins.detect.extensions.tool.DetectAirGapInstallation;
 import com.synopsys.integration.jenkins.detect.service.DetectArgumentService;
 import com.synopsys.integration.jenkins.detect.service.DetectEnvironmentService;
 import com.synopsys.integration.jenkins.detect.service.strategy.DetectAirGapJarStrategy;
+import com.synopsys.integration.jenkins.detect.service.strategy.DetectDownloadStrategyService;
+import com.synopsys.integration.jenkins.detect.service.strategy.DetectExecutionStrategyFactory;
 import com.synopsys.integration.jenkins.detect.service.strategy.DetectJarStrategy;
 import com.synopsys.integration.jenkins.detect.service.strategy.DetectScriptStrategy;
-import com.synopsys.integration.jenkins.detect.service.strategy.DetectStrategyService;
 import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
 import com.synopsys.integration.jenkins.service.JenkinsConfigService;
 import com.synopsys.integration.jenkins.service.JenkinsRemotingService;
 import com.synopsys.integration.jenkins.wrapper.JenkinsProxyHelper;
 import com.synopsys.integration.jenkins.wrapper.JenkinsVersionHelper;
 import com.synopsys.integration.jenkins.wrapper.SynopsysCredentialsHelper;
+import com.synopsys.integration.rest.proxy.ProxyInfo;
 import com.synopsys.integration.util.IntEnvironmentVariables;
 import com.synopsys.integration.util.OperatingSystemType;
 
+import hudson.model.TaskListener;
+
 public class DetectRunnerTest {
-    private static final String DETECT_PROPERTY_INPUT = "--detect.docker.passthrough.service.timeout=$BLACKDUCK_TIMEOUT --detect.cleanup=false --detect.project.name=\"Test Project'\"";
-    private static final String WORKSPACE_TMP_REL_PATH = "out/test/DetectPostBuildStepTest/testPerform/workspace@tmp";
-    private static final String JDK_HOME = "/tmp/jdk/bin/java";
-    private static final String DETECT_JAR_PATH = "/tmp/detect.jar";
-    private static final String DETECT_AIRGAP_JAR_PATH = "/tmp/airgap/detect.jar";
-    private static final String DETECT_SHELL_PATH = "/tmp/detect.sh";
-    private static final String DETECT_POWERSHELL_PATH = "/tmp/detect.ps1";
-    private static final String AIRGAP_TOOL_NAME = "AirGap_Tool";
-    private static final String AIRGAP_TOOL_PATH = "/air/gap/tool/path";
-    private static final AirGapDownloadStrategy AIRGAP_DOWNLOAD_STRATEGY = new AirGapDownloadStrategy();
-    private static final ScriptOrJarDownloadStrategy SCRIPTJAR_DOWNLOAD_STRATEGY = new ScriptOrJarDownloadStrategy();
+    private static final String DETECT_ARGUMENT_STRING = "--dummy.detect.argument";
+    private static final String DETECT_JAR_PATH = "/tmp/airgap/detect.jar";
+    private static final String REMOTE_JDK_HOME = "/remote/jdk/home";
 
-    @Test
-    public void testRunDetectJar() {
-        JenkinsRemotingService mockedRemotingService = getMockedRemotingService(OperatingSystemType.LINUX, DETECT_JAR_PATH);
-        HashMap<String, String> environment = new HashMap<>();
-        environment.put(DetectJenkinsEnvironmentVariable.USER_PROVIDED_JAR_PATH.stringValue(), DETECT_JAR_PATH);
+    private static final ArrayList<String> EXPECTED_CMDS_JAR = new ArrayList<>(Arrays.asList(REMOTE_JDK_HOME, "-jar", DETECT_JAR_PATH));
+    private static final ArrayList<String> EXPECTED_DETECT_CMDS_JAR = new ArrayList<>(
+        Arrays.asList(DETECT_ARGUMENT_STRING, "--logging.level.com.synopsys.integration=INFO", "--detect.phone.home.passthrough.jenkins.version=<unknown>", "--detect.phone.home.passthrough.jenkins.plugin.version=<unknown>"));
 
-        List<String> actualCommand = runDetectAndCaptureCommand(environment, mockedRemotingService, SCRIPTJAR_DOWNLOAD_STRATEGY);
+    private static final ArrayList<String> EXPECTED_SCRIPT_CMDS_WINDOWS = new ArrayList<>(Arrays.asList("powershell", "\"Import-Module C:\\power\\shell; detect\"", "C:\\power\\shell"));
+    private static final ArrayList<String> EXPECTED_DETECT_CMDS_WINDOWS = new ArrayList<>(
+        Arrays.asList(DETECT_ARGUMENT_STRING, "--logging.level.com.synopsys.integration`=INFO", "--detect.phone.home.passthrough.jenkins.version`=`<unknown`>", "--detect.phone.home.passthrough.jenkins.plugin.version`=`<unknown`>"));
 
-        int i = 0;
-        assertEquals(JDK_HOME, actualCommand.get(i++));
-        assertEquals("-jar", actualCommand.get(i++));
-        assertEquals(DETECT_JAR_PATH, actualCommand.get(i++));
-        assertEquals("--detect.docker.passthrough.service.timeout=120", actualCommand.get(i++));
-        assertEquals("--detect.cleanup=false", actualCommand.get(i++));
-        assertEquals("--detect.project.name=Test Project'", actualCommand.get(i++));
-        assertEquals("--logging.level.com.synopsys.integration=INFO", actualCommand.get(i++));
-        assertTrue(actualCommand.get(i++).startsWith("--detect.phone.home.passthrough.jenkins.version="));
-        assertTrue(actualCommand.get(i).startsWith("--detect.phone.home.passthrough.jenkins.plugin.version="));
+    private static final ArrayList<String> EXPECTED_SCRIPT_CMDS_LINUX = new ArrayList<>(Arrays.asList("bash", "/tmp/airgap/detect.sh"));
+    private static final ArrayList<String> EXPECTED_DETECT_CMDS_LINUX = new ArrayList<>(
+        Arrays.asList(DETECT_ARGUMENT_STRING, "--logging.level.com.synopsys.integration\\=INFO", "--detect.phone.home.passthrough.jenkins.version\\=\\<unknown\\>", "--detect.phone.home.passthrough.jenkins.plugin.version\\=\\<unknown\\>"));
+
+    private final JenkinsProxyHelper jenkinsProxyHelperMock = Mockito.mock(JenkinsProxyHelper.class);
+    private final JenkinsVersionHelper jenkinsVersionHelperMock = Mockito.mock(JenkinsVersionHelper.class);
+    private final SynopsysCredentialsHelper synopsysCredentialsHelperMock = Mockito.mock(SynopsysCredentialsHelper.class);
+    private final JenkinsRemotingService jenkinsRemotingServiceMock = Mockito.mock(JenkinsRemotingService.class);
+    private final DetectAirGapInstallation detectAirGapInstallationMock = Mockito.mock(DetectAirGapInstallation.class);
+
+    private static DetectRunner detectRunner;
+
+    @Mock
+    private JenkinsConfigService jenkinsConfigServiceMock;
+
+    @Captor
+    ArgumentCaptor<ArrayList<String>> cmdsArgCapture;
+
+    @BeforeEach
+    public void init() {
+        MockitoAnnotations.initMocks(this);
+    }
+
+    public static Stream<Object> shouldEscapeTestSource() {
+        String shouldEscapeKey = DetectJenkinsEnvironmentVariable.SHOULD_ESCAPE.stringValue();
+
+        return Stream.of(Arguments.of(Collections.singletonMap(shouldEscapeKey, "true")),
+            Arguments.of(Collections.singletonMap(shouldEscapeKey, "false")),
+            Arguments.of(Collections.singletonMap(shouldEscapeKey, "")),
+            Arguments.of(Collections.singletonMap(shouldEscapeKey, null)),
+            Arguments.of(new HashMap<>()));
+    }
+
+    private void requiredObjectSetup(Map<String, String> environmentVariables) {
+        TaskListener taskListener = Mockito.mock(TaskListener.class);
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        Mockito.when(taskListener.getLogger()).thenReturn(new PrintStream(byteArrayOutputStream));
+        JenkinsIntLogger logger = new JenkinsIntLogger(taskListener);
+
+        DetectEnvironmentService detectEnvironmentService = new DetectEnvironmentService(logger, jenkinsProxyHelperMock, jenkinsVersionHelperMock, synopsysCredentialsHelperMock, jenkinsConfigServiceMock, environmentVariables);
+        DetectDownloadStrategyService detectDownloadStrategyService = new DetectDownloadStrategyService(logger, jenkinsConfigServiceMock);
+        DetectArgumentService detectArgumentService = new DetectArgumentService(logger, jenkinsVersionHelperMock);
+        DetectExecutionStrategyFactory detectExecutionStrategyFactory = new DetectExecutionStrategyFactory(logger, jenkinsProxyHelperMock, "/remote/temp/workspace/path", jenkinsConfigServiceMock, jenkinsRemotingServiceMock,
+            detectArgumentService);
+        detectRunner = new DetectRunner(detectEnvironmentService, detectDownloadStrategyService, detectExecutionStrategyFactory);
+    }
+
+    private List<String> runDetectAndCaptureCommand(DetectDownloadStrategy detectDownloadStrategy) throws InterruptedException, IntegrationException, IOException {
+        detectRunner.runDetect(REMOTE_JDK_HOME, DETECT_ARGUMENT_STRING, detectDownloadStrategy);
+
+        //cmdsArgCapture = ArgumentCaptor.forClass(List.class);
+        ArgumentCaptor<IntEnvironmentVariables> detectEnvCapture = ArgumentCaptor.forClass(IntEnvironmentVariables.class);
+        Mockito.verify(jenkinsRemotingServiceMock).launch(detectEnvCapture.capture(), cmdsArgCapture.capture());
+        return cmdsArgCapture.getValue();
+    }
+
+    @ParameterizedTest
+    @MethodSource("shouldEscapeTestSource")
+    public void testRunDetectAirGapJar(Map<String, String> environmentVariables) throws IOException, InterruptedException, IntegrationException {
+        String airgapToolName = "DetectAirGapTool";
+        String airgapToolHome = "/tmp/airgap";
+
+        AirGapDownloadStrategy airGapDownloadStrategy = new AirGapDownloadStrategy();
+        AirGapDownloadStrategy spiedAirGapDownloadStrategy = Mockito.spy(airGapDownloadStrategy);
+
+        requiredObjectSetup(environmentVariables);
+
+        Mockito.when(spiedAirGapDownloadStrategy.getAirGapInstallationName()).thenReturn(airgapToolName);
+        Mockito.doReturn(Optional.of(detectAirGapInstallationMock)).when(jenkinsConfigServiceMock).getInstallationForNodeAndEnvironment(DetectAirGapInstallation.DescriptorImpl.class, airgapToolName);
+        Mockito.when(detectAirGapInstallationMock.getHome()).thenReturn(airgapToolHome);
+        Mockito.when(jenkinsRemotingServiceMock.call(Mockito.any(DetectAirGapJarStrategy.SetupCallableImpl.class))).thenReturn(EXPECTED_CMDS_JAR);
+
+        List<String> actualDetectCommand = runDetectAndCaptureCommand(spiedAirGapDownloadStrategy);
+        assertEquals(Stream.concat(EXPECTED_CMDS_JAR.stream(), EXPECTED_DETECT_CMDS_JAR.stream()).collect(Collectors.toList()), actualDetectCommand);
     }
 
     @Test
-    public void testRunDetectShell() {
-        JenkinsRemotingService mockedRemotingService = getMockedRemotingService(OperatingSystemType.LINUX, DETECT_SHELL_PATH);
-        HashMap<String, String> environment = new HashMap<>();
+    public void testRunDetectShellWindows() throws IOException, InterruptedException, IntegrationException {
+        ScriptOrJarDownloadStrategy scriptOrJarDownloadStrategy = new ScriptOrJarDownloadStrategy();
 
-        List<String> actualCommand = runDetectAndCaptureCommand(environment, mockedRemotingService, SCRIPTJAR_DOWNLOAD_STRATEGY);
+        requiredObjectSetup(new HashMap<>());
 
-        int i = 0;
-        assertEquals("bash", actualCommand.get(i++));
-        assertEquals(DETECT_SHELL_PATH, actualCommand.get(i++));
-        assertEquals("--detect.docker.passthrough.service.timeout\\=120", actualCommand.get(i++));
-        assertEquals("--detect.cleanup\\=false", actualCommand.get(i++));
-        assertEquals("--detect.project.name\\=Test\\ Project\\'", actualCommand.get(i++));
-        assertEquals("--logging.level.com.synopsys.integration\\=INFO", actualCommand.get(i++));
-        assertTrue(actualCommand.get(i++).startsWith("--detect.phone.home.passthrough.jenkins.version\\="));
-        assertTrue(actualCommand.get(i).startsWith("--detect.phone.home.passthrough.jenkins.plugin.version\\="));
+        Mockito.when(jenkinsRemotingServiceMock.getRemoteOperatingSystemType()).thenReturn(OperatingSystemType.WINDOWS);
+        Mockito.when(jenkinsProxyHelperMock.getProxyInfo(DetectScriptStrategy.LATEST_POWERSHELL_SCRIPT_URL)).thenReturn(ProxyInfo.NO_PROXY_INFO);
+        Mockito.when(jenkinsRemotingServiceMock.call(Mockito.any(DetectScriptStrategy.SetupCallableImpl.class))).thenReturn(EXPECTED_SCRIPT_CMDS_WINDOWS);
+
+        List<String> actualDetectCommand = runDetectAndCaptureCommand(scriptOrJarDownloadStrategy);
+        assertEquals(Stream.concat(EXPECTED_SCRIPT_CMDS_WINDOWS.stream(), EXPECTED_DETECT_CMDS_WINDOWS.stream()).collect(Collectors.toList()), actualDetectCommand);
     }
 
     @Test
-    public void testRunDetectPowerShell() {
-        JenkinsRemotingService mockedRemotingService = getMockedRemotingService(OperatingSystemType.WINDOWS, DETECT_POWERSHELL_PATH);
-        HashMap<String, String> environment = new HashMap<>();
+    public void testRunDetectShellUnix() throws IOException, InterruptedException, IntegrationException {
+        ScriptOrJarDownloadStrategy scriptOrJarDownloadStrategy = new ScriptOrJarDownloadStrategy();
 
-        List<String> actualCommand = runDetectAndCaptureCommand(environment, mockedRemotingService, SCRIPTJAR_DOWNLOAD_STRATEGY);
+        requiredObjectSetup(new HashMap<>());
 
-        int i = 0;
-        assertEquals("powershell", actualCommand.get(i++));
-        assertEquals("\"Import-Module '" + DETECT_POWERSHELL_PATH + "'; detect\"", actualCommand.get(i++));
-        assertEquals("--detect.docker.passthrough.service.timeout`=120", actualCommand.get(i++));
-        assertEquals("--detect.cleanup`=false", actualCommand.get(i++));
-        assertEquals("--detect.project.name`=Test` Project`'", actualCommand.get(i++));
-        assertEquals("--logging.level.com.synopsys.integration`=INFO", actualCommand.get(i++));
-        assertTrue(actualCommand.get(i++).startsWith("--detect.phone.home.passthrough.jenkins.version`="));
-        assertTrue(actualCommand.get(i).startsWith("--detect.phone.home.passthrough.jenkins.plugin.version`="));
+        Mockito.when(jenkinsRemotingServiceMock.getRemoteOperatingSystemType()).thenReturn(OperatingSystemType.LINUX);
+        Mockito.when(jenkinsProxyHelperMock.getProxyInfo(DetectScriptStrategy.LATEST_SHELL_SCRIPT_URL)).thenReturn(ProxyInfo.NO_PROXY_INFO);
+        Mockito.when(jenkinsRemotingServiceMock.call(Mockito.any(DetectScriptStrategy.SetupCallableImpl.class))).thenReturn(EXPECTED_SCRIPT_CMDS_LINUX);
+
+        List<String> actualDetectCommand = runDetectAndCaptureCommand(scriptOrJarDownloadStrategy);
+        assertEquals(Stream.concat(EXPECTED_SCRIPT_CMDS_LINUX.stream(), EXPECTED_DETECT_CMDS_LINUX.stream()).collect(Collectors.toList()), actualDetectCommand);
     }
 
     @Test
-    public void testRunDetectAirGapJar() {
-        JenkinsRemotingService mockedRemotingService = getMockedRemotingService(OperatingSystemType.LINUX, DETECT_SHELL_PATH);
-        HashMap<String, String> environment = new HashMap<>();
+    public void testRunDetectJarUnix() throws IOException, InterruptedException, IntegrationException {
+        ScriptOrJarDownloadStrategy scriptOrJarDownloadStrategy = new ScriptOrJarDownloadStrategy();
 
-        AirGapDownloadStrategy airGapDownloadStrategySpy = Mockito.spy(AIRGAP_DOWNLOAD_STRATEGY);
-        Mockito.when(airGapDownloadStrategySpy.getAirGapInstallationName()).thenReturn(AIRGAP_TOOL_NAME);
-        List<String> actualCommand = runDetectAndCaptureCommand(environment, mockedRemotingService, airGapDownloadStrategySpy);
+        requiredObjectSetup(Collections.singletonMap(DetectJenkinsEnvironmentVariable.USER_PROVIDED_JAR_PATH.stringValue(), DETECT_JAR_PATH));
 
-        int i = 0;
-        assertEquals(JDK_HOME, actualCommand.get(i++));
-        assertEquals("-jar", actualCommand.get(i++));
-        assertEquals(DETECT_AIRGAP_JAR_PATH, actualCommand.get(i++));
-        assertEquals("--detect.docker.passthrough.service.timeout=120", actualCommand.get(i++));
-        assertEquals("--detect.cleanup=false", actualCommand.get(i++));
-        assertEquals("--detect.project.name=Test Project'", actualCommand.get(i++));
-        assertEquals("--logging.level.com.synopsys.integration=INFO", actualCommand.get(i++));
-        assertTrue(actualCommand.get(i++).startsWith("--detect.phone.home.passthrough.jenkins.version="));
-        assertTrue(actualCommand.get(i).startsWith("--detect.phone.home.passthrough.jenkins.plugin.version="));
-    }
+        Mockito.when(jenkinsRemotingServiceMock.getRemoteOperatingSystemType()).thenReturn(OperatingSystemType.LINUX);
+        Mockito.when(jenkinsProxyHelperMock.getProxyInfo(DetectScriptStrategy.LATEST_SHELL_SCRIPT_URL)).thenReturn(ProxyInfo.NO_PROXY_INFO);
+        Mockito.when(jenkinsRemotingServiceMock.call(Mockito.any(DetectJarStrategy.SetupCallableImpl.class))).thenReturn(EXPECTED_DETECT_CMDS_JAR);
 
-    private JenkinsRemotingService getMockedRemotingService(OperatingSystemType operatingSystemType, String detectPath) {
-        JenkinsRemotingService mockedRemotingService = Mockito.mock(JenkinsRemotingService.class);
-
-        try {
-            Mockito.when(mockedRemotingService.call(Mockito.any(DetectJarStrategy.SetupCallableImpl.class))).thenReturn(new ArrayList<>(Arrays.asList(JDK_HOME, "-jar", detectPath)));
-            Mockito.when(mockedRemotingService.call(Mockito.any(DetectAirGapJarStrategy.SetupCallableImpl.class))).thenReturn(new ArrayList<>(Arrays.asList(JDK_HOME, "-jar", DETECT_AIRGAP_JAR_PATH)));
-
-            if (operatingSystemType == OperatingSystemType.WINDOWS) {
-                Mockito.when(mockedRemotingService.call(Mockito.any(DetectScriptStrategy.SetupCallableImpl.class))).thenReturn(new ArrayList<>(Arrays.asList("powershell", String.format("\"Import-Module '%s'; detect\"", detectPath))));
-            } else {
-                Mockito.when(mockedRemotingService.call(Mockito.any(DetectScriptStrategy.SetupCallableImpl.class))).thenReturn(new ArrayList<>(Arrays.asList("bash", detectPath)));
-            }
-
-            Mockito.when(mockedRemotingService.getRemoteOperatingSystemType()).thenReturn(operatingSystemType);
-            Mockito.when(mockedRemotingService.launch(Mockito.any(), Mockito.any())).thenReturn(0);
-        } catch (Exception e) {
-            fail("Could not mock JenkinsRemotingService due to an unexpected exception. The test code likely requires fixing: ", e);
-        }
-
-        return mockedRemotingService;
-    }
-
-    private List<String> runDetectAndCaptureCommand(Map<String, String> environmentVariables, JenkinsRemotingService mockedRemotingService, DetectDownloadStrategy detectDownloadStrategy) {
-        try {
-            JenkinsIntLogger jenkinsIntLogger = new JenkinsIntLogger(null);
-            Map<BuilderPropertyKey, String> builderEnvironmentVariables = new HashMap<>();
-            builderEnvironmentVariables.put(BlackDuckServerConfigBuilder.TIMEOUT_KEY, "120");
-
-            BlackDuckServerConfigBuilder blackDuckServerConfigBuilder = Mockito.mock(BlackDuckServerConfigBuilder.class);
-            Mockito.when(blackDuckServerConfigBuilder.getProperties()).thenReturn(builderEnvironmentVariables);
-
-            DetectGlobalConfig detectGlobalConfig = Mockito.mock(DetectGlobalConfig.class);
-            Mockito.when(detectGlobalConfig.getBlackDuckServerConfigBuilder(Mockito.any(), Mockito.any())).thenReturn(blackDuckServerConfigBuilder);
-
-            JenkinsConfigService jenkinsConfigService = Mockito.mock(JenkinsConfigService.class);
-            Mockito.when(jenkinsConfigService.getGlobalConfiguration(DetectGlobalConfig.class)).thenReturn(Optional.of(detectGlobalConfig));
-
-            // Mocks specific to AirGap
-            DetectAirGapInstallation detectAirGapInstallationMock = Mockito.mock(DetectAirGapInstallation.class);
-            Mockito.when(jenkinsConfigService.getInstallationForNodeAndEnvironment(DetectAirGapInstallation.DescriptorImpl.class, AIRGAP_TOOL_NAME)).thenReturn(Optional.ofNullable(detectAirGapInstallationMock));
-            Mockito.doReturn(AIRGAP_TOOL_PATH).when(detectAirGapInstallationMock).getHome();
-
-            JenkinsVersionHelper mockedVersionHelper = Mockito.mock(JenkinsVersionHelper.class);
-
-            SynopsysCredentialsHelper mockedCredentialsHelper = Mockito.mock(SynopsysCredentialsHelper.class);
-
-            JenkinsProxyHelper blankProxyHelper = new JenkinsProxyHelper();
-
-            DetectEnvironmentService detectEnvironmentService = new DetectEnvironmentService(jenkinsIntLogger, blankProxyHelper, mockedVersionHelper, mockedCredentialsHelper, jenkinsConfigService, environmentVariables);
-            DetectArgumentService detectArgumentService = new DetectArgumentService(jenkinsIntLogger, mockedVersionHelper);
-            DetectStrategyService detectStrategyService = new DetectStrategyService(jenkinsIntLogger, blankProxyHelper, WORKSPACE_TMP_REL_PATH, jenkinsConfigService);
-
-            DetectRunner detectRunner = new DetectRunner(detectEnvironmentService, mockedRemotingService, detectStrategyService, detectArgumentService);
-
-            // run the method we're testing
-            detectRunner.runDetect(null, DETECT_PROPERTY_INPUT, detectDownloadStrategy);
-
-            // get the Detect command line that was constructed to return to calling test for validation
-            ArgumentCaptor<List<String>> cmdsArgCapture = ArgumentCaptor.forClass(List.class);
-            ArgumentCaptor<IntEnvironmentVariables> detectEnvCapture = ArgumentCaptor.forClass(IntEnvironmentVariables.class);
-            Mockito.verify(mockedRemotingService).launch(detectEnvCapture.capture(), cmdsArgCapture.capture());
-
-            // verify that the system env is NOT inherited
-            // TODO: Verification is needed to check that the system env is not being inherited. A new test should be put in place,
-            //       which will only be run if System.getenv().size > 0. In order to do this, detectRunner.runDetect() needs to be
-            //       run, which currently requires the setup above. Long term, the tests here should be redesigned so that we aren't
-            //       performing all of the mocking. Until then, perform the assert below against all System.getenv() entries.
-            System.getenv().forEach((key, value) ->
-                                        assertNotEquals(value, detectEnvCapture.getValue().getValue(value))
-            );
-
-            return cmdsArgCapture.getValue();
-        } catch (Throwable t) {
-            fail("An unexpected exception was thrown by the test code: ", t);
-        }
-        return Collections.emptyList();
+        List<String> actualDetectCommand = runDetectAndCaptureCommand(scriptOrJarDownloadStrategy);
+        assertEquals(Stream.concat(EXPECTED_DETECT_CMDS_JAR.stream(), EXPECTED_DETECT_CMDS_JAR.stream()).collect(Collectors.toList()), actualDetectCommand);
     }
 }

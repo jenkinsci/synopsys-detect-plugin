@@ -24,14 +24,45 @@ package com.synopsys.integration.jenkins.detect.service.strategy;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Function;
 
 import com.synopsys.integration.exception.IntegrationException;
+import com.synopsys.integration.jenkins.detect.DetectJenkinsEnvironmentVariable;
+import com.synopsys.integration.jenkins.detect.service.DetectArgumentService;
+import com.synopsys.integration.jenkins.service.JenkinsRemotingService;
+import com.synopsys.integration.util.IntEnvironmentVariables;
 
 import jenkins.security.MasterToSlaveCallable;
 
 public abstract class DetectExecutionStrategy {
-    public abstract MasterToSlaveCallable<ArrayList<String>, IntegrationException> getSetupCallable() throws IntegrationException, IOException, InterruptedException;
+    protected final IntEnvironmentVariables intEnvironmentVariables;
 
-    public abstract Function<String, String> getArgumentEscaper();
+    private final JenkinsRemotingService jenkinsRemotingService;
+    private final DetectArgumentService detectArgumentService;
+
+    public DetectExecutionStrategy(JenkinsRemotingService jenkinsRemotingService, DetectArgumentService detectArgumentService, IntEnvironmentVariables intEnvironmentVariables) {
+        this.jenkinsRemotingService = jenkinsRemotingService;
+        this.detectArgumentService = detectArgumentService;
+        this.intEnvironmentVariables = intEnvironmentVariables;
+    }
+
+    protected abstract MasterToSlaveCallable<ArrayList<String>, IntegrationException> getSetupCallable() throws IntegrationException, IOException, InterruptedException;
+
+    protected abstract Function<String, String> getArgumentEscaper();
+
+    public int runStrategy(String detectArgumentString) throws InterruptedException, IntegrationException, IOException {
+        MasterToSlaveCallable<ArrayList<String>, IntegrationException> setupCallable = getSetupCallable();
+        ArrayList<String> detectCommands = jenkinsRemotingService.call(setupCallable);
+
+        Function<String, String> argumentEscaper = getArgumentEscaper();
+        boolean shouldEscape = Boolean.parseBoolean(intEnvironmentVariables.getValue(DetectJenkinsEnvironmentVariable.SHOULD_ESCAPE.stringValue(), "true"));
+        if (!shouldEscape) {
+            argumentEscaper = Function.identity();
+        }
+
+        List<String> detectArguments = detectArgumentService.getDetectArguments(intEnvironmentVariables, argumentEscaper, detectCommands, detectArgumentString);
+
+        return jenkinsRemotingService.launch(intEnvironmentVariables, detectArguments);
+    }
 }

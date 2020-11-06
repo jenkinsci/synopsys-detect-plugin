@@ -32,7 +32,9 @@ import java.util.function.Function;
 import com.synopsys.integration.IntegrationEscapeUtils;
 import com.synopsys.integration.exception.IntegrationException;
 import com.synopsys.integration.jenkins.detect.exception.DetectJenkinsException;
+import com.synopsys.integration.jenkins.detect.service.DetectArgumentService;
 import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
+import com.synopsys.integration.jenkins.service.JenkinsRemotingService;
 import com.synopsys.integration.jenkins.wrapper.JenkinsProxyHelper;
 import com.synopsys.integration.rest.HttpUrl;
 import com.synopsys.integration.rest.client.IntHttpClient;
@@ -42,6 +44,7 @@ import com.synopsys.integration.rest.proxy.ProxyInfo;
 import com.synopsys.integration.rest.proxy.ProxyInfoBuilder;
 import com.synopsys.integration.rest.request.Request;
 import com.synopsys.integration.rest.response.Response;
+import com.synopsys.integration.util.IntEnvironmentVariables;
 import com.synopsys.integration.util.OperatingSystemType;
 
 import jenkins.security.MasterToSlaveCallable;
@@ -58,7 +61,9 @@ public class DetectScriptStrategy extends DetectExecutionStrategy {
     private final JenkinsProxyHelper jenkinsProxyHelper;
     private final String toolsDirectory;
 
-    public DetectScriptStrategy(JenkinsIntLogger logger, JenkinsProxyHelper jenkinsProxyHelper, OperatingSystemType operatingSystemType, String toolsDirectory) {
+    public DetectScriptStrategy(JenkinsRemotingService jenkinsRemotingService, DetectArgumentService detectArgumentService, IntEnvironmentVariables intEnvironmentVariables, JenkinsIntLogger logger, JenkinsProxyHelper jenkinsProxyHelper,
+        OperatingSystemType operatingSystemType, String toolsDirectory) {
+        super(jenkinsRemotingService, detectArgumentService, intEnvironmentVariables);
         this.logger = logger;
         this.jenkinsProxyHelper = jenkinsProxyHelper;
         this.operatingSystemType = operatingSystemType;

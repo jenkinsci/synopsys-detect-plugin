@@ -32,7 +32,6 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tools.ant.types.Commandline;
 
-import com.synopsys.integration.jenkins.detect.DetectJenkinsEnvironmentVariable;
 import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
 import com.synopsys.integration.jenkins.wrapper.JenkinsVersionHelper;
 import com.synopsys.integration.phonehome.request.PhoneHomeRequestBody;
@@ -52,15 +51,7 @@ public class DetectArgumentService {
         this.jenkinsVersionHelper = jenkinsVersionHelper;
     }
 
-    public List<String> getDetectArguments(IntEnvironmentVariables intEnvironmentVariables, Function<String, String> strategyEscaper, List<String> initialArguments, String detectArgumentString) {
-        boolean shouldEscape = Boolean.parseBoolean(intEnvironmentVariables.getValue(DetectJenkinsEnvironmentVariable.SHOULD_ESCAPE.stringValue(), "true"));
-        Function<String, String> argumentEscaper;
-        if (shouldEscape) {
-            argumentEscaper = strategyEscaper;
-        } else {
-            argumentEscaper = Function.identity();
-        }
-
+    public List<String> getDetectArguments(IntEnvironmentVariables intEnvironmentVariables, Function<String, String> argumentEscaper, List<String> initialArguments, String detectArgumentString) {
         List<String> userProvidedArguments = parseDetectArgumentString(intEnvironmentVariables.getVariables(), argumentEscaper, detectArgumentString);
 
         List<String> additionalArguments = new ArrayList<>();

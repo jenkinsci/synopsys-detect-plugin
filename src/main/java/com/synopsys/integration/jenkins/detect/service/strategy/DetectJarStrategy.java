@@ -28,7 +28,9 @@ import java.util.Map;
 import java.util.function.Function;
 
 import com.synopsys.integration.exception.IntegrationException;
+import com.synopsys.integration.jenkins.detect.service.DetectArgumentService;
 import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
+import com.synopsys.integration.jenkins.service.JenkinsRemotingService;
 import com.synopsys.integration.util.IntEnvironmentVariables;
 
 import jenkins.security.MasterToSlaveCallable;
@@ -36,12 +38,11 @@ import jenkins.security.MasterToSlaveCallable;
 public class DetectJarStrategy extends DetectExecutionStrategy {
     private final JenkinsIntLogger logger;
     private final String detectJarPath;
-    private final IntEnvironmentVariables intEnvironmentVariables;
     private final String remoteJdkHome;
 
-    public DetectJarStrategy(JenkinsIntLogger logger, IntEnvironmentVariables intEnvironmentVariables, String remoteJdkHome, String detectJarPath) {
+    public DetectJarStrategy(JenkinsRemotingService jenkinsRemotingService, DetectArgumentService detectArgumentService, IntEnvironmentVariables intEnvironmentVariables, JenkinsIntLogger logger, String remoteJdkHome, String detectJarPath) {
+        super(jenkinsRemotingService, detectArgumentService, intEnvironmentVariables);
         this.logger = logger;
-        this.intEnvironmentVariables = intEnvironmentVariables;
         this.remoteJdkHome = remoteJdkHome;
         this.detectJarPath = detectJarPath;
     }

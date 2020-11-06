@@ -34,8 +34,10 @@ import com.synopsys.integration.exception.IntegrationException;
 import com.synopsys.integration.jenkins.detect.exception.DetectJenkinsException;
 import com.synopsys.integration.jenkins.detect.extensions.AirGapDownloadStrategy;
 import com.synopsys.integration.jenkins.detect.extensions.tool.DetectAirGapInstallation;
+import com.synopsys.integration.jenkins.detect.service.DetectArgumentService;
 import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
 import com.synopsys.integration.jenkins.service.JenkinsConfigService;
+import com.synopsys.integration.jenkins.service.JenkinsRemotingService;
 import com.synopsys.integration.util.IntEnvironmentVariables;
 
 import jenkins.security.MasterToSlaveCallable;
@@ -45,21 +47,21 @@ public class DetectAirGapJarStrategy extends DetectExecutionStrategy {
     public static final String DETECT_JAR_SUFFIX = ".jar";
 
     private final JenkinsIntLogger logger;
-    private final IntEnvironmentVariables intEnvironmentVariables;
     private final String remoteJdkHome;
     private final JenkinsConfigService jenkinsConfigService;
     private final AirGapDownloadStrategy airGapDownloadStrategy;
 
-    public DetectAirGapJarStrategy(JenkinsIntLogger logger, IntEnvironmentVariables intEnvironmentVariables, String remoteJdkHome, JenkinsConfigService jenkinsConfigService, AirGapDownloadStrategy airGapDownloadStrategy) {
+    public DetectAirGapJarStrategy(JenkinsRemotingService jenkinsRemotingService, DetectArgumentService detectArgumentService, IntEnvironmentVariables intEnvironmentVariables, JenkinsIntLogger logger, String remoteJdkHome,
+        JenkinsConfigService jenkinsConfigService, AirGapDownloadStrategy airGapDownloadStrategy) {
+        super(jenkinsRemotingService, detectArgumentService, intEnvironmentVariables);
         this.logger = logger;
-        this.intEnvironmentVariables = intEnvironmentVariables;
         this.remoteJdkHome = remoteJdkHome;
         this.jenkinsConfigService = jenkinsConfigService;
         this.airGapDownloadStrategy = airGapDownloadStrategy;
     }
 
     @Override
-    public Function<String, String> getArgumentEscaper() {
+    protected Function<String, String> getArgumentEscaper() {
         return Function.identity();
     }
 
@@ -81,7 +83,7 @@ public class DetectAirGapJarStrategy extends DetectExecutionStrategy {
     }
 
     @Override
-    public MasterToSlaveCallable<ArrayList<String>, IntegrationException> getSetupCallable() throws DetectJenkinsException {
+    protected MasterToSlaveCallable<ArrayList<String>, IntegrationException> getSetupCallable() throws DetectJenkinsException {
         String airGapBaseDir = getOrDownloadAirGapJar();
 
         if (airGapBaseDir == null) {

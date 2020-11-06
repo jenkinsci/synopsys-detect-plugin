@@ -12,25 +12,35 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import com.synopsys.integration.exception.IntegrationException;
+import com.synopsys.integration.jenkins.detect.service.DetectArgumentService;
 import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
+import com.synopsys.integration.jenkins.service.JenkinsRemotingService;
 import com.synopsys.integration.jenkins.wrapper.JenkinsProxyHelper;
+import com.synopsys.integration.jenkins.wrapper.JenkinsVersionHelper;
 import com.synopsys.integration.util.OperatingSystemType;
 
 import hudson.model.TaskListener;
 
 public class DetectScriptStrategyTest {
     private final String unescapedSpecialCharacters = "|&;<>()$`\\\"' \t\r\n\n*?[#~=%,";
-    private JenkinsIntLogger defaultLogger;
-    private JenkinsProxyHelper defaultProxyHelper;
+    private JenkinsIntLogger logger;
+    private JenkinsProxyHelper defaultProxyHelper = new JenkinsProxyHelper();
     private ByteArrayOutputStream logs;
 
+    private DetectArgumentService detectArgumentService;
+
+    private JenkinsRemotingService jenkinsRemotingServiceMock = Mockito.mock(JenkinsRemotingService.class);
+    private JenkinsVersionHelper jenkinsVersionHelperMock = Mockito.mock(JenkinsVersionHelper.class);
+
     @BeforeEach
-    public void setUpMocks() {
+    public void setup() {
         logs = new ByteArrayOutputStream();
         TaskListener mockedTaskListener = Mockito.mock(TaskListener.class);
         Mockito.when(mockedTaskListener.getLogger()).thenReturn(new PrintStream(logs));
-        defaultLogger = new JenkinsIntLogger(mockedTaskListener);
-        defaultProxyHelper = new JenkinsProxyHelper();
+        logger = new JenkinsIntLogger(mockedTaskListener);
+
+        detectArgumentService = new DetectArgumentService(logger, jenkinsVersionHelperMock);
+
     }
 
     @Test
@@ -39,7 +49,7 @@ public class DetectScriptStrategyTest {
 
         JenkinsProxyHelper mockedProxyHelper = Mockito.mock(JenkinsProxyHelper.class);
         Mockito.when(mockedProxyHelper.getProxyInfo(Mockito.anyString())).thenThrow(new IllegalArgumentException(expectedExceptionMessage));
-        DetectScriptStrategy detectScriptStrategy = new DetectScriptStrategy(defaultLogger, mockedProxyHelper, OperatingSystemType.LINUX, null);
+        DetectScriptStrategy detectScriptStrategy = new DetectScriptStrategy(jenkinsRemotingServiceMock, detectArgumentService, null, logger, mockedProxyHelper, OperatingSystemType.LINUX, null);
 
         try {
             detectScriptStrategy.getSetupCallable();
@@ -52,9 +62,8 @@ public class DetectScriptStrategyTest {
 
     @Test
     public void testArgumentEscaperLinux() {
-        DetectScriptStrategy detectScriptStrategy = new DetectScriptStrategy(defaultLogger, defaultProxyHelper, OperatingSystemType.LINUX, null);
+        DetectScriptStrategy detectScriptStrategy = new DetectScriptStrategy(jenkinsRemotingServiceMock, detectArgumentService, null, logger, defaultProxyHelper, OperatingSystemType.LINUX, null);
         String expectedEscapedString = "\\|\\&\\;\\<\\>\\(\\)\\$\\`\\\\\\\"\\'\\ \\\t\\*\\?\\[\\#\\~\\=\\%,";
-
         String escapedString = detectScriptStrategy.getArgumentEscaper().apply(unescapedSpecialCharacters);
 
         assertEquals(escapedString, expectedEscapedString);
@@ -62,9 +71,8 @@ public class DetectScriptStrategyTest {
 
     @Test
     public void testArgumentEscaperMac() {
-        DetectScriptStrategy detectScriptStrategy = new DetectScriptStrategy(defaultLogger, defaultProxyHelper, OperatingSystemType.MAC, null);
+        DetectScriptStrategy detectScriptStrategy = new DetectScriptStrategy(jenkinsRemotingServiceMock, detectArgumentService, null, logger, defaultProxyHelper, OperatingSystemType.MAC, null);
         String expectedEscapedString = "\\|\\&\\;\\<\\>\\(\\)\\$\\`\\\\\\\"\\'\\ \\\t\\*\\?\\[\\#\\~\\=\\%,";
-
         String escapedString = detectScriptStrategy.getArgumentEscaper().apply(unescapedSpecialCharacters);
 
         assertEquals(escapedString, expectedEscapedString);
@@ -72,9 +80,8 @@ public class DetectScriptStrategyTest {
 
     @Test
     public void testArgumentEscaperWindows() {
-        DetectScriptStrategy detectScriptStrategy = new DetectScriptStrategy(defaultLogger, defaultProxyHelper, OperatingSystemType.WINDOWS, null);
+        DetectScriptStrategy detectScriptStrategy = new DetectScriptStrategy(jenkinsRemotingServiceMock, detectArgumentService, null, logger, defaultProxyHelper, OperatingSystemType.WINDOWS, null);
         String expectedEscapedString = "`|`&`;`<`>`(`)`$```\\`\"`'` `\t`*`?`[`#`~`=`%`,";
-
         String escapedString = detectScriptStrategy.getArgumentEscaper().apply(unescapedSpecialCharacters);
 
         assertEquals(expectedEscapedString, escapedString);

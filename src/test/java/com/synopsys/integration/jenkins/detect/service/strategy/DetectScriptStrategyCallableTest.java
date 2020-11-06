@@ -23,24 +23,31 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import com.synopsys.integration.exception.IntegrationException;
+import com.synopsys.integration.jenkins.detect.service.DetectArgumentService;
 import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
+import com.synopsys.integration.jenkins.service.JenkinsRemotingService;
 import com.synopsys.integration.jenkins.wrapper.JenkinsProxyHelper;
+import com.synopsys.integration.jenkins.wrapper.JenkinsVersionHelper;
+import com.synopsys.integration.util.IntEnvironmentVariables;
 import com.synopsys.integration.util.OperatingSystemType;
 
 import hudson.model.TaskListener;
 
 public class DetectScriptStrategyCallableTest {
-    private JenkinsIntLogger defaultLogger;
+    private JenkinsIntLogger logger;
     private JenkinsProxyHelper defaultProxyHelper;
     private ByteArrayOutputStream logs;
     private String toolsDirectoryPath;
+    private JenkinsRemotingService jenkinsRemotingServiceMock;
+    private IntEnvironmentVariables intEnvironmentVariables;
+    private DetectArgumentService detectArgumentService;
 
     @BeforeEach
     public void setUp() {
         logs = new ByteArrayOutputStream();
         TaskListener mockedTaskListener = Mockito.mock(TaskListener.class);
         Mockito.when(mockedTaskListener.getLogger()).thenReturn(new PrintStream(logs));
-        defaultLogger = new JenkinsIntLogger(mockedTaskListener);
+        logger = new JenkinsIntLogger(mockedTaskListener);
         defaultProxyHelper = new JenkinsProxyHelper();
 
         try {
@@ -50,6 +57,11 @@ public class DetectScriptStrategyCallableTest {
         } catch (IOException e) {
             assumeTrue(false, "Skipping test, could not create temporary directory: " + e.getMessage());
         }
+
+        JenkinsVersionHelper jenkinsVersionHelperMock = Mockito.mock(JenkinsVersionHelper.class);
+        detectArgumentService = new DetectArgumentService(logger, jenkinsVersionHelperMock);
+        jenkinsRemotingServiceMock = Mockito.mock(JenkinsRemotingService.class);
+        intEnvironmentVariables = IntEnvironmentVariables.empty();
     }
 
     @AfterEach
@@ -76,7 +88,8 @@ public class DetectScriptStrategyCallableTest {
         assumeTrue(new File(toolsDirectoryPath).setReadOnly(), "Skipping test because we can't modify file permissions.");
         assumeFalse(new File(toolsDirectoryPath).canWrite(), "Skipping as test can still write. Possibly running as root.");
 
-        DetectScriptStrategy detectScriptStrategy = new DetectScriptStrategy(defaultLogger, defaultProxyHelper, OperatingSystemType.determineFromSystem(), toolsDirectoryPath);
+        DetectScriptStrategy detectScriptStrategy = new DetectScriptStrategy(jenkinsRemotingServiceMock, detectArgumentService, intEnvironmentVariables, logger, defaultProxyHelper, OperatingSystemType.determineFromSystem(),
+            toolsDirectoryPath);
 
         try {
             assertThrows(IntegrationException.class, detectScriptStrategy.getSetupCallable()::call);
@@ -96,7 +109,8 @@ public class DetectScriptStrategyCallableTest {
         }
 
         try {
-            DetectScriptStrategy detectScriptStrategy = new DetectScriptStrategy(defaultLogger, defaultProxyHelper, OperatingSystemType.determineFromSystem(), toolsDirectoryPath);
+            DetectScriptStrategy detectScriptStrategy = new DetectScriptStrategy(jenkinsRemotingServiceMock, detectArgumentService, intEnvironmentVariables, logger, defaultProxyHelper, OperatingSystemType.determineFromSystem(),
+                toolsDirectoryPath);
             detectScriptStrategy.getSetupCallable().call();
 
             assertTrue(logs.toString().contains("Running already installed Detect script"), "Expected a message about running an existing Detect script but found none.");
@@ -109,7 +123,7 @@ public class DetectScriptStrategyCallableTest {
         try {
             String expectedScriptPath = new File(toolsDirectoryPath, DetectScriptStrategy.DETECT_INSTALL_DIRECTORY).getPath();
 
-            DetectScriptStrategy detectScriptStrategy = new DetectScriptStrategy(defaultLogger, defaultProxyHelper, operatingSystemType, toolsDirectoryPath);
+            DetectScriptStrategy detectScriptStrategy = new DetectScriptStrategy(jenkinsRemotingServiceMock, detectArgumentService, intEnvironmentVariables, logger, defaultProxyHelper, operatingSystemType, toolsDirectoryPath);
             ArrayList<String> scriptStrategyArgs = detectScriptStrategy.getSetupCallable().call();
             String remoteScriptPath = scriptStrategyArgs.get(scriptStrategyArgs.size() - 1);
             File remoteScriptFile = new File(remoteScriptPath);

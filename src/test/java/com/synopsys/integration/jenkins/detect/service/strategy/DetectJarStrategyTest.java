@@ -21,7 +21,10 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 
 import com.synopsys.integration.exception.IntegrationException;
+import com.synopsys.integration.jenkins.detect.service.DetectArgumentService;
 import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
+import com.synopsys.integration.jenkins.service.JenkinsRemotingService;
+import com.synopsys.integration.jenkins.wrapper.JenkinsVersionHelper;
 import com.synopsys.integration.log.LogLevel;
 import com.synopsys.integration.util.IntEnvironmentVariables;
 
@@ -34,9 +37,13 @@ public class DetectJarStrategyTest {
     private static final String expectedJdkJavaPath = remoteJdkHome + "/bin/java";
     private static final String expectedPath = "/test/path/env";
 
+    private JenkinsRemotingService jenkinsRemotingServiceMock = Mockito.mock(JenkinsRemotingService.class);
+    private JenkinsVersionHelper jenkinsVersionHelperMock = Mockito.mock(JenkinsVersionHelper.class);
+
     private IntEnvironmentVariables environmentVariables;
     private JenkinsIntLogger logger;
     private ByteArrayOutputStream byteArrayOutputStream;
+    private DetectArgumentService detectArgumentService;
 
     public static Stream<Arguments> testSetupCallableJavaHomeSource() {
         return Stream.of(Arguments.of(" ", System.getProperty("user.dir") + "/ /bin/java"),
@@ -55,11 +62,13 @@ public class DetectJarStrategyTest {
         Mockito.when(taskListener.getLogger()).thenReturn(new PrintStream(byteArrayOutputStream));
 
         logger = new JenkinsIntLogger(taskListener);
+
+        detectArgumentService = new DetectArgumentService(logger, jenkinsVersionHelperMock);
     }
 
     @Test
     public void testArgumentEscaper() {
-        DetectJarStrategy detectJarStrategy = new DetectJarStrategy(logger, environmentVariables, remoteJdkHome, detectJarPath);
+        DetectJarStrategy detectJarStrategy = new DetectJarStrategy(jenkinsRemotingServiceMock, detectArgumentService, environmentVariables, logger, remoteJdkHome, detectJarPath);
         assertEquals(Function.identity(), detectJarStrategy.getArgumentEscaper());
     }
 
@@ -125,7 +134,7 @@ public class DetectJarStrategyTest {
 
     private void executeAndValidateSetupCallable(String javaHomeInput, String expectedJavaPath) {
         try {
-            DetectJarStrategy detectJarStrategy = new DetectJarStrategy(logger, environmentVariables, javaHomeInput, detectJarPath);
+            DetectJarStrategy detectJarStrategy = new DetectJarStrategy(jenkinsRemotingServiceMock, detectArgumentService, environmentVariables, logger, javaHomeInput, detectJarPath);
             MasterToSlaveCallable<ArrayList<String>, IntegrationException> setupCallable = detectJarStrategy.getSetupCallable();
 
             ArrayList<String> jarExecutionElements = setupCallable.call();
