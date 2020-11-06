@@ -121,7 +121,7 @@ public class DetectRunnerTest {
 
     @ParameterizedTest
     @MethodSource("shouldEscapeTestSource")
-    public void testRunDetectAirGapJar(Map<String, String> environmentVariables) throws IOException, InterruptedException, IntegrationException {
+    public void testRunDetectAirGapJar(Map<String, String> environmentVariables) throws IntegrationException, InterruptedException, IOException {
         String airgapToolName = "DetectAirGapTool";
         String airgapToolHome = "/tmp/airgap";
 
@@ -140,7 +140,7 @@ public class DetectRunnerTest {
     }
 
     @Test
-    public void testRunDetectShellWindows() throws IOException, InterruptedException, IntegrationException {
+    public void testRunDetectShellWindows() throws IntegrationException, InterruptedException, IOException {
         ScriptOrJarDownloadStrategy scriptOrJarDownloadStrategy = new ScriptOrJarDownloadStrategy();
 
         requiredObjectSetup(new HashMap<>());
@@ -154,7 +154,7 @@ public class DetectRunnerTest {
     }
 
     @Test
-    public void testRunDetectShellUnix() throws IOException, InterruptedException, IntegrationException {
+    public void testRunDetectShellUnix() throws IntegrationException, InterruptedException, IOException {
         ScriptOrJarDownloadStrategy scriptOrJarDownloadStrategy = new ScriptOrJarDownloadStrategy();
 
         requiredObjectSetup(new HashMap<>());
@@ -168,7 +168,7 @@ public class DetectRunnerTest {
     }
 
     @Test
-    public void testRunDetectJarUnix() throws IOException, InterruptedException, IntegrationException {
+    public void testRunDetectJarUnix() throws IntegrationException, InterruptedException, IOException {
         ScriptOrJarDownloadStrategy scriptOrJarDownloadStrategy = new ScriptOrJarDownloadStrategy();
 
         requiredObjectSetup(Collections.singletonMap(DetectJenkinsEnvironmentVariable.USER_PROVIDED_JAR_PATH.stringValue(), DETECT_JAR_PATH));
