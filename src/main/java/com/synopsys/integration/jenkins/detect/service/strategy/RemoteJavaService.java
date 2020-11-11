@@ -56,13 +56,14 @@ public class RemoteJavaService {
             }
             try {
                 javaExecutablePath = remoteJdkJava.getCanonicalPath();
-                logger.info("Running with JAVA: " + javaExecutablePath);
             } catch (IOException e) {
                 logger.warn("Detect could not get Java Home from configured JDK, falling back to java on path: " + e.getMessage());
             }
         }
 
+        logger.info("Running with JAVA: " + javaExecutablePath);
         logDebugData(javaExecutablePath);
+
         return javaExecutablePath;
     }
 
