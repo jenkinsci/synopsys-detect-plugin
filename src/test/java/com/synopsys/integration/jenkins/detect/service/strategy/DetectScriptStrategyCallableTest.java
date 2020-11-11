@@ -17,6 +17,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.SystemUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,14 +33,14 @@ import hudson.model.TaskListener;
 public class DetectScriptStrategyCallableTest {
     private JenkinsIntLogger defaultLogger;
     private JenkinsProxyHelper defaultProxyHelper;
-    private ByteArrayOutputStream logs;
+    private ByteArrayOutputStream byteArrayOutputStream;
     private String toolsDirectoryPath;
 
     @BeforeEach
     public void setUp() {
-        logs = new ByteArrayOutputStream();
+        byteArrayOutputStream = new ByteArrayOutputStream();
         TaskListener mockedTaskListener = Mockito.mock(TaskListener.class);
-        Mockito.when(mockedTaskListener.getLogger()).thenReturn(new PrintStream(logs));
+        Mockito.when(mockedTaskListener.getLogger()).thenReturn(new PrintStream(byteArrayOutputStream));
         defaultLogger = new JenkinsIntLogger(mockedTaskListener);
         defaultProxyHelper = new JenkinsProxyHelper();
 
@@ -88,9 +89,10 @@ public class DetectScriptStrategyCallableTest {
     @Test
     public void testAlreadyExists() {
         try {
+            String scriptName = (SystemUtils.IS_OS_WINDOWS) ? DetectScriptStrategy.POWERSHELL_SCRIPT_FILENAME : DetectScriptStrategy.SHELL_SCRIPT_FILENAME;
             Path preDownloadedShellScript = Paths.get(toolsDirectoryPath, DetectScriptStrategy.DETECT_INSTALL_DIRECTORY);
             Files.createDirectories(preDownloadedShellScript);
-            Files.createFile(preDownloadedShellScript.resolve(DetectScriptStrategy.SHELL_SCRIPT_FILENAME));
+            Files.createFile(preDownloadedShellScript.resolve(scriptName));
         } catch (Exception e) {
             fail("Test could not be set up: Could not create Shell Script file", e);
         }
@@ -99,7 +101,7 @@ public class DetectScriptStrategyCallableTest {
             DetectScriptStrategy detectScriptStrategy = new DetectScriptStrategy(defaultLogger, defaultProxyHelper, OperatingSystemType.determineFromSystem(), toolsDirectoryPath);
             detectScriptStrategy.getSetupCallable().call();
 
-            assertTrue(logs.toString().contains("Running already installed Detect script"), "Expected a message about running an existing Detect script but found none.");
+            assertTrue(byteArrayOutputStream.toString().contains("Running already installed Detect script"), "Expected a message about running an existing Detect script but found none.");
         } catch (IntegrationException e) {
             fail("Unexpected exception occurred: ", e);
         }
@@ -111,13 +113,20 @@ public class DetectScriptStrategyCallableTest {
 
             DetectScriptStrategy detectScriptStrategy = new DetectScriptStrategy(defaultLogger, defaultProxyHelper, operatingSystemType, toolsDirectoryPath);
             ArrayList<String> scriptStrategyArgs = detectScriptStrategy.getSetupCallable().call();
-            String remoteScriptPath = scriptStrategyArgs.get(scriptStrategyArgs.size() - 1);
-            File remoteScriptFile = new File(remoteScriptPath);
+            File remoteScriptFile = new File(parseScriptStrategyArgs(scriptStrategyArgs));
 
-            assertEquals(expectedScriptPath, remoteScriptFile.getParent(), "Script should have been downloaded to " + expectedScriptPath + " but wasn't.");
-            assertTrue(remoteScriptFile.exists(), "A script should exist at " + remoteScriptPath + " but it doesn't");
+            assertEquals(expectedScriptPath, remoteScriptFile.getParent(), String.format("Script was not downloaded to <%s>", expectedScriptPath));
+            assertTrue(remoteScriptFile.exists(), String.format("Expected script does not exist <%s>", expectedScriptPath));
         } catch (IntegrationException e) {
             fail("Unexpected exception occurred: ", e);
         }
+    }
+
+    private String parseScriptStrategyArgs(ArrayList<String> scriptStrategyArgs) {
+        String remoteScriptArgument = scriptStrategyArgs.get(scriptStrategyArgs.size() - 1);
+        if (scriptStrategyArgs.get(0).equals("powershell")) {
+            remoteScriptArgument = remoteScriptArgument.split("'")[1];
+        }
+        return remoteScriptArgument;
     }
 }

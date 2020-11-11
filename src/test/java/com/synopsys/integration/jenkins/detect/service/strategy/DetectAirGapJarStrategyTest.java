@@ -16,6 +16,7 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import org.apache.commons.lang3.SystemUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -36,13 +37,14 @@ import hudson.model.TaskListener;
 import jenkins.security.MasterToSlaveCallable;
 
 public class DetectAirGapJarStrategyTest {
-    private static final String TEST_TEMPDIR_PREFIX = "Test-AirGapJar-Strategy";
-    private static final String AIRGAP_TOOL_NAME = "DetectAirGapTool";
-    private static final String REMOTE_JDK_HOME = "/test/java/home/path";
-    private static final String EXPECTED_JDK_JAVA_PATH = REMOTE_JDK_HOME + "/bin/java";
-    private static final String EXPECTED_PATH = "/test/path/env";
-    private static final String EXPECTED_ONE_JAR_ERROR_MSG = "Expected 1 jar from Detect Air Gap tool installation at <%s>";
+    private static final String JAVA_EXECUTABLE = (SystemUtils.IS_OS_WINDOWS) ? "java.exe" : "java";
+    private static final String REMOTE_JDK_HOME = new File("/test/java/home/path").getAbsolutePath();
+    private static final String REMOTE_JAVA_RELATIVE_PATH = new File("/bin/" + JAVA_EXECUTABLE).getPath();
+    private static final String EXPECTED_JAVA_FULL_PATH = new File(REMOTE_JDK_HOME + REMOTE_JAVA_RELATIVE_PATH).getAbsolutePath();
+    private static final String EXPECTED_PATH = new File("/test/path/env").getAbsolutePath();
 
+    private static final String AIRGAP_TOOL_NAME = "DetectAirGapTool";
+    private static final String EXPECTED_ONE_JAR_ERROR_MSG = "Expected 1 jar from Detect Air Gap tool installation at <%s>";
     private static final AirGapDownloadStrategy AIRGAP_DOWNLOAD_STRATEGY = new AirGapDownloadStrategy();
 
     private JenkinsConfigService jenkinsConfigServiceMock = Mockito.mock(JenkinsConfigService.class);
@@ -55,10 +57,10 @@ public class DetectAirGapJarStrategyTest {
     private File tempAirGapJar;
 
     public static Stream<Arguments> testJavaHomeSource() {
-        return Stream.of(Arguments.of(" ", System.getProperty("user.dir") + "/ /bin/java"),
-            Arguments.of("", "/bin/java"),
+        return Stream.of(Arguments.of(" ", System.getProperty("user.dir") + File.separator + " " + REMOTE_JAVA_RELATIVE_PATH),
+            Arguments.of("", new File(REMOTE_JAVA_RELATIVE_PATH).getAbsolutePath()),
             Arguments.of(null, "java"),
-            Arguments.of(REMOTE_JDK_HOME, EXPECTED_JDK_JAVA_PATH));
+            Arguments.of(REMOTE_JDK_HOME, EXPECTED_JAVA_FULL_PATH));
     }
 
     @BeforeEach
@@ -93,7 +95,7 @@ public class DetectAirGapJarStrategyTest {
     @Test
     public void testWarnLogging() {
         logger.setLogLevel(LogLevel.WARN);
-        executeAndValidateSetupCallable(REMOTE_JDK_HOME, EXPECTED_JDK_JAVA_PATH, tempJarDirectoryPathName, tempAirGapJar);
+        executeAndValidateSetupCallable(REMOTE_JDK_HOME, EXPECTED_JAVA_FULL_PATH, tempJarDirectoryPathName, tempAirGapJar);
         validateLogsNotPresentInfo();
         validateLogsNotPresentDebug();
     }
@@ -101,7 +103,7 @@ public class DetectAirGapJarStrategyTest {
     @Test
     public void testInfoLogging() {
         logger.setLogLevel(LogLevel.INFO);
-        executeAndValidateSetupCallable(REMOTE_JDK_HOME, EXPECTED_JDK_JAVA_PATH, tempJarDirectoryPathName, tempAirGapJar);
+        executeAndValidateSetupCallable(REMOTE_JDK_HOME, EXPECTED_JAVA_FULL_PATH, tempJarDirectoryPathName, tempAirGapJar);
         validateLogsPresentInfo();
         validateLogsNotPresentDebug();
     }
@@ -109,7 +111,7 @@ public class DetectAirGapJarStrategyTest {
     @Test
     public void testDebugLogging() {
         logger.setLogLevel(LogLevel.DEBUG);
-        executeAndValidateSetupCallable(REMOTE_JDK_HOME, EXPECTED_JDK_JAVA_PATH, tempJarDirectoryPathName, tempAirGapJar);
+        executeAndValidateSetupCallable(REMOTE_JDK_HOME, EXPECTED_JAVA_FULL_PATH, tempJarDirectoryPathName, tempAirGapJar);
         validateLogsPresentInfo();
         validateLogsPresentDebug();
     }
@@ -117,7 +119,7 @@ public class DetectAirGapJarStrategyTest {
     @Test
     public void testTraceLogging() {
         logger.setLogLevel(LogLevel.TRACE);
-        executeAndValidateSetupCallable(REMOTE_JDK_HOME, EXPECTED_JDK_JAVA_PATH, tempJarDirectoryPathName, tempAirGapJar);
+        executeAndValidateSetupCallable(REMOTE_JDK_HOME, EXPECTED_JAVA_FULL_PATH, tempJarDirectoryPathName, tempAirGapJar);
         validateLogsPresentInfo();
         validateLogsPresentDebug();
     }
@@ -127,7 +129,7 @@ public class DetectAirGapJarStrategyTest {
         logger.setLogLevel(LogLevel.DEBUG);
         try {
             String badJavaHome = Files.createTempDirectory(null).toRealPath().toString();
-            String expectedBadJavaPath = badJavaHome + "/bin/java";
+            String expectedBadJavaPath = badJavaHome + REMOTE_JAVA_RELATIVE_PATH;
             executeAndValidateSetupCallable(badJavaHome, expectedBadJavaPath, tempJarDirectoryPathName, tempAirGapJar);
 
             assertTrue(byteArrayOutputStream.toString().contains("Error printing the JAVA version: "), "Log does not contain error for printing Java version.");
@@ -141,7 +143,7 @@ public class DetectAirGapJarStrategyTest {
         logger.setLogLevel(LogLevel.DEBUG);
         executeAndValidateSetupCallable(null, "java", tempJarDirectoryPathName, tempAirGapJar);
 
-        assertTrue(byteArrayOutputStream.toString().contains("Java version: \n"), "Log does not contain entry for Java Version heading.");
+        assertTrue(byteArrayOutputStream.toString().contains("Java version: "), "Log does not contain entry for Java Version heading.");
     }
 
     @Test
@@ -273,7 +275,7 @@ public class DetectAirGapJarStrategyTest {
     private File createTempAirGapDirectory() {
         File tempJarDirectory = null;
         try {
-            tempJarDirectory = Files.createTempDirectory(TEST_TEMPDIR_PREFIX).toFile();
+            tempJarDirectory = Files.createTempDirectory("Test-AirGapJar-Strategy").toFile();
             tempJarDirectory.deleteOnExit();
             System.out.println(String.format("Test directory created: %s", tempJarDirectory.getPath()));
         } catch (IOException e) {

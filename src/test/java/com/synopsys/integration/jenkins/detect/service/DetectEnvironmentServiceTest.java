@@ -67,9 +67,7 @@ public class DetectEnvironmentServiceTest {
 
         // Populate expected return IntEnvironmentVariables
         expectedIntEnvironmentVariables.putAll(environmentVariables);
-        builderEnvironmentVariables.forEach((key, value) -> {
-            expectedIntEnvironmentVariables.put(key.getKey(), value);
-        });
+        builderEnvironmentVariables.forEach((key, value) -> expectedIntEnvironmentVariables.put(key.getKey(), value));
 
         detectEnvironmentService = new DetectEnvironmentService(jenkinsIntLogger, jenkinsProxyHelper, jenkinsVersionHelperMock, synopsysCredentialsHelper, jenkinsConfigServiceMock, environmentVariables);
     }
@@ -79,7 +77,7 @@ public class DetectEnvironmentServiceTest {
         IntEnvironmentVariables intEnvironmentVariables = detectEnvironmentService.createDetectEnvironment();
 
         assertEquals(expectedIntEnvironmentVariables, intEnvironmentVariables.getVariables());
-        assertTrue(byteArrayOutputStream.toString().contains("Running Synopsys Detect for Jenkins\n"), "Log should contain default message about what it is running.");
+        assertTrue(byteArrayOutputStream.toString().contains("Running Synopsys Detect for Jenkins"), "Log should contain default message about what it is running.");
     }
 
     @Test
@@ -88,7 +86,8 @@ public class DetectEnvironmentServiceTest {
         IntEnvironmentVariables intEnvironmentVariables = detectEnvironmentService.createDetectEnvironment();
 
         assertEquals(expectedIntEnvironmentVariables, intEnvironmentVariables.getVariables());
-        assertTrue(byteArrayOutputStream.toString().contains(String.format("Running Synopsys Detect for Jenkins version: %s\n", expectedJenkinsPluginVersion)), "Log should contain message, with plugin version, about what it is running.");
+        assertTrue(byteArrayOutputStream.toString().contains(String.format("Running Synopsys Detect for Jenkins version: %s", expectedJenkinsPluginVersion)),
+            "Log should contain message, with plugin version, about what it is running.");
     }
 
     @Test
