@@ -30,6 +30,7 @@ import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
 import com.synopsys.integration.jenkins.service.JenkinsConfigService;
 
 public class DetectDownloadStrategyService {
+    public static final String DETECT_GLOBAL_CONFIGURATION_NOT_FOUND = "Could not find Detect configuration. Check Jenkins System Configuration to ensure Detect is configured correctly.";
     private final JenkinsIntLogger logger;
     private final JenkinsConfigService jenkinsConfigService;
 
@@ -38,26 +39,33 @@ public class DetectDownloadStrategyService {
         this.jenkinsConfigService = jenkinsConfigService;
     }
 
+    //TODO we should likely have an explicit object for HOW we are going to get detect and not reuse the user selection object, DetectDownloadStrategy (maybe build off of DetectExecutionStrategyOptions)
     public DetectDownloadStrategy determineCorrectDownloadStrategy(DetectDownloadStrategy initialDownloadStrategy) throws DetectJenkinsException {
         DetectDownloadStrategy correctDownloadStrategy = initialDownloadStrategy;
-        String correctStrategyLabel = "configured";
+        String downloadStrategySource = "configured";
         if (initialDownloadStrategy == null || initialDownloadStrategy instanceof InheritFromGlobalDownloadStrategy) {
-            DetectGlobalConfig detectGlobalConfig =
-                jenkinsConfigService.getGlobalConfiguration(DetectGlobalConfig.class)
-                    .orElseThrow(() -> new DetectJenkinsException("Could not find Detect configuration. Check Jenkins System Configuration to ensure Detect is configured correctly."));
+            DetectGlobalConfig detectGlobalConfig = jenkinsConfigService
+                                                        .getGlobalConfiguration(DetectGlobalConfig.class)
+                                                        .orElseThrow(() -> new DetectJenkinsException(DETECT_GLOBAL_CONFIGURATION_NOT_FOUND));
             correctDownloadStrategy = detectGlobalConfig.getDownloadStrategy();
-            correctStrategyLabel = "configured system";
+            downloadStrategySource = "configured system";
 
             if (correctDownloadStrategy == null) {
                 correctDownloadStrategy = detectGlobalConfig.getDefaultDownloadStrategy();
-                correctStrategyLabel = "default";
+                downloadStrategySource = "default";
                 logger.info("System configured strategy not found.");
             }
         }
 
-        logger.info(String.format("Running Detect using %s strategy: %s", correctStrategyLabel, correctDownloadStrategy.getDisplayName()));
+        logger.info(String.format("Running Detect using %s strategy: %s", downloadStrategySource, correctDownloadStrategy.getDisplayName()));
 
         return correctDownloadStrategy;
+    }
+
+    private DetectGlobalConfig getValidDetectGlobalConfig() throws DetectJenkinsException {
+        return jenkinsConfigService
+                   .getGlobalConfiguration(DetectGlobalConfig.class)
+                   .orElseThrow(() -> new DetectJenkinsException(DETECT_GLOBAL_CONFIGURATION_NOT_FOUND));
     }
 
 }

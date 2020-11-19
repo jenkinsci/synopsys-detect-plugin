@@ -46,6 +46,7 @@ public class DetectRunner {
 
     public int runDetect(String remoteJdkHome, String detectArgumentString, DetectDownloadStrategy initialDetectDownloadStrategy) throws IOException, InterruptedException, IntegrationException {
         IntEnvironmentVariables intEnvironmentVariables = detectEnvironmentService.createDetectEnvironment();
+        //TODO we should merge the download strategy service and creation of strategy options
         DetectDownloadStrategy correctDownloadStrategy = detectDownloadStrategyService.determineCorrectDownloadStrategy(initialDetectDownloadStrategy);
         DetectExecutionStrategyOptions detectExecutionStrategyOptions = new DetectExecutionStrategyOptions(intEnvironmentVariables, correctDownloadStrategy);
         DetectExecutionStrategy detectExecutionStrategy = detectExecutionStrategyFactory.createDetectExecutionStrategy(detectExecutionStrategyOptions, remoteJdkHome);

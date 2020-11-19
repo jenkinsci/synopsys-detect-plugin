@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
 import com.synopsys.integration.exception.IntegrationException;
 import com.synopsys.integration.jenkins.detect.DetectJenkinsEnvironmentVariable;
@@ -55,6 +56,7 @@ public abstract class DetectExecutionStrategy {
         MasterToSlaveCallable<ArrayList<String>, IntegrationException> setupCallable = getSetupCallable();
         ArrayList<String> detectCommands = jenkinsRemotingService.call(setupCallable);
 
+        //TODO change to UnaryOperator
         Function<String, String> argumentEscaper = getArgumentEscaper();
         boolean shouldEscape = Boolean.parseBoolean(intEnvironmentVariables.getValue(DetectJenkinsEnvironmentVariable.SHOULD_ESCAPE.stringValue(), "true"));
         if (!shouldEscape) {
