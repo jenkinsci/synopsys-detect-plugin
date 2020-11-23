@@ -3,7 +3,7 @@ sudo: false
 install: true
 
 jdk:
-  - openjdk8
+  - openjdk11
 
 notifications:
   email:
@@ -12,7 +12,7 @@ notifications:
       - billings@synopsys.com
 
 script:
-  - "./gradlew clean build jpi
+  - "./gradlew clean build jpi"
 
 after_success:
   - bash <(curl -s https://copilot.blackducksoftware.com/ci/travis/scripts/upload)
