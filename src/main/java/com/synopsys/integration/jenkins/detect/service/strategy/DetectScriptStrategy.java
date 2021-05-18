@@ -10,6 +10,7 @@ package com.synopsys.integration.jenkins.detect.service.strategy;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.function.Function;
@@ -126,19 +127,14 @@ public class DetectScriptStrategy extends DetectExecutionStrategy {
                 Files.createDirectories(installationDirectory);
                 Path detectScriptPath = installationDirectory.resolve(scriptFileName);
 
-                // .toFile().exists() is significantly more performant than Files.notExist, so we use that here. --rotte JUL 2020
-                if (detectScriptPath.toFile().exists()) {
-                    logger.info("Running already installed Detect script " + detectScriptPath);
-                } else {
-                    logger.info(String.format("Downloading Detect script from %s to %s", scriptUrl, detectScriptPath));
+                logger.info(String.format("Downloading Detect script from %s to %s", scriptUrl, detectScriptPath));
 
-                    IntHttpClient intHttpClient = new IntHttpClient(logger, 120, true, rebuildProxyInfo());
-                    Request request = new Request.Builder().url(new HttpUrl(scriptUrl)).build();
+                IntHttpClient intHttpClient = new IntHttpClient(logger, 120, true, rebuildProxyInfo());
+                Request request = new Request.Builder().url(new HttpUrl(scriptUrl)).build();
 
-                    try (Response response = intHttpClient.execute(request)) {
-                        response.throwExceptionForError();
-                        Files.copy(response.getContent(), detectScriptPath);
-                    }
+                try (Response response = intHttpClient.execute(request)) {
+                    response.throwExceptionForError();
+                    Files.copy(response.getContent(), detectScriptPath, StandardCopyOption.REPLACE_EXISTING);
                 }
 
                 scriptRemotePath = detectScriptPath.toRealPath().toString();

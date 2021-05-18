@@ -97,14 +97,7 @@ public class DetectScriptStrategyCallableTest {
             fail("Test could not be set up: Could not create Shell Script file", e);
         }
 
-        try {
-            DetectScriptStrategy detectScriptStrategy = new DetectScriptStrategy(defaultLogger, defaultProxyHelper, OperatingSystemType.determineFromSystem(), toolsDirectoryPath);
-            detectScriptStrategy.getSetupCallable().call();
-
-            assertTrue(byteArrayOutputStream.toString().contains("Running already installed Detect script"), "Expected a message about running an existing Detect script but found none.");
-        } catch (IntegrationException e) {
-            fail("Unexpected exception occurred: ", e);
-        }
+        downloadAndValidateScript(OperatingSystemType.determineFromSystem());
     }
 
     private void downloadAndValidateScript(OperatingSystemType operatingSystemType) {
@@ -117,7 +110,8 @@ public class DetectScriptStrategyCallableTest {
 
             assertEquals(expectedScriptPath, remoteScriptFile.getParent(), String.format("Script was not downloaded to <%s>", expectedScriptPath));
             assertTrue(remoteScriptFile.exists(), String.format("Expected script does not exist <%s>", expectedScriptPath));
-        } catch (IntegrationException e) {
+            assertTrue(Files.size(remoteScriptFile.toPath()) > 0, String.format("Expected script exists, but it's empty <%s>", expectedScriptPath));
+        } catch (IntegrationException | IOException e) {
             fail("Unexpected exception occurred: ", e);
         }
     }
