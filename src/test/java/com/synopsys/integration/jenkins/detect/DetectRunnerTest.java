@@ -40,7 +40,7 @@ import com.synopsys.integration.util.IntEnvironmentVariables;
 import com.synopsys.integration.util.OperatingSystemType;
 
 public class DetectRunnerTest {
-    private static final String DETECT_PROPERTY_INPUT = "--detect.docker.passthrough.service.timeout=$BLACKDUCK_TIMEOUT --detect.cleanup=false --detect.project.name=\"Test Project'\"";
+    private static final String DETECT_PROPERTY_INPUT = "--detect.docker.passthrough.service.timeout=$DETECT_TIMEOUT --detect.cleanup=false --detect.project.name=\"Test Project'\"";
     private static final String WORKSPACE_TMP_REL_PATH = "out/test/DetectPostBuildStepTest/testPerform/workspace@tmp";
     private static final String JDK_HOME = "/tmp/jdk/bin/java";
     private static final String DETECT_JAR_PATH = "/tmp/detect.jar";

@@ -55,7 +55,6 @@ import com.synopsys.integration.jenkins.wrapper.SynopsysCredentialsHelper;
 import com.synopsys.integration.log.LogLevel;
 import com.synopsys.integration.log.PrintStreamIntLogger;
 import com.synopsys.integration.rest.client.ConnectionResult;
-import com.synopsys.integration.rest.credentials.Credentials;
 import com.synopsys.integration.rest.proxy.ProxyInfo;
 
 import hudson.Extension;
@@ -302,24 +301,17 @@ public class DetectGlobalConfig extends GlobalConfiguration implements Serializa
         return getNodeValue(doc, tagName).map(Boolean::valueOf);
     }
 
-    private BlackDuckServerConfigBuilder createBlackDuckServerConfigBuilder(JenkinsProxyHelper jenkinsProxyHelper, SynopsysCredentialsHelper synopsysCredentialsHelper, String blackDuckUrl, String credentialsId, int timeout,
-        boolean alwaysTrust) {
+    private BlackDuckServerConfigBuilder createBlackDuckServerConfigBuilder(JenkinsProxyHelper jenkinsProxyHelper, SynopsysCredentialsHelper synopsysCredentialsHelper,
+        String blackDuckUrl, String credentialsId, int timeout, boolean alwaysTrust) {
         ProxyInfo proxyInfo = jenkinsProxyHelper.getProxyInfo(blackDuckUrl);
+        String apiToken = synopsysCredentialsHelper.getApiTokenByCredentialsId(credentialsId).orElse(null);
 
-        BlackDuckServerConfigBuilder builder = BlackDuckServerConfig.newBuilder()
-                                                   .setUrl(blackDuckUrl)
-                                                   .setTimeoutInSeconds(timeout)
-                                                   .setTrustCert(alwaysTrust)
-                                                   .setProxyInfo(proxyInfo);
-
-        Credentials usernamePasswordCredentials = synopsysCredentialsHelper.getIntegrationCredentialsById(credentialsId);
-        if (!usernamePasswordCredentials.isBlank()) {
-            builder.setCredentials(usernamePasswordCredentials);
-        } else {
-            synopsysCredentialsHelper.getApiTokenByCredentialsId(credentialsId).ifPresent(builder::setApiToken);
-        }
-
-        return builder;
+        return BlackDuckServerConfig.newBuilder()
+                   .setUrl(blackDuckUrl)
+                   .setTimeoutInSeconds(timeout)
+                   .setTrustCert(alwaysTrust)
+                   .setProxyInfo(proxyInfo)
+                   .setApiToken(apiToken);
     }
 
 }

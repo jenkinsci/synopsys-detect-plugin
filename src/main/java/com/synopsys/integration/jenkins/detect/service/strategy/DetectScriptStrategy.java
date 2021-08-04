@@ -34,9 +34,9 @@ import jenkins.security.MasterToSlaveCallable;
 
 public class DetectScriptStrategy extends DetectExecutionStrategy {
     public static final String DETECT_INSTALL_DIRECTORY = "Detect_Installation";
-    public static final String LATEST_SHELL_SCRIPT_URL = "https://detect.synopsys.com/detect.sh";
+    public static final String LATEST_SHELL_SCRIPT_URL = "https://detect.synopsys.com/detect7.sh";
     public static final String SHELL_SCRIPT_FILENAME = "detect.sh";
-    public static final String LATEST_POWERSHELL_SCRIPT_URL = "https://detect.synopsys.com/detect.ps1";
+    public static final String LATEST_POWERSHELL_SCRIPT_URL = "https://detect.synopsys.com/detect7.ps1";
     public static final String POWERSHELL_SCRIPT_FILENAME = "detect.ps1";
 
     private final JenkinsIntLogger logger;
