@@ -7,13 +7,13 @@ plugins {
     id 'org.jenkins-ci.jpi' version '0.38.0'
 }
 
+project.ext.excludesFromTestCoverage = ['**/DetectGlobalConfig.java', '**/DetectPipelineStep.java', '**/DetectPostBuildStep.java', '**/DetectAirGapInstallation.java']
+
 group = 'com.blackducksoftware.integration'
 version = '7.0.0-SNAPSHOT'
 description = 'Synopsys Detect Plugin for Jenkins'
 
 apply plugin: 'com.synopsys.integration.solution'
-
-project.ext.excludesFromTestCoverage = ['**/DetectGlobalConfig.java', '**/DetectPipelineStep.java', '**/DetectPostBuildStep.java', '**/DetectAirGapInstallation.java']
 
 artifactory {
     publish {
