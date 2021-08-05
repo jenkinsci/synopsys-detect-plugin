@@ -169,7 +169,7 @@ public class DetectGlobalConfig extends GlobalConfiguration implements Serializa
         jenkins.checkPermission(Jenkins.ADMINISTER);
         return new StandardListBoxModel()
                    .includeEmptyValue()
-                   .includeMatchingAs(ACL.SYSTEM, jenkins, BaseStandardCredentials.class, Collections.emptyList(), SynopsysCredentialsHelper.API_TOKEN_OR_USERNAME_PASSWORD_CREDENTIALS);
+                   .includeMatchingAs(ACL.SYSTEM, jenkins, BaseStandardCredentials.class, Collections.emptyList(), SynopsysCredentialsHelper.API_TOKEN_CREDENTIALS);
     }
 
     @POST
