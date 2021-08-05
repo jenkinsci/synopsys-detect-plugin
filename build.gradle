@@ -13,6 +13,8 @@ description = 'Synopsys Detect Plugin for Jenkins'
 
 apply plugin: 'com.synopsys.integration.solution'
 
+project.ext.excludesFromTestCoverage = ['**/DetectGlobalConfig.java', '**/DetectPipelineStep.java', '**/DetectPostBuildStep.java', '**/DetectAirGapInstallation.java']
+
 artifactory {
     publish {
         defaults { publications('mavenJpi') }
