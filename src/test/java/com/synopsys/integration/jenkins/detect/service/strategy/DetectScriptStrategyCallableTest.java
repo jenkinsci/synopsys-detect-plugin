@@ -33,12 +33,11 @@ import hudson.model.TaskListener;
 public class DetectScriptStrategyCallableTest {
     private JenkinsIntLogger defaultLogger;
     private JenkinsProxyHelper defaultProxyHelper;
-    private ByteArrayOutputStream byteArrayOutputStream;
     private String toolsDirectoryPath;
 
     @BeforeEach
     public void setUp() {
-        byteArrayOutputStream = new ByteArrayOutputStream();
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         TaskListener mockedTaskListener = Mockito.mock(TaskListener.class);
         Mockito.when(mockedTaskListener.getLogger()).thenReturn(new PrintStream(byteArrayOutputStream));
         defaultLogger = new JenkinsIntLogger(mockedTaskListener);
