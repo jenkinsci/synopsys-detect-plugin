@@ -72,10 +72,7 @@ public class DetectEnvironmentService {
     }
 
     private void updateAndFilterVariables(BiConsumer<String, String> environmentPutter, String key, String value) {
-        String filteredKey = key;
-        if (BlackDuckServerConfigBuilder.TIMEOUT_KEY.getKey().equals(filteredKey)) {
-            filteredKey = TIMEOUT;
-        }
+        String filteredKey = BlackDuckServerConfigBuilder.TIMEOUT_KEY.getKey().equals(key) ? TIMEOUT : key;
 
         if (StringUtils.isNoneBlank(filteredKey, value)) {
             environmentPutter.accept(filteredKey, value);
