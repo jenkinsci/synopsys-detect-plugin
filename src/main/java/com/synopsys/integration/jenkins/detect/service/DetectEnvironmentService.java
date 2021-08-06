@@ -23,6 +23,8 @@ import com.synopsys.integration.jenkins.wrapper.SynopsysCredentialsHelper;
 import com.synopsys.integration.util.IntEnvironmentVariables;
 
 public class DetectEnvironmentService {
+    public static final String TIMEOUT = "DETECT_TIMEOUT";
+
     private final JenkinsIntLogger logger;
     private final JenkinsProxyHelper jenkinsProxyHelper;
     private final JenkinsVersionHelper jenkinsVersionHelper;
@@ -66,12 +68,14 @@ public class DetectEnvironmentService {
         BlackDuckServerConfigBuilder blackDuckServerConfigBuilder = detectGlobalConfig.get().getBlackDuckServerConfigBuilder(jenkinsProxyHelper, synopsysCredentialsHelper);
 
         blackDuckServerConfigBuilder.getProperties()
-            .forEach((builderPropertyKey, propertyValue) -> acceptIfNotNull(environmentPutter, builderPropertyKey.getKey(), propertyValue));
+            .forEach((builderPropertyKey, propertyValue) -> updateAndFilterVariables(environmentPutter, builderPropertyKey.getKey(), propertyValue));
     }
 
-    private void acceptIfNotNull(BiConsumer<String, String> environmentPutter, String key, String value) {
-        if (StringUtils.isNoneBlank(key, value)) {
-            environmentPutter.accept(key, value);
+    private void updateAndFilterVariables(BiConsumer<String, String> environmentPutter, String key, String value) {
+        String filteredKey = BlackDuckServerConfigBuilder.TIMEOUT_KEY.getKey().equals(key) ? TIMEOUT : key;
+
+        if (StringUtils.isNoneBlank(filteredKey, value)) {
+            environmentPutter.accept(filteredKey, value);
         }
     }
 
