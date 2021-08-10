@@ -8,7 +8,7 @@ plugins {
 }
 
 group = 'com.blackducksoftware.integration'
-version = '7.0.0-SIGQA3-SNAPSHOT'
+version = '7.0.0-SIGQA3'
 description = 'Synopsys Detect Plugin for Jenkins'
 
 apply plugin: 'com.synopsys.integration.solution'
