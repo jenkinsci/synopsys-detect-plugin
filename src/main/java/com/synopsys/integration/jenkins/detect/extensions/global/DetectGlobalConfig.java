@@ -77,9 +77,10 @@ public class DetectGlobalConfig extends GlobalConfiguration implements Serializa
     @HelpMarkdown("Provide the URL that lets you access your Black Duck server.")
     private String blackDuckUrl;
 
-    @HelpMarkdown("Choose the Username and Password from the list to authenticate to the Black Duck server.  \r\n" +
-                      "Alternatively, choose the Api Token from the list to authenticate to the Black Duck server.  \r\n" +
-                      "If the credentials you are looking for are not in the list then you can add them with the Add button.")
+    @HelpMarkdown("Choose the saved API Token from the list to authenticate to the Black Duck server.  \r\n" +
+                      "If the saved secret text containing your API Token is not in the list, you can add it with the Add button.\r\n\n" +
+                      "As of Detect 7.0.0, an API Token saved as secret text is the only supported means for authentication.  \r\n" +
+                      "Username with password is no longer supported.")
     private String blackDuckCredentialsId;
 
     @HelpMarkdown("If selected, Detect will automatically trust certificates when communicating with your Black Duck server.")
