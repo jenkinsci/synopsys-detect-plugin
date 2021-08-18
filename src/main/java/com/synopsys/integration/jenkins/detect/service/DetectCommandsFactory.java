@@ -8,9 +8,7 @@
 package com.synopsys.integration.jenkins.detect.service;
 
 import java.io.IOException;
-import java.util.Optional;
 
-import com.synopsys.integration.function.ThrowingSupplier;
 import com.synopsys.integration.jenkins.detect.DetectFreestyleCommands;
 import com.synopsys.integration.jenkins.detect.DetectPipelineCommands;
 import com.synopsys.integration.jenkins.detect.DetectRunner;
@@ -33,16 +31,21 @@ import hudson.model.TaskListener;
 import hudson.slaves.WorkspaceList;
 
 public class DetectCommandsFactory {
+    public static final String NULL_WORKSPACE = "Detect cannot be executed when the workspace is null";
     private final JenkinsWrapper jenkinsWrapper;
     private final TaskListener listener;
     private final EnvVars envVars;
-    private final ThrowingSupplier<FilePath, AbortException> validatedWorkspace;
+    private final FilePath workspace;
 
-    private DetectCommandsFactory(JenkinsWrapper jenkinsWrapper, TaskListener listener, EnvVars envVars, FilePath workspace) {
+    private DetectCommandsFactory(JenkinsWrapper jenkinsWrapper, TaskListener listener, EnvVars envVars, FilePath workspace) throws AbortException {
         this.jenkinsWrapper = jenkinsWrapper;
         this.listener = listener;
         this.envVars = envVars;
-        this.validatedWorkspace = () -> Optional.ofNullable(workspace).orElseThrow(() -> new AbortException("Detect cannot be executed when the workspace is null"));
+
+        if (null == workspace) {
+            throw new AbortException(NULL_WORKSPACE);
+        }
+        this.workspace = workspace;
     }
 
     public static DetectFreestyleCommands fromPostBuild(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws IOException, InterruptedException {
@@ -78,9 +81,8 @@ public class DetectCommandsFactory {
         return new DetectEnvironmentService(getLogger(), jenkinsWrapper.getProxyHelper(), jenkinsWrapper.getVersionHelper(), jenkinsWrapper.getCredentialsHelper(), jenkinsConfigService, envVars);
     }
 
-    private DetectStrategyService createDetectStrategyService(JenkinsConfigService jenkinsConfigService) throws AbortException {
-        FilePath workspace = validatedWorkspace.get();
-        FilePath workspaceTempDir = WorkspaceList.tempDir(workspace);
+    private DetectStrategyService createDetectStrategyService(JenkinsConfigService jenkinsConfigService) {
+        FilePath workspaceTempDir = WorkspaceList.tempDir(this.workspace);
 
         return new DetectStrategyService(getLogger(), jenkinsWrapper.getProxyHelper(), workspaceTempDir.getRemote(), jenkinsConfigService);
     }

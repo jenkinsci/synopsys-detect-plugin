@@ -7,6 +7,8 @@ plugins {
     id 'org.jenkins-ci.jpi' version '0.38.0'
 }
 
+project.ext.excludesFromTestCoverage = ['**/DetectDownloadStrategy.java', '**/DetectPipelineStep.java', '**/DetectPostBuildStep.java', '**/DetectAirGapInstallation.java']
+
 group = 'com.blackducksoftware.integration'
 version = '7.1.0-SNAPSHOT'
 description = 'Synopsys Detect Plugin for Jenkins'

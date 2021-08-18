@@ -47,8 +47,8 @@ public class DetectAirGapJarStrategyTest {
     private static final String EXPECTED_ONE_JAR_ERROR_MSG = "Expected 1 jar from Detect Air Gap tool installation at <%s>";
     private static final AirGapDownloadStrategy AIRGAP_DOWNLOAD_STRATEGY = new AirGapDownloadStrategy();
 
-    private JenkinsConfigService jenkinsConfigServiceMock = Mockito.mock(JenkinsConfigService.class);
-    private DetectAirGapInstallation detectAirGapInstallationMock = Mockito.mock(DetectAirGapInstallation.class);
+    private final JenkinsConfigService jenkinsConfigServiceMock = Mockito.mock(JenkinsConfigService.class);
+    private final DetectAirGapInstallation detectAirGapInstallationMock = Mockito.mock(DetectAirGapInstallation.class);
 
     private IntEnvironmentVariables environmentVariables;
     private JenkinsIntLogger logger;
@@ -277,7 +277,7 @@ public class DetectAirGapJarStrategyTest {
         try {
             tempJarDirectory = Files.createTempDirectory("Test-AirGapJar-Strategy").toFile();
             tempJarDirectory.deleteOnExit();
-            System.out.println(String.format("Test directory created: %s", tempJarDirectory.getPath()));
+            System.out.printf("Test directory created: %s%n", tempJarDirectory.getPath());
         } catch (IOException e) {
             fail("Unexpected exception was thrown in test code: ", e);
         }
@@ -289,7 +289,7 @@ public class DetectAirGapJarStrategyTest {
         try {
             tempAirGapJar = File.createTempFile(prefix, suffix, new File(tempJarDirectoryPathName));
             tempAirGapJar.deleteOnExit();
-            System.out.println(String.format("Test jar created: %s", tempAirGapJar.getName()));
+            System.out.printf("Test jar created: %s%n", tempAirGapJar.getName());
         } catch (IOException e) {
             fail("Unexpected exception was thrown in test code: ", e);
         }

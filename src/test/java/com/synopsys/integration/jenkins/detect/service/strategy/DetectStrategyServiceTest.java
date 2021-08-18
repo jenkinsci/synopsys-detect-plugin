@@ -2,6 +2,7 @@ package com.synopsys.integration.jenkins.detect.service.strategy;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -10,12 +11,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.Optional;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-import com.synopsys.integration.exception.IntegrationException;
 import com.synopsys.integration.jenkins.detect.DetectJenkinsEnvironmentVariable;
 import com.synopsys.integration.jenkins.detect.exception.DetectJenkinsException;
 import com.synopsys.integration.jenkins.detect.extensions.AirGapDownloadStrategy;
@@ -34,7 +33,7 @@ public class DetectStrategyServiceTest {
     private static final InheritFromGlobalDownloadStrategy INHERIT_DOWNLOAD_STRATEGY = new InheritFromGlobalDownloadStrategy();
     private static final ScriptOrJarDownloadStrategy SCRIPTJAR_DOWNLOAD_STRATEGY = new ScriptOrJarDownloadStrategy();
 
-    private IntEnvironmentVariables intEnvironmentVariables = IntEnvironmentVariables.empty();
+    private final IntEnvironmentVariables intEnvironmentVariables = IntEnvironmentVariables.empty();
 
     private ByteArrayOutputStream byteArrayOutputStream;
     private DetectStrategyService detectStrategyService;
@@ -51,9 +50,16 @@ public class DetectStrategyServiceTest {
         detectStrategyService = new DetectStrategyService(logger, null, null, jenkinsConfigService);
     }
 
-    @AfterEach
-    public void cleanUp() {
-        System.out.println(byteArrayOutputStream.toString());
+    @Test
+    public void testGettersAndSetters() {
+        assertNull(AIRGAP_DOWNLOAD_STRATEGY.getAirGapInstallationName());
+        AIRGAP_DOWNLOAD_STRATEGY.setAirGapInstallationName("JUnit_AirGap_Tool");
+        assertEquals("JUnit_AirGap_Tool", AIRGAP_DOWNLOAD_STRATEGY.getAirGapInstallationName());
+        assertEquals(AirGapDownloadStrategy.DISPLAY_NAME, AIRGAP_DOWNLOAD_STRATEGY.getDisplayName());
+
+        assertEquals(InheritFromGlobalDownloadStrategy.DISPLAY_NAME, INHERIT_DOWNLOAD_STRATEGY.getDisplayName());
+
+        assertEquals(ScriptOrJarDownloadStrategy.DISPLAY_NAME, SCRIPTJAR_DOWNLOAD_STRATEGY.getDisplayName());
     }
 
     @Test
@@ -82,7 +88,7 @@ public class DetectStrategyServiceTest {
     }
 
     @Test
-    public void testInheritFromGlobalStrategyFailure() throws IllegalAccessException, IntegrationException, NoSuchFieldException {
+    public void testInheritFromGlobalStrategyFailure() {
         assertThrows(DetectJenkinsException.class, () -> detectStrategyService.getExecutionStrategy(intEnvironmentVariables, null, null, INHERIT_DOWNLOAD_STRATEGY));
     }
 
