@@ -11,6 +11,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Optional;
 import java.util.function.Function;
@@ -238,12 +239,21 @@ public class DetectAirGapJarStrategyTest {
             DetectAirGapJarStrategy detectAirGapJarStrategy = configureCallable(javaHomeInput, toolHomeDirectory);
             MasterToSlaveCallable<ArrayList<String>, IntegrationException> setupCallable = detectAirGapJarStrategy.getSetupCallable();
             ArrayList<String> airGapJarExecutionElements = setupCallable.call();
+            String resolvedExpectedJavaPath = resolveDirectory(expectedJavaPath);
 
-            assertEquals(expectedJavaPath, airGapJarExecutionElements.get(0));
+            assertEquals(resolvedExpectedJavaPath, airGapJarExecutionElements.get(0));
             assertEquals("-jar", airGapJarExecutionElements.get(1));
             assertEquals(expectedAirGapJar.getPath(), airGapJarExecutionElements.get(2));
         } catch (IntegrationException e) {
             fail("An unexpected exception occurred: ", e);
+        }
+    }
+
+    private String resolveDirectory(String inputDirectory) {
+        try {
+            return Paths.get(inputDirectory).toRealPath().toString();
+        } catch (IOException e) {
+            return inputDirectory;
         }
     }
 

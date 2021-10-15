@@ -10,6 +10,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -139,13 +140,22 @@ public class DetectJarStrategyTest {
         try {
             DetectJarStrategy detectJarStrategy = new DetectJarStrategy(logger, environmentVariables, javaHomeInput, DETECT_JAR_PATH);
             MasterToSlaveCallable<ArrayList<String>, IntegrationException> setupCallable = detectJarStrategy.getSetupCallable();
-
             ArrayList<String> jarExecutionElements = setupCallable.call();
-            assertEquals(expectedJavaPath, jarExecutionElements.get(0));
+            String resolvedExpectedJavaPath = resolveDirectory(expectedJavaPath);
+
+            assertEquals(resolvedExpectedJavaPath, jarExecutionElements.get(0));
             assertEquals("-jar", jarExecutionElements.get(1));
             assertEquals(DETECT_JAR_PATH, jarExecutionElements.get(2));
         } catch (IntegrationException e) {
             fail("An unexpected exception occurred: ", e);
+        }
+    }
+
+    private String resolveDirectory(String inputDirectory) {
+        try {
+            return Paths.get(inputDirectory).toRealPath().toString();
+        } catch (IOException e) {
+            return inputDirectory;
         }
     }
 
