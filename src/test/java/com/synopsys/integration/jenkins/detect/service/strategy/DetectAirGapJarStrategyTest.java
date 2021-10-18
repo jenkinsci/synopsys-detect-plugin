@@ -11,6 +11,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Optional;
@@ -252,7 +253,7 @@ public class DetectAirGapJarStrategyTest {
     private String resolveDirectory(String inputDirectory) {
         try {
             return Paths.get(inputDirectory).toRealPath().toString();
-        } catch (IOException e) {
+        } catch (IOException | InvalidPathException e) {
             return inputDirectory;
         }
     }
