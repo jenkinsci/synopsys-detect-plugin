@@ -13,6 +13,10 @@ group = 'com.blackducksoftware.integration'
 version = '7.1.0-SNAPSHOT'
 description = 'Synopsys Detect Plugin for Jenkins'
 
+repositories {
+    maven { url "https://repo.jenkins-ci.org/releases/" }
+}
+
 apply plugin: 'com.synopsys.integration.solution'
 
 artifactory {
