@@ -9,6 +9,7 @@ package com.synopsys.integration.jenkins.detect.service.strategy;
 
 import org.apache.commons.lang3.StringUtils;
 
+import com.google.gson.Gson;
 import com.synopsys.integration.exception.IntegrationException;
 import com.synopsys.integration.jenkins.detect.DetectJenkinsEnvironmentVariable;
 import com.synopsys.integration.jenkins.detect.exception.DetectJenkinsException;
@@ -35,13 +36,18 @@ public class DetectStrategyService {
         this.jenkinsConfigService = jenkinsConfigService;
     }
 
-    public DetectExecutionStrategy getExecutionStrategy(IntEnvironmentVariables intEnvironmentVariables, OperatingSystemType operatingSystemType, String remoteJdkHome, DetectDownloadStrategy detectDownloadStrategy)
+    public DetectExecutionStrategy getExecutionStrategy(
+        IntEnvironmentVariables intEnvironmentVariables,
+        OperatingSystemType operatingSystemType,
+        String remoteJdkHome,
+        DetectDownloadStrategy detectDownloadStrategy
+    )
         throws IntegrationException {
         String loggingMessage = "Running Detect using configured strategy: ";
 
         if (detectDownloadStrategy == null || detectDownloadStrategy instanceof InheritFromGlobalDownloadStrategy) {
             DetectGlobalConfig detectGlobalConfig = jenkinsConfigService.getGlobalConfiguration(DetectGlobalConfig.class)
-                                                        .orElseThrow(() -> new DetectJenkinsException("Could not find Detect configuration. Check Jenkins System Configuration to ensure Detect is configured correctly."));
+                .orElseThrow(() -> new DetectJenkinsException("Could not find Detect configuration. Check Jenkins System Configuration to ensure Detect is configured correctly."));
             detectDownloadStrategy = detectGlobalConfig.getDownloadStrategy();
 
             if (detectDownloadStrategy == null) {
@@ -58,11 +64,17 @@ public class DetectStrategyService {
         DetectExecutionStrategy detectExecutionStrategy;
 
         if (detectDownloadStrategy instanceof AirGapDownloadStrategy) {
-            detectExecutionStrategy = new DetectAirGapJarStrategy(logger, intEnvironmentVariables, remoteJdkHome, jenkinsConfigService, (AirGapDownloadStrategy) detectDownloadStrategy);
+            detectExecutionStrategy = new DetectAirGapJarStrategy(
+                logger,
+                intEnvironmentVariables,
+                remoteJdkHome,
+                jenkinsConfigService,
+                (AirGapDownloadStrategy) detectDownloadStrategy
+            );
         } else if (StringUtils.isNotBlank(detectJarPath)) {
             detectExecutionStrategy = new DetectJarStrategy(logger, intEnvironmentVariables, remoteJdkHome, detectJarPath);
         } else {
-            detectExecutionStrategy = new DetectScriptStrategy(logger, jenkinsProxyHelper, operatingSystemType, remoteTempWorkspacePath);
+            detectExecutionStrategy = new DetectScriptStrategy(logger, jenkinsProxyHelper, operatingSystemType, remoteTempWorkspacePath, new Gson());
         }
 
         return detectExecutionStrategy;

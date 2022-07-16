@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.function.Function;
 
+import com.google.gson.Gson;
 import com.synopsys.integration.IntegrationEscapeUtils;
 import com.synopsys.integration.exception.IntegrationException;
 import com.synopsys.integration.jenkins.detect.exception.DetectJenkinsException;
@@ -43,12 +44,14 @@ public class DetectScriptStrategy extends DetectExecutionStrategy {
     private final OperatingSystemType operatingSystemType;
     private final JenkinsProxyHelper jenkinsProxyHelper;
     private final String toolsDirectory;
+    private final Gson gson;
 
-    public DetectScriptStrategy(JenkinsIntLogger logger, JenkinsProxyHelper jenkinsProxyHelper, OperatingSystemType operatingSystemType, String toolsDirectory) {
+    public DetectScriptStrategy(JenkinsIntLogger logger, JenkinsProxyHelper jenkinsProxyHelper, OperatingSystemType operatingSystemType, String toolsDirectory, Gson gson) {
         this.logger = logger;
         this.jenkinsProxyHelper = jenkinsProxyHelper;
         this.operatingSystemType = operatingSystemType;
         this.toolsDirectory = toolsDirectory;
+        this.gson = gson;
     }
 
     @Override
@@ -88,7 +91,19 @@ public class DetectScriptStrategy extends DetectExecutionStrategy {
         String proxyPassword = proxyInfo.getPassword().orElse(null);
         String proxyNtlmDomain = proxyInfo.getNtlmDomain().orElse(null);
         String proxyNtlmWorkstation = proxyInfo.getNtlmWorkstation().orElse(null);
-        return new SetupCallableImpl(logger, toolsDirectory, scriptUrl, scriptFileName, proxyHost, proxyPort, proxyUsername, proxyPassword, proxyNtlmDomain, proxyNtlmWorkstation);
+        return new SetupCallableImpl(
+            logger,
+            toolsDirectory,
+            scriptUrl,
+            scriptFileName,
+            proxyHost,
+            proxyPort,
+            proxyUsername,
+            proxyPassword,
+            proxyNtlmDomain,
+            proxyNtlmWorkstation,
+            gson
+        );
     }
 
     public static class SetupCallableImpl extends MasterToSlaveCallable<ArrayList<String>, IntegrationException> {
@@ -103,9 +118,12 @@ public class DetectScriptStrategy extends DetectExecutionStrategy {
         private final String proxyNtlmDomain;
         private final String proxyNtlmWorkstation;
         private final String scriptFileName;
+        private final Gson gson;
 
-        public SetupCallableImpl(JenkinsIntLogger logger, String toolsDirectory, String scriptUrl, String scriptFileName, String proxyHost, int proxyPort, String proxyUsername, String proxyPassword,
-            String proxyNtlmDomain, String proxyNtlmWorkstation) {
+        public SetupCallableImpl(
+            JenkinsIntLogger logger, String toolsDirectory, String scriptUrl, String scriptFileName, String proxyHost, int proxyPort, String proxyUsername, String proxyPassword,
+            String proxyNtlmDomain, String proxyNtlmWorkstation, Gson gson
+        ) {
             this.logger = logger;
             this.toolsDirectory = toolsDirectory;
             this.scriptUrl = scriptUrl;
@@ -116,6 +134,7 @@ public class DetectScriptStrategy extends DetectExecutionStrategy {
             this.proxyPassword = proxyPassword;
             this.proxyNtlmDomain = proxyNtlmDomain;
             this.proxyNtlmWorkstation = proxyNtlmWorkstation;
+            this.gson = gson;
         }
 
         @Override
@@ -129,7 +148,7 @@ public class DetectScriptStrategy extends DetectExecutionStrategy {
 
                 logger.info(String.format("Downloading Detect script from %s to %s", scriptUrl, detectScriptPath));
 
-                IntHttpClient intHttpClient = new IntHttpClient(logger, 120, true, rebuildProxyInfo());
+                IntHttpClient intHttpClient = new IntHttpClient(logger, gson, 120, true, rebuildProxyInfo());
                 Request request = new Request.Builder().url(new HttpUrl(scriptUrl)).build();
 
                 try (Response response = intHttpClient.execute(request)) {

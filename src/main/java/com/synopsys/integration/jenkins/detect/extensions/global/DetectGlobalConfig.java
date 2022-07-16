@@ -45,6 +45,7 @@ import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.cloudbees.plugins.credentials.impl.BaseStandardCredentials;
 import com.synopsys.integration.blackduck.configuration.BlackDuckServerConfig;
 import com.synopsys.integration.blackduck.configuration.BlackDuckServerConfigBuilder;
+import com.synopsys.integration.exception.IntegrationException;
 import com.synopsys.integration.jenkins.annotations.HelpMarkdown;
 import com.synopsys.integration.jenkins.detect.extensions.AirGapDownloadStrategy;
 import com.synopsys.integration.jenkins.detect.extensions.DetectDownloadStrategy;
@@ -54,8 +55,8 @@ import com.synopsys.integration.jenkins.wrapper.JenkinsWrapper;
 import com.synopsys.integration.jenkins.wrapper.SynopsysCredentialsHelper;
 import com.synopsys.integration.log.LogLevel;
 import com.synopsys.integration.log.PrintStreamIntLogger;
-import com.synopsys.integration.rest.client.ConnectionResult;
 import com.synopsys.integration.rest.proxy.ProxyInfo;
+import com.synopsys.integration.rest.response.Response;
 
 import hudson.Extension;
 import hudson.Functions;
@@ -78,9 +79,9 @@ public class DetectGlobalConfig extends GlobalConfiguration implements Serializa
     private String blackDuckUrl;
 
     @HelpMarkdown("Choose the saved API Token from the list to authenticate to the Black Duck server.  \r\n" +
-                      "If the saved secret text containing your API Token is not in the list, you can add it with the Add button.\r\n\n" +
-                      "As of Detect 7.0.0, an API Token saved as secret text is the only supported means for authentication.  \r\n" +
-                      "Username with password is no longer supported.")
+        "If the saved secret text containing your API Token is not in the list, you can add it with the Add button.\r\n\n" +
+        "As of Detect 7.0.0, an API Token saved as secret text is the only supported means for authentication.  \r\n" +
+        "Username with password is no longer supported.")
     private String blackDuckCredentialsId;
 
     @HelpMarkdown("If selected, Detect will automatically trust certificates when communicating with your Black Duck server.")
@@ -159,7 +160,14 @@ public class DetectGlobalConfig extends GlobalConfiguration implements Serializa
     }
 
     public BlackDuckServerConfigBuilder getBlackDuckServerConfigBuilder(JenkinsProxyHelper jenkinsProxyHelper, SynopsysCredentialsHelper synopsysCredentialsHelper) {
-        return createBlackDuckServerConfigBuilder(jenkinsProxyHelper, synopsysCredentialsHelper, blackDuckUrl, blackDuckCredentialsId, blackDuckTimeout, trustBlackDuckCertificates);
+        return createBlackDuckServerConfigBuilder(
+            jenkinsProxyHelper,
+            synopsysCredentialsHelper,
+            blackDuckUrl,
+            blackDuckCredentialsId,
+            blackDuckTimeout,
+            trustBlackDuckCertificates
+        );
     }
 
     public ListBoxModel doFillBlackDuckCredentialsIdItems() {
@@ -169,13 +177,17 @@ public class DetectGlobalConfig extends GlobalConfiguration implements Serializa
         }
         jenkins.checkPermission(Jenkins.ADMINISTER);
         return new StandardListBoxModel()
-                   .includeEmptyValue()
-                   .includeMatchingAs(ACL.SYSTEM, jenkins, BaseStandardCredentials.class, Collections.emptyList(), SynopsysCredentialsHelper.API_TOKEN_CREDENTIALS);
+            .includeEmptyValue()
+            .includeMatchingAs(ACL.SYSTEM, jenkins, BaseStandardCredentials.class, Collections.emptyList(), SynopsysCredentialsHelper.API_TOKEN_CREDENTIALS);
     }
 
     @POST
-    public FormValidation doTestBlackDuckConnection(@QueryParameter("blackDuckUrl") String blackDuckUrl, @QueryParameter("blackDuckCredentialsId") String blackDuckCredentialsId, @QueryParameter("blackDuckTimeout") String blackDuckTimeout,
-        @QueryParameter("trustBlackDuckCertificates") boolean trustBlackDuckCertificates) {
+    public FormValidation doTestBlackDuckConnection(
+        @QueryParameter("blackDuckUrl") String blackDuckUrl,
+        @QueryParameter("blackDuckCredentialsId") String blackDuckCredentialsId,
+        @QueryParameter("blackDuckTimeout") String blackDuckTimeout,
+        @QueryParameter("trustBlackDuckCertificates") boolean trustBlackDuckCertificates
+    ) {
         JenkinsWrapper jenkinsWrapper = JenkinsWrapper.initializeFromJenkinsJVM();
         if (!jenkinsWrapper.getJenkins().isPresent()) {
             return FormValidation.warning(
@@ -187,22 +199,29 @@ public class DetectGlobalConfig extends GlobalConfiguration implements Serializa
         JenkinsProxyHelper jenkinsProxyHelper = jenkinsWrapper.getProxyHelper();
 
         try {
-            BlackDuckServerConfig blackDuckServerConfig = createBlackDuckServerConfigBuilder(jenkinsProxyHelper, synopsysCredentialsHelper, blackDuckUrl, blackDuckCredentialsId, Integer.parseInt(blackDuckTimeout),
-                trustBlackDuckCertificates).build();
-            ConnectionResult connectionResult = blackDuckServerConfig.createBlackDuckHttpClient(new PrintStreamIntLogger(System.out, LogLevel.DEBUG)).attemptConnection();
-            if (connectionResult.isFailure()) {
-                int statusCode = connectionResult.getHttpStatusCode();
+            BlackDuckServerConfig blackDuckServerConfig = createBlackDuckServerConfigBuilder(
+                jenkinsProxyHelper,
+                synopsysCredentialsHelper,
+                blackDuckUrl,
+                blackDuckCredentialsId,
+                Integer.parseInt(blackDuckTimeout),
+                trustBlackDuckCertificates
+            ).build();
+            Response response = blackDuckServerConfig.createBlackDuckHttpClient(new PrintStreamIntLogger(System.out, LogLevel.DEBUG)).attemptAuthentication();
+
+            if (response.isStatusCodeError()) {
+                int statusCode = response.getStatusCode();
                 String validationMessage = determineValidationMessage(statusCode);
 
                 // This is how Jenkins constructs an error with an exception stack trace, we're using it here because often a status code and phrase are not enough, but also (especially with proxies) the failure message can be too much.
-                String moreDetailsHtml = connectionResult.getFailureMessage()
-                                             .map(Util::escape)
-                                             .map(msg -> String.format("<a href='#' class='showDetails'>%s</a><pre style='display:none'>%s</pre>", Messages.FormValidation_Error_Details(), msg))
-                                             .orElse(StringUtils.EMPTY);
+                String moreDetailsHtml = Optional.ofNullable(response.getContentString())
+                    .map(Util::escape)
+                    .map(msg -> String.format("<a href='#' class='showDetails'>%s</a><pre style='display:none'>%s</pre>", Messages.FormValidation_Error_Details(), msg))
+                    .orElse(StringUtils.EMPTY);
 
                 return FormValidation.errorWithMarkup(String.join(" ", validationMessage, moreDetailsHtml));
             }
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException | IntegrationException e) {
             return FormValidation.error(e.getMessage());
         }
 
@@ -285,9 +304,9 @@ public class DetectGlobalConfig extends GlobalConfiguration implements Serializa
 
     private Optional<String> getNodeValue(Document doc, String tagName) {
         return Optional.ofNullable(doc.getElementsByTagName(tagName).item(0))
-                   .map(Node::getFirstChild)
-                   .map(Node::getNodeValue)
-                   .map(String::trim);
+            .map(Node::getFirstChild)
+            .map(Node::getNodeValue)
+            .map(String::trim);
     }
 
     private Optional<Integer> getNodeIntegerValue(Document doc, String tagName) {
@@ -302,17 +321,19 @@ public class DetectGlobalConfig extends GlobalConfiguration implements Serializa
         return getNodeValue(doc, tagName).map(Boolean::valueOf);
     }
 
-    private BlackDuckServerConfigBuilder createBlackDuckServerConfigBuilder(JenkinsProxyHelper jenkinsProxyHelper, SynopsysCredentialsHelper synopsysCredentialsHelper,
-        String blackDuckUrl, String credentialsId, int timeout, boolean alwaysTrust) {
+    private BlackDuckServerConfigBuilder createBlackDuckServerConfigBuilder(
+        JenkinsProxyHelper jenkinsProxyHelper, SynopsysCredentialsHelper synopsysCredentialsHelper,
+        String blackDuckUrl, String credentialsId, int timeout, boolean alwaysTrust
+    ) {
         ProxyInfo proxyInfo = jenkinsProxyHelper.getProxyInfo(blackDuckUrl);
         String apiToken = synopsysCredentialsHelper.getApiTokenByCredentialsId(credentialsId).orElse(null);
 
         return BlackDuckServerConfig.newBuilder()
-                   .setUrl(blackDuckUrl)
-                   .setTimeoutInSeconds(timeout)
-                   .setTrustCert(alwaysTrust)
-                   .setProxyInfo(proxyInfo)
-                   .setApiToken(apiToken);
+            .setUrl(blackDuckUrl)
+            .setTimeoutInSeconds(timeout)
+            .setTrustCert(alwaysTrust)
+            .setProxyInfo(proxyInfo)
+            .setApiToken(apiToken);
     }
 
 }

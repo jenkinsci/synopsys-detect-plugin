@@ -11,6 +11,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import com.google.gson.Gson;
 import com.synopsys.integration.exception.IntegrationException;
 import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
 import com.synopsys.integration.jenkins.wrapper.JenkinsProxyHelper;
@@ -39,7 +40,7 @@ public class DetectScriptStrategyTest {
 
         JenkinsProxyHelper mockedProxyHelper = Mockito.mock(JenkinsProxyHelper.class);
         Mockito.when(mockedProxyHelper.getProxyInfo(Mockito.anyString())).thenThrow(new IllegalArgumentException(expectedExceptionMessage));
-        DetectScriptStrategy detectScriptStrategy = new DetectScriptStrategy(defaultLogger, mockedProxyHelper, OperatingSystemType.LINUX, null);
+        DetectScriptStrategy detectScriptStrategy = new DetectScriptStrategy(defaultLogger, mockedProxyHelper, OperatingSystemType.LINUX, null, new Gson());
 
         try {
             detectScriptStrategy.getSetupCallable();
@@ -52,7 +53,7 @@ public class DetectScriptStrategyTest {
 
     @Test
     public void testArgumentEscaperLinux() {
-        DetectScriptStrategy detectScriptStrategy = new DetectScriptStrategy(defaultLogger, defaultProxyHelper, OperatingSystemType.LINUX, null);
+        DetectScriptStrategy detectScriptStrategy = new DetectScriptStrategy(defaultLogger, defaultProxyHelper, OperatingSystemType.LINUX, null, new Gson());
         String expectedEscapedString = "\\|\\&\\;\\<\\>\\(\\)\\$\\`\\\\\\\"\\'\\ \\\t\\*\\?\\[\\#\\~\\=\\%,";
 
         String escapedString = detectScriptStrategy.getArgumentEscaper().apply(unescapedSpecialCharacters);
@@ -62,7 +63,7 @@ public class DetectScriptStrategyTest {
 
     @Test
     public void testArgumentEscaperMac() {
-        DetectScriptStrategy detectScriptStrategy = new DetectScriptStrategy(defaultLogger, defaultProxyHelper, OperatingSystemType.MAC, null);
+        DetectScriptStrategy detectScriptStrategy = new DetectScriptStrategy(defaultLogger, defaultProxyHelper, OperatingSystemType.MAC, null, new Gson());
         String expectedEscapedString = "\\|\\&\\;\\<\\>\\(\\)\\$\\`\\\\\\\"\\'\\ \\\t\\*\\?\\[\\#\\~\\=\\%,";
 
         String escapedString = detectScriptStrategy.getArgumentEscaper().apply(unescapedSpecialCharacters);
@@ -72,7 +73,7 @@ public class DetectScriptStrategyTest {
 
     @Test
     public void testArgumentEscaperWindows() {
-        DetectScriptStrategy detectScriptStrategy = new DetectScriptStrategy(defaultLogger, defaultProxyHelper, OperatingSystemType.WINDOWS, null);
+        DetectScriptStrategy detectScriptStrategy = new DetectScriptStrategy(defaultLogger, defaultProxyHelper, OperatingSystemType.WINDOWS, null, new Gson());
         String expectedEscapedString = "`|`&`;`<`>`(`)`$```\\`\"`'` `\t`*`?`[`#`~`=`%`,";
 
         String escapedString = detectScriptStrategy.getArgumentEscaper().apply(unescapedSpecialCharacters);
