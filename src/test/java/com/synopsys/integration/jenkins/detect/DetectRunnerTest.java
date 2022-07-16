@@ -133,11 +133,14 @@ public class DetectRunnerTest {
         JenkinsRemotingService mockedRemotingService = Mockito.mock(JenkinsRemotingService.class);
 
         try {
-            Mockito.when(mockedRemotingService.call(Mockito.any(DetectJarStrategy.SetupCallableImpl.class))).thenReturn(new ArrayList<>(Arrays.asList(JDK_HOME, "-jar", detectPath)));
-            Mockito.when(mockedRemotingService.call(Mockito.any(DetectAirGapJarStrategy.SetupCallableImpl.class))).thenReturn(new ArrayList<>(Arrays.asList(JDK_HOME, "-jar", DETECT_AIRGAP_JAR_PATH)));
+            Mockito.when(mockedRemotingService.call(Mockito.any(DetectJarStrategy.SetupCallableImpl.class)))
+                .thenReturn(new ArrayList<>(Arrays.asList(JDK_HOME, "-jar", detectPath)));
+            Mockito.when(mockedRemotingService.call(Mockito.any(DetectAirGapJarStrategy.SetupCallableImpl.class)))
+                .thenReturn(new ArrayList<>(Arrays.asList(JDK_HOME, "-jar", DETECT_AIRGAP_JAR_PATH)));
 
             if (operatingSystemType == OperatingSystemType.WINDOWS) {
-                Mockito.when(mockedRemotingService.call(Mockito.any(DetectScriptStrategy.SetupCallableImpl.class))).thenReturn(new ArrayList<>(Arrays.asList("powershell", String.format("\"Import-Module '%s'; detect\"", detectPath))));
+                Mockito.when(mockedRemotingService.call(Mockito.any(DetectScriptStrategy.SetupCallableImpl.class)))
+                    .thenReturn(new ArrayList<>(Arrays.asList("powershell", String.format("\"Import-Module '%s'; detect\"", detectPath))));
             } else {
                 Mockito.when(mockedRemotingService.call(Mockito.any(DetectScriptStrategy.SetupCallableImpl.class))).thenReturn(new ArrayList<>(Arrays.asList("bash", detectPath)));
             }
@@ -151,9 +154,13 @@ public class DetectRunnerTest {
         return mockedRemotingService;
     }
 
-    private List<String> runDetectAndCaptureCommand(Map<String, String> environmentVariables, JenkinsRemotingService mockedRemotingService, DetectDownloadStrategy detectDownloadStrategy) {
+    private List<String> runDetectAndCaptureCommand(
+        Map<String, String> environmentVariables,
+        JenkinsRemotingService mockedRemotingService,
+        DetectDownloadStrategy detectDownloadStrategy
+    ) {
         try {
-            JenkinsIntLogger jenkinsIntLogger = new JenkinsIntLogger(null);
+            JenkinsIntLogger jenkinsIntLogger = JenkinsIntLogger.logToListener(null);
             Map<BuilderPropertyKey, String> builderEnvironmentVariables = new HashMap<>();
             builderEnvironmentVariables.put(BlackDuckServerConfigBuilder.TIMEOUT_KEY, "120");
 
@@ -168,7 +175,8 @@ public class DetectRunnerTest {
 
             // Mocks specific to AirGap
             DetectAirGapInstallation detectAirGapInstallationMock = Mockito.mock(DetectAirGapInstallation.class);
-            Mockito.when(jenkinsConfigService.getInstallationForNodeAndEnvironment(DetectAirGapInstallation.DescriptorImpl.class, AIRGAP_TOOL_NAME)).thenReturn(Optional.ofNullable(detectAirGapInstallationMock));
+            Mockito.when(jenkinsConfigService.getInstallationForNodeAndEnvironment(DetectAirGapInstallation.DescriptorImpl.class, AIRGAP_TOOL_NAME))
+                .thenReturn(Optional.ofNullable(detectAirGapInstallationMock));
             Mockito.doReturn(AIRGAP_TOOL_PATH).when(detectAirGapInstallationMock).getHome();
 
             JenkinsVersionHelper mockedVersionHelper = Mockito.mock(JenkinsVersionHelper.class);
@@ -177,7 +185,14 @@ public class DetectRunnerTest {
 
             JenkinsProxyHelper blankProxyHelper = new JenkinsProxyHelper();
 
-            DetectEnvironmentService detectEnvironmentService = new DetectEnvironmentService(jenkinsIntLogger, blankProxyHelper, mockedVersionHelper, mockedCredentialsHelper, jenkinsConfigService, environmentVariables);
+            DetectEnvironmentService detectEnvironmentService = new DetectEnvironmentService(
+                jenkinsIntLogger,
+                blankProxyHelper,
+                mockedVersionHelper,
+                mockedCredentialsHelper,
+                jenkinsConfigService,
+                environmentVariables
+            );
             DetectArgumentService detectArgumentService = new DetectArgumentService(jenkinsIntLogger, mockedVersionHelper);
             DetectStrategyService detectStrategyService = new DetectStrategyService(jenkinsIntLogger, blankProxyHelper, WORKSPACE_TMP_REL_PATH, jenkinsConfigService);
 
@@ -197,7 +212,7 @@ public class DetectRunnerTest {
             //       run, which currently requires the setup above. Long term, the tests here should be redesigned so that we aren't
             //       performing all of the mocking. Until then, perform the assert below against all System.getenv() entries.
             System.getenv().forEach((key, value) ->
-                                        assertNotEquals(value, detectEnvCapture.getValue().getValue(value))
+                assertNotEquals(value, detectEnvCapture.getValue().getValue(value))
             );
 
             return cmdsArgCapture.getValue();

@@ -59,10 +59,12 @@ public class DetectAirGapJarStrategyTest {
     private File tempAirGapJar;
 
     public static Stream<Arguments> testJavaHomeSource() {
-        return Stream.of(Arguments.of(" ", System.getProperty("user.dir") + File.separator + " " + REMOTE_JAVA_RELATIVE_PATH),
+        return Stream.of(
+            Arguments.of(" ", System.getProperty("user.dir") + File.separator + " " + REMOTE_JAVA_RELATIVE_PATH),
             Arguments.of("", new File(REMOTE_JAVA_RELATIVE_PATH).getAbsolutePath()),
             Arguments.of(null, "java"),
-            Arguments.of(REMOTE_JDK_HOME, EXPECTED_JAVA_FULL_PATH));
+            Arguments.of(REMOTE_JDK_HOME, EXPECTED_JAVA_FULL_PATH)
+        );
     }
 
     @BeforeEach
@@ -74,17 +76,24 @@ public class DetectAirGapJarStrategyTest {
         byteArrayOutputStream = new ByteArrayOutputStream();
         Mockito.when(taskListener.getLogger()).thenReturn(new PrintStream(byteArrayOutputStream));
 
-        logger = new JenkinsIntLogger(taskListener);
+        logger = JenkinsIntLogger.logToListener(taskListener);
 
         tempJarDirectoryPathName = createTempAirGapDirectory().getPath();
         tempAirGapJar = createTempAirGapJar(DetectAirGapJarStrategy.DETECT_JAR_PREFIX, DetectAirGapJarStrategy.DETECT_JAR_SUFFIX);
 
-        Mockito.doReturn(Optional.of(detectAirGapInstallationMock)).when(jenkinsConfigServiceMock).getInstallationForNodeAndEnvironment(DetectAirGapInstallation.DescriptorImpl.class, AIRGAP_TOOL_NAME);
+        Mockito.doReturn(Optional.of(detectAirGapInstallationMock)).when(jenkinsConfigServiceMock)
+            .getInstallationForNodeAndEnvironment(DetectAirGapInstallation.DescriptorImpl.class, AIRGAP_TOOL_NAME);
     }
 
     @Test
     public void testArgumentEscaper() {
-        DetectAirGapJarStrategy detectAirGapJarStrategy = new DetectAirGapJarStrategy(logger, environmentVariables, REMOTE_JDK_HOME, jenkinsConfigServiceMock, AIRGAP_DOWNLOAD_STRATEGY);
+        DetectAirGapJarStrategy detectAirGapJarStrategy = new DetectAirGapJarStrategy(
+            logger,
+            environmentVariables,
+            REMOTE_JDK_HOME,
+            jenkinsConfigServiceMock,
+            AIRGAP_DOWNLOAD_STRATEGY
+        );
         assertEquals(Function.identity(), detectAirGapJarStrategy.getArgumentEscaper());
     }
 
@@ -157,8 +166,10 @@ public class DetectAirGapJarStrategyTest {
         }
 
         DetectJenkinsException exception = assertThrows(DetectJenkinsException.class, () -> configureCallable(REMOTE_JDK_HOME, tempJarDirectoryPathName).getSetupCallable().call());
-        assertTrue(exception.getMessage().contains(String.format("Problem encountered getting Detect Air Gap tool with the name %s from global tool configuration.", AIRGAP_TOOL_NAME)),
-            "Stacktrace does not contain expected message: " + exception.getMessage());
+        assertTrue(
+            exception.getMessage().contains(String.format("Problem encountered getting Detect Air Gap tool with the name %s from global tool configuration.", AIRGAP_TOOL_NAME)),
+            "Stacktrace does not contain expected message: " + exception.getMessage()
+        );
     }
 
     @Test
@@ -171,13 +182,17 @@ public class DetectAirGapJarStrategyTest {
 
         DetectJenkinsException exception = assertThrows(DetectJenkinsException.class, () -> configureCallable(REMOTE_JDK_HOME, tempJarDirectoryPathName).getSetupCallable().call());
         assertTrue(exception.getCause() instanceof IOException, "Expected an IOException to be thrown");
-        assertTrue(exception.getMessage().contains("Problem encountered while interacting with Jenkins environment."), "Stacktrace does not contain expected message: " + exception.getMessage());
+        assertTrue(
+            exception.getMessage().contains("Problem encountered while interacting with Jenkins environment."),
+            "Stacktrace does not contain expected message: " + exception.getMessage()
+        );
     }
 
     @Test
     public void testInterruptedExceptionGetToolName() {
         try {
-            Mockito.doThrow(InterruptedException.class).when(jenkinsConfigServiceMock).getInstallationForNodeAndEnvironment(DetectAirGapInstallation.DescriptorImpl.class, AIRGAP_TOOL_NAME);
+            Mockito.doThrow(InterruptedException.class).when(jenkinsConfigServiceMock)
+                .getInstallationForNodeAndEnvironment(DetectAirGapInstallation.DescriptorImpl.class, AIRGAP_TOOL_NAME);
         } catch (Exception e) {
             fail("Unexpected exception mocking call to getInstallationForNodeAndEnvironment");
         }
@@ -231,8 +246,10 @@ public class DetectAirGapJarStrategyTest {
         createTempAirGapJar(DetectAirGapJarStrategy.DETECT_JAR_PREFIX, DetectAirGapJarStrategy.DETECT_JAR_SUFFIX);
 
         DetectJenkinsException exception = assertThrows(DetectJenkinsException.class, () -> configureCallable(REMOTE_JDK_HOME, tempJarDirectoryPathName).getSetupCallable().call());
-        assertTrue(exception.getMessage().contains(String.format(EXPECTED_ONE_JAR_ERROR_MSG + " and instead found %d jars", tempJarDirectoryPathName, 2)),
-            "Stacktrace does not contain expected message.");
+        assertTrue(
+            exception.getMessage().contains(String.format(EXPECTED_ONE_JAR_ERROR_MSG + " and instead found %d jars", tempJarDirectoryPathName, 2)),
+            "Stacktrace does not contain expected message."
+        );
     }
 
     private void executeAndValidateSetupCallable(String javaHomeInput, String expectedJavaPath, String toolHomeDirectory, File expectedAirGapJar) {

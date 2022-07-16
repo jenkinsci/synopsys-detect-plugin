@@ -40,7 +40,7 @@ public class DetectScriptStrategyCallableTest {
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         TaskListener mockedTaskListener = Mockito.mock(TaskListener.class);
         Mockito.when(mockedTaskListener.getLogger()).thenReturn(new PrintStream(byteArrayOutputStream));
-        defaultLogger = new JenkinsIntLogger(mockedTaskListener);
+        defaultLogger = JenkinsIntLogger.logToListener(mockedTaskListener);
         defaultProxyHelper = new JenkinsProxyHelper();
 
         try {
