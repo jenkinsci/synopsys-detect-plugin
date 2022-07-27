@@ -148,7 +148,7 @@ public class DetectScriptStrategy extends DetectExecutionStrategy {
 
                 logger.info(String.format("Downloading Detect script from %s to %s", scriptUrl, detectScriptPath));
 
-                IntHttpClient intHttpClient = new IntHttpClient(logger, gson, 120, true, rebuildProxyInfo());
+                IntHttpClient intHttpClient = new IntHttpClient(logger, gson, 120, false, rebuildProxyInfo());
                 Request request = new Request.Builder().url(new HttpUrl(scriptUrl)).build();
 
                 try (Response response = intHttpClient.execute(request)) {
