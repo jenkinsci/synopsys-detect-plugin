@@ -91,12 +91,13 @@ public class DetectCommandsFactory {
         return new DetectPipelineCommands(detectCommandsFactory.createDetectRunner(jenkinsConfigService, jenkinsRemotingService), detectCommandsFactory.getLogger());
     }
 
-    private DetectRunner createDetectRunner(JenkinsConfigService jenkinsConfigService, JenkinsRemotingService jenkinsRemotingService) throws AbortException {
+    private DetectRunner createDetectRunner(JenkinsConfigService jenkinsConfigService, JenkinsRemotingService jenkinsRemotingService) {
         return new DetectRunner(
             createDetectEnvironmentService(jenkinsConfigService),
             jenkinsRemotingService,
             createDetectStrategyService(jenkinsConfigService),
-            createDetectArgumentService()
+            createDetectArgumentService(),
+            getLogger()
         );
     }
 

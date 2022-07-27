@@ -196,7 +196,7 @@ public class DetectRunnerTest {
             DetectArgumentService detectArgumentService = new DetectArgumentService(jenkinsIntLogger, mockedVersionHelper);
             DetectStrategyService detectStrategyService = new DetectStrategyService(jenkinsIntLogger, blankProxyHelper, WORKSPACE_TMP_REL_PATH, jenkinsConfigService);
 
-            DetectRunner detectRunner = new DetectRunner(detectEnvironmentService, mockedRemotingService, detectStrategyService, detectArgumentService);
+            DetectRunner detectRunner = new DetectRunner(detectEnvironmentService, mockedRemotingService, detectStrategyService, detectArgumentService, jenkinsIntLogger);
 
             // run the method we're testing
             detectRunner.runDetect(null, DETECT_PROPERTY_INPUT, detectDownloadStrategy);
