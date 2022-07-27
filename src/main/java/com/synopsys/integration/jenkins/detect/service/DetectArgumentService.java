@@ -37,7 +37,12 @@ public class DetectArgumentService {
         this.jenkinsVersionHelper = jenkinsVersionHelper;
     }
 
-    public List<String> getDetectArguments(IntEnvironmentVariables intEnvironmentVariables, Function<String, String> strategyEscaper, List<String> initialArguments, String detectArgumentString) {
+    public List<String> getDetectArguments(
+        IntEnvironmentVariables intEnvironmentVariables,
+        Function<String, String> strategyEscaper,
+        List<String> initialArguments,
+        String detectArgumentString
+    ) {
         boolean shouldEscape = Boolean.parseBoolean(intEnvironmentVariables.getValue(DetectJenkinsEnvironmentVariable.SHOULD_ESCAPE.stringValue(), "true"));
         Function<String, String> argumentEscaper;
         if (shouldEscape) {
@@ -46,43 +51,38 @@ public class DetectArgumentService {
             argumentEscaper = Function.identity();
         }
 
-        List<String> userProvidedArguments = parseDetectArgumentString(intEnvironmentVariables.getVariables(), argumentEscaper, detectArgumentString);
+        List<String> detectArguments = new ArrayList<>();
+        detectArguments.addAll(initialArguments);
+        detectArguments.addAll(parseDetectArgumentString(intEnvironmentVariables.getVariables(), argumentEscaper, detectArgumentString));
 
-        List<String> additionalArguments = new ArrayList<>();
-
-        if (userProvidedArguments.stream().noneMatch(argument -> argument.contains(DETECT_LOGLEVEL_ARGUMENT))) {
-            additionalArguments.add(asEscapedDetectArgument(argumentEscaper, DETECT_LOGLEVEL_ARGUMENT, logger.getLogLevel().toString()));
+        if (detectArguments.stream().noneMatch(argument -> argument.contains(DETECT_LOGLEVEL_ARGUMENT))) {
+            detectArguments.add(asEscapedDetectArgument(argumentEscaper, DETECT_LOGLEVEL_ARGUMENT, logger.getLogLevel().toString()));
         }
 
         String jenkinsVersion = jenkinsVersionHelper.getJenkinsVersion().orElse(PhoneHomeRequestBody.UNKNOWN_FIELD_VALUE);
         String pluginVersion = jenkinsVersionHelper.getPluginVersion("blackduck-detect").orElse(PhoneHomeRequestBody.UNKNOWN_FIELD_VALUE);
 
-        additionalArguments.add(asEscapedDetectArgument(argumentEscaper, DETECT_PHONEHOME_JENKINS_VERSION_ARGUMENT, jenkinsVersion));
-        additionalArguments.add(asEscapedDetectArgument(argumentEscaper, DETECT_PHONEHOME_PLUGIN_VERSION_ARGUMENT, pluginVersion));
+        detectArguments.add(asEscapedDetectArgument(argumentEscaper, DETECT_PHONEHOME_JENKINS_VERSION_ARGUMENT, jenkinsVersion));
+        detectArguments.add(asEscapedDetectArgument(argumentEscaper, DETECT_PHONEHOME_PLUGIN_VERSION_ARGUMENT, pluginVersion));
 
-        List<String> detectArguments = new ArrayList<>();
-        detectArguments.addAll(initialArguments);
-        detectArguments.addAll(userProvidedArguments);
-
-        logger.info("Running Detect command: " + StringUtils.join(detectArguments, " "));
-
-        detectArguments.addAll(additionalArguments);
         return detectArguments;
     }
 
-    private String asEscapedDetectArgument(Function<String, String> escaper, String key, String value) {
-        String argumentString = String.format("--%s=%s", key, value);
-        return escaper.apply(argumentString);
+    private String asEscapedDetectArgument(Function<String, String> escaper, String key, String rawValue) {
+        return String.format("--%s=%s", key, escaper.apply(rawValue));
     }
 
-    public List<String> parseDetectArgumentString(Map<String, String> environmentVariables, Function<String, String> argumentEscaper, String argumentString) {
+    public List<String> parseDetectArgumentString(
+        Map<String, String> environmentVariables, Function<String, String> argumentEscaper, String argumentString
+    ) {
         return Arrays.stream(Commandline.translateCommandline(argumentString))
-                   .map(argumentBlobString -> argumentBlobString.split("\\r?\\n"))
-                   .flatMap(Arrays::stream)
-                   .map(argument -> Util.replaceMacro(argument, environmentVariables))
-                   .filter(this::validateExpandedArguments)
-                   .map(argumentEscaper)
-                   .collect(Collectors.toList());
+            .map(argumentBlobString -> argumentBlobString.split("\\r?\\n"))
+            .flatMap(Arrays::stream)
+            .map(argument -> Util.replaceMacro(argument, environmentVariables))
+            .filter(this::validateExpandedArguments)
+            .filter(argument -> argument != null)
+            .map(argument -> escapeArgument(argument, argumentEscaper))
+            .collect(Collectors.toList());
     }
 
     private boolean validateExpandedArguments(String argument) {
@@ -97,4 +97,17 @@ public class DetectArgumentService {
         return true;
     }
 
+    private String escapeArgument(String argument, Function<String, String> escaper) {
+        String detectPropertyName = "";
+        String detectPropertyValue = "";
+        if (argument.startsWith("--") && argument.contains("=")) {
+            String[] splitArgument = argument.split("=", 2);
+            detectPropertyName = splitArgument[0];
+            detectPropertyValue = splitArgument[1];
+        } else {
+            detectPropertyValue = argument;
+        }
+
+        return detectPropertyName + "=" + escaper.apply(detectPropertyValue);
+    }
 }
