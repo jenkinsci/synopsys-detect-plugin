@@ -40,7 +40,7 @@ import com.synopsys.integration.util.IntEnvironmentVariables;
 import com.synopsys.integration.util.OperatingSystemType;
 
 public class DetectRunnerTest {
-    private static final String DETECT_PROPERTY_INPUT = "--detect.docker.passthrough.service.timeout=$DETECT_TIMEOUT --detect.cleanup=false --detect.project.name=\"Test Project'\"";
+    private static final String DETECT_PROPERTY_INPUT = "--detect.docker.passthrough.service.timeout=$DETECT_TIMEOUT --detect.cleanup=false --detect.project.name=\"Test Project'\" --detect.project.tags=alpha,beta,gamma,delta,epsilon";
     private static final String WORKSPACE_TMP_REL_PATH = "out/test/DetectPostBuildStepTest/testPerform/workspace@tmp";
     private static final String JDK_HOME = "/tmp/jdk/bin/java";
     private static final String DETECT_JAR_PATH = "/tmp/detect.jar";
@@ -67,6 +67,7 @@ public class DetectRunnerTest {
         assertEquals("--detect.docker.passthrough.service.timeout=120", actualCommand.get(i++));
         assertEquals("--detect.cleanup=false", actualCommand.get(i++));
         assertEquals("--detect.project.name=Test Project'", actualCommand.get(i++));
+        assertEquals("--detect.project.tags=alpha,beta,gamma,delta,epsilon", actualCommand.get(i++));
         assertEquals("--logging.level.com.synopsys.integration=INFO", actualCommand.get(i++));
         assertTrue(actualCommand.get(i++).startsWith("--detect.phone.home.passthrough.jenkins.version="));
         assertTrue(actualCommand.get(i).startsWith("--detect.phone.home.passthrough.jenkins.plugin.version="));
@@ -85,6 +86,7 @@ public class DetectRunnerTest {
         assertEquals("--detect.docker.passthrough.service.timeout=120", actualCommand.get(i++));
         assertEquals("--detect.cleanup=false", actualCommand.get(i++));
         assertEquals("--detect.project.name=Test\\ Project\\'", actualCommand.get(i++));
+        assertEquals("--detect.project.tags=alpha,beta,gamma,delta,epsilon", actualCommand.get(i++));
         assertEquals("--logging.level.com.synopsys.integration=INFO", actualCommand.get(i++));
         assertTrue(actualCommand.get(i++).startsWith("--detect.phone.home.passthrough.jenkins.version="));
         assertTrue(actualCommand.get(i).startsWith("--detect.phone.home.passthrough.jenkins.plugin.version="));
@@ -103,6 +105,7 @@ public class DetectRunnerTest {
         assertEquals("--detect.docker.passthrough.service.timeout=120", actualCommand.get(i++));
         assertEquals("--detect.cleanup=false", actualCommand.get(i++));
         assertEquals("--detect.project.name=Test` Project`'", actualCommand.get(i++));
+        assertEquals("--detect.project.tags=alpha`,beta`,gamma`,delta`,epsilon", actualCommand.get(i++));
         assertEquals("--logging.level.com.synopsys.integration=INFO", actualCommand.get(i++));
         assertTrue(actualCommand.get(i++).startsWith("--detect.phone.home.passthrough.jenkins.version="));
         assertTrue(actualCommand.get(i).startsWith("--detect.phone.home.passthrough.jenkins.plugin.version="));
@@ -124,6 +127,7 @@ public class DetectRunnerTest {
         assertEquals("--detect.docker.passthrough.service.timeout=120", actualCommand.get(i++));
         assertEquals("--detect.cleanup=false", actualCommand.get(i++));
         assertEquals("--detect.project.name=Test Project'", actualCommand.get(i++));
+        assertEquals("--detect.project.tags=alpha,beta,gamma,delta,epsilon", actualCommand.get(i++));
         assertEquals("--logging.level.com.synopsys.integration=INFO", actualCommand.get(i++));
         assertTrue(actualCommand.get(i++).startsWith("--detect.phone.home.passthrough.jenkins.version="));
         assertTrue(actualCommand.get(i).startsWith("--detect.phone.home.passthrough.jenkins.plugin.version="));
