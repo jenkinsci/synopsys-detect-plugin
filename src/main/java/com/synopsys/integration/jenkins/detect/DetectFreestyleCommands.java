@@ -7,7 +7,6 @@
  */
 package com.synopsys.integration.jenkins.detect;
 
-import com.synopsys.integration.exception.IntegrationException;
 import com.synopsys.integration.jenkins.detect.extensions.DetectDownloadStrategy;
 import com.synopsys.integration.jenkins.service.JenkinsBuildService;
 
@@ -30,8 +29,6 @@ public class DetectFreestyleCommands {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             jenkinsBuildService.markBuildInterrupted();
-        } catch (IntegrationException e) {
-            jenkinsBuildService.markBuildUnstable(e);
         } catch (Exception e) {
             jenkinsBuildService.markBuildFailed(e);
         }
