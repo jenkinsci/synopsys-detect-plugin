@@ -32,8 +32,14 @@ public class DetectEnvironmentService {
     private final Map<String, String> environmentVariables;
     private final JenkinsConfigService jenkinsConfigService;
 
-    public DetectEnvironmentService(JenkinsIntLogger logger, JenkinsProxyHelper jenkinsProxyHelper, JenkinsVersionHelper jenkinsVersionHelper, SynopsysCredentialsHelper synopsysCredentialsHelper, JenkinsConfigService jenkinsConfigService,
-        Map<String, String> environmentVariables) {
+    public DetectEnvironmentService(
+        JenkinsIntLogger logger,
+        JenkinsProxyHelper jenkinsProxyHelper,
+        JenkinsVersionHelper jenkinsVersionHelper,
+        SynopsysCredentialsHelper synopsysCredentialsHelper,
+        JenkinsConfigService jenkinsConfigService,
+        Map<String, String> environmentVariables
+    ) {
         this.logger = logger;
         this.jenkinsProxyHelper = jenkinsProxyHelper;
         this.jenkinsVersionHelper = jenkinsVersionHelper;
@@ -51,9 +57,9 @@ public class DetectEnvironmentService {
 
         Optional<String> pluginVersion = jenkinsVersionHelper.getPluginVersion("blackduck-detect");
         if (pluginVersion.isPresent()) {
-            logger.info("Running Synopsys Detect for Jenkins version: " + pluginVersion.get());
+            logger.info("Running Synopsys Detect Plugin for Jenkins version: " + pluginVersion.get());
         } else {
-            logger.info("Running Synopsys Detect for Jenkins");
+            logger.info("Running Synopsys Detect Plugin for Jenkins");
         }
 
         return intEnvironmentVariables;

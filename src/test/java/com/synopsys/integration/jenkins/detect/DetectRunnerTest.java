@@ -82,12 +82,12 @@ public class DetectRunnerTest {
         int i = 0;
         assertEquals("bash", actualCommand.get(i++));
         assertEquals(DETECT_SHELL_PATH, actualCommand.get(i++));
-        assertEquals("--detect.docker.passthrough.service.timeout\\=120", actualCommand.get(i++));
-        assertEquals("--detect.cleanup\\=false", actualCommand.get(i++));
-        assertEquals("--detect.project.name\\=Test\\ Project\\'", actualCommand.get(i++));
-        assertEquals("--logging.level.com.synopsys.integration\\=INFO", actualCommand.get(i++));
-        assertTrue(actualCommand.get(i++).startsWith("--detect.phone.home.passthrough.jenkins.version\\="));
-        assertTrue(actualCommand.get(i).startsWith("--detect.phone.home.passthrough.jenkins.plugin.version\\="));
+        assertEquals("--detect.docker.passthrough.service.timeout=120", actualCommand.get(i++));
+        assertEquals("--detect.cleanup=false", actualCommand.get(i++));
+        assertEquals("--detect.project.name=Test\\ Project\\'", actualCommand.get(i++));
+        assertEquals("--logging.level.com.synopsys.integration=INFO", actualCommand.get(i++));
+        assertTrue(actualCommand.get(i++).startsWith("--detect.phone.home.passthrough.jenkins.version="));
+        assertTrue(actualCommand.get(i).startsWith("--detect.phone.home.passthrough.jenkins.plugin.version="));
     }
 
     @Test
@@ -100,12 +100,12 @@ public class DetectRunnerTest {
         int i = 0;
         assertEquals("powershell", actualCommand.get(i++));
         assertEquals("\"Import-Module '" + DETECT_POWERSHELL_PATH + "'; detect\"", actualCommand.get(i++));
-        assertEquals("--detect.docker.passthrough.service.timeout`=120", actualCommand.get(i++));
-        assertEquals("--detect.cleanup`=false", actualCommand.get(i++));
-        assertEquals("--detect.project.name`=Test` Project`'", actualCommand.get(i++));
-        assertEquals("--logging.level.com.synopsys.integration`=INFO", actualCommand.get(i++));
-        assertTrue(actualCommand.get(i++).startsWith("--detect.phone.home.passthrough.jenkins.version`="));
-        assertTrue(actualCommand.get(i).startsWith("--detect.phone.home.passthrough.jenkins.plugin.version`="));
+        assertEquals("--detect.docker.passthrough.service.timeout=120", actualCommand.get(i++));
+        assertEquals("--detect.cleanup=false", actualCommand.get(i++));
+        assertEquals("--detect.project.name=Test` Project`'", actualCommand.get(i++));
+        assertEquals("--logging.level.com.synopsys.integration=INFO", actualCommand.get(i++));
+        assertTrue(actualCommand.get(i++).startsWith("--detect.phone.home.passthrough.jenkins.version="));
+        assertTrue(actualCommand.get(i).startsWith("--detect.phone.home.passthrough.jenkins.plugin.version="));
     }
 
     @Test
@@ -196,7 +196,7 @@ public class DetectRunnerTest {
             DetectArgumentService detectArgumentService = new DetectArgumentService(jenkinsIntLogger, mockedVersionHelper);
             DetectStrategyService detectStrategyService = new DetectStrategyService(jenkinsIntLogger, blankProxyHelper, WORKSPACE_TMP_REL_PATH, jenkinsConfigService);
 
-            DetectRunner detectRunner = new DetectRunner(detectEnvironmentService, mockedRemotingService, detectStrategyService, detectArgumentService);
+            DetectRunner detectRunner = new DetectRunner(detectEnvironmentService, mockedRemotingService, detectStrategyService, detectArgumentService, jenkinsIntLogger);
 
             // run the method we're testing
             detectRunner.runDetect(null, DETECT_PROPERTY_INPUT, detectDownloadStrategy);
