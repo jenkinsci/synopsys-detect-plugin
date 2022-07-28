@@ -1,7 +1,6 @@
 package com.synopsys.integration.jenkins.detect.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayOutputStream;
@@ -45,8 +44,8 @@ public class DetectArgumentServiceTest {
 
     private DetectArgumentService detectArgumentService;
     private Map<String, String> inputDetectProperties;
-    private Map<String, String> expectedVisibleDetectProperties;
-    private Map<String, String> expectedHiddenDetectProperties;
+    private Map<String, String> expectedArgsFromEnvironment;
+    private Map<String, String> expectedArgsFromPlugin;
 
     @BeforeEach
     public void setUp() {
@@ -70,16 +69,14 @@ public class DetectArgumentServiceTest {
         inputDetectProperties.put("--detect.cleanup", "ThisIsFalse");
 
         // These are the standard expected detect properties. Tests will update if needed.
-        // They SHOULD be visible in the output log message and be within the return List
-        expectedVisibleDetectProperties = new LinkedHashMap<>();
-        expectedVisibleDetectProperties.putAll(inputDetectProperties);
-        expectedVisibleDetectProperties.put(loggingLevelKey, jenkinsIntLogger.getLogLevel().toString());
+        expectedArgsFromEnvironment = new LinkedHashMap<>();
+        expectedArgsFromEnvironment.putAll(inputDetectProperties);
 
         // These are the automatically appended detect properties added by DetectArgumentService(). Tests will update if needed.
-        // They should NOT be visible in the output log message but should be within the return List
-        expectedHiddenDetectProperties = new LinkedHashMap<>();
-        expectedHiddenDetectProperties.put(jenkinsVersionParam, expectedJenkinsVersion);
-        expectedHiddenDetectProperties.put(pluginVersionParam, expectedJenkinsPluginVersion);
+        expectedArgsFromPlugin = new LinkedHashMap<>();
+        expectedArgsFromPlugin.put(jenkinsVersionParam, expectedJenkinsVersion);
+        expectedArgsFromPlugin.put(pluginVersionParam, expectedJenkinsPluginVersion);
+        expectedArgsFromPlugin.put(loggingLevelKey, jenkinsIntLogger.getLogLevel().toString());
 
         // Create object in test
         detectArgumentService = new DetectArgumentService(jenkinsIntLogger, jenkinsVersionHelper);
@@ -101,7 +98,8 @@ public class DetectArgumentServiceTest {
         );
 
         assertEquals(6, detectCommandLine.size()); // Invocation args (1) + passed args (2) + auto added args (3)
-        commonValidation(detectCommandLine, expectedVisibleDetectProperties, expectedHiddenDetectProperties);
+        assertEquals(0, byteArrayOutputStream.size(), "Output log should be empty");
+        commonValidation(detectCommandLine, expectedArgsFromEnvironment, expectedArgsFromPlugin);
     }
 
     @Test
@@ -116,7 +114,8 @@ public class DetectArgumentServiceTest {
         );
 
         assertEquals(6, detectCommandLine.size()); // Invocation args (1) + passed args (2) + auto added args (3)
-        commonValidation(detectCommandLine, expectedVisibleDetectProperties, expectedHiddenDetectProperties);
+        assertEquals(0, byteArrayOutputStream.size(), "Output log should be empty");
+        commonValidation(detectCommandLine, expectedArgsFromEnvironment, expectedArgsFromPlugin);
     }
 
     @Test
@@ -125,7 +124,7 @@ public class DetectArgumentServiceTest {
         IntEnvironmentVariables intEnvironmentVariables = IntEnvironmentVariables.empty();
         intEnvironmentVariables.put("TRUST_CERT", "false");
         inputDetectProperties.put("--blackduck.trust.cert", "$TRUST_CERT");
-        expectedVisibleDetectProperties.put("--blackduck.trust.cert", "false");
+        expectedArgsFromEnvironment.put("--blackduck.trust.cert", "false");
 
         List<String> detectCommandLine = detectArgumentService.getDetectArguments(
             intEnvironmentVariables,
@@ -135,7 +134,8 @@ public class DetectArgumentServiceTest {
         );
 
         assertEquals(7, detectCommandLine.size()); // Invocation args (1) + passed args (3) + auto added args (3)
-        commonValidation(detectCommandLine, expectedVisibleDetectProperties, expectedHiddenDetectProperties);
+        assertEquals(0, byteArrayOutputStream.size(), "Output log should be empty");
+        commonValidation(detectCommandLine, expectedArgsFromEnvironment, expectedArgsFromPlugin);
     }
 
     @Test
@@ -150,19 +150,18 @@ public class DetectArgumentServiceTest {
         );
 
         assertEquals(7, detectCommandLine.size()); // Invocation args (1) + passed args (3) + auto added args (3)
-        commonValidation(detectCommandLine, expectedVisibleDetectProperties, expectedHiddenDetectProperties);
-
         assertTrue(
             byteArrayOutputStream.toString().contains("A variable may not have been properly replaced in resolved argument: $VISIBLE"),
             "Log should contain message about unable to replace variable."
         );
+        commonValidation(detectCommandLine, expectedArgsFromEnvironment, expectedArgsFromPlugin);
     }
 
     @Test
     public void testCustomLogLevel() {
         String expectedCustomLogLevel = "TestLogLevel";
         inputDetectProperties.put(loggingLevelKey, expectedCustomLogLevel);
-        expectedVisibleDetectProperties.replace(loggingLevelKey, expectedCustomLogLevel);
+        expectedArgsFromPlugin.replace(loggingLevelKey, expectedCustomLogLevel);
 
         List<String> detectCommandLine = detectArgumentService.getDetectArguments(
             intEnvironmentVariables,
@@ -172,7 +171,8 @@ public class DetectArgumentServiceTest {
         );
 
         assertEquals(6, detectCommandLine.size()); // Invocation args (1) + passed args (3) + auto added args (2)
-        commonValidation(detectCommandLine, expectedVisibleDetectProperties, expectedHiddenDetectProperties);
+        assertEquals(0, byteArrayOutputStream.size(), "Output log should be empty");
+        commonValidation(detectCommandLine, expectedArgsFromEnvironment, expectedArgsFromPlugin);
     }
 
     @Test
@@ -180,15 +180,16 @@ public class DetectArgumentServiceTest {
         List<String> detectCommandLine = detectArgumentService.getDetectArguments(intEnvironmentVariables, strategyEscaper, invocationParameters, "\t");
 
         assertEquals(4, detectCommandLine.size()); // Invocation args (1) + passed args (0) + auto added args (3)
-        commonValidation(detectCommandLine, new LinkedHashMap<>(), expectedHiddenDetectProperties);
+        assertEquals(0, byteArrayOutputStream.size(), "Output log should be empty");
+        commonValidation(detectCommandLine, new LinkedHashMap<>(), expectedArgsFromPlugin);
     }
 
     @Test
     public void testUnknownJenkinsVersion() {
         Mockito.when(jenkinsVersionHelper.getJenkinsVersion()).thenReturn(Optional.empty());
         Mockito.when(jenkinsVersionHelper.getPluginVersion(pluginName)).thenReturn(Optional.empty());
-        expectedHiddenDetectProperties.replace(jenkinsVersionParam, expectedJenkinsVersion, "<unknown>");
-        expectedHiddenDetectProperties.replace(pluginVersionParam, expectedJenkinsPluginVersion, "<unknown>");
+        expectedArgsFromPlugin.replace(jenkinsVersionParam, expectedJenkinsVersion, "<unknown>");
+        expectedArgsFromPlugin.replace(pluginVersionParam, expectedJenkinsPluginVersion, "<unknown>");
 
         List<String> detectCommandLine = detectArgumentService.getDetectArguments(
             intEnvironmentVariables,
@@ -198,7 +199,8 @@ public class DetectArgumentServiceTest {
         );
 
         assertEquals(6, detectCommandLine.size()); // Invocation args (1) + passed args (2) + auto added args (3)
-        commonValidation(detectCommandLine, expectedVisibleDetectProperties, expectedHiddenDetectProperties);
+        assertEquals(0, byteArrayOutputStream.size(), "Output log should be empty");
+        commonValidation(detectCommandLine, expectedArgsFromEnvironment, expectedArgsFromPlugin);
     }
 
     @Test
@@ -213,22 +215,16 @@ public class DetectArgumentServiceTest {
         );
 
         assertEquals(6, detectCommandLine.size()); // Invocation args (1) + passed args (2) + auto added args (3)
-        commonValidation(detectCommandLine, expectedVisibleDetectProperties, expectedHiddenDetectProperties);
+        assertEquals(0, byteArrayOutputStream.size(), "Output log should be empty");
+        commonValidation(detectCommandLine, expectedArgsFromEnvironment, expectedArgsFromPlugin);
     }
 
-    private void commonValidation(List<String> detectCommandLine, Map<String, String> expectedVisibleDetectProperties, Map<String, String> expectedHiddenDetectProperties) {
+    private void commonValidation(List<String> detectCommandLine, Map<String, String> expectedPropertiesFromEnvironment, Map<String, String> expectedPropertiesFromPlugin) {
         assertEquals(expectedTestInvocationParameter, detectCommandLine.get(0));
 
-        // Validate that detectCommandLine DOES contain all the visible and hidden properties
-        validateMapProperties(expectedVisibleDetectProperties, detectCommandLine);
-        validateMapProperties(expectedHiddenDetectProperties, detectCommandLine);
-
-        // Validate the log contents
-        String log = byteArrayOutputStream.toString();
-        assertTrue(log.contains("Running Detect command: "), "Output log should contain : Running Detect command: ");
-        for (String key : expectedHiddenDetectProperties.keySet()) {
-            assertFalse(log.contains(key), "Output log should not contain : " + key);
-        }
+        // Validate that detectCommandLine DOES contain all the expected properties
+        validateMapProperties(expectedPropertiesFromEnvironment, detectCommandLine);
+        validateMapProperties(expectedPropertiesFromPlugin, detectCommandLine);
     }
 
     private void validateMapProperties(Map<String, String> detectProperties, List<String> detectCommandLine) {
