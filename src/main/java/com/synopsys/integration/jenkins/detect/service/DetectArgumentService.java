@@ -98,16 +98,13 @@ public class DetectArgumentService {
     }
 
     private String escapeArgument(String argument, Function<String, String> escaper) {
-        String detectPropertyName = "";
-        String detectPropertyValue = "";
+        // Assume a cleaned argument, then test
+        String cleanedArg = argument;
         if (argument.startsWith("--") && argument.contains("=")) {
             String[] splitArgument = argument.split("=", 2);
-            detectPropertyName = splitArgument[0];
-            detectPropertyValue = splitArgument[1];
-        } else {
-            detectPropertyValue = argument;
+            cleanedArg = splitArgument[0] + "=" + escaper.apply(splitArgument[1]);
         }
 
-        return detectPropertyName + "=" + escaper.apply(detectPropertyValue);
+        return cleanedArg;
     }
 }
