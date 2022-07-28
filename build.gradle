@@ -36,11 +36,11 @@ jenkinsPlugin {
 }
 
 dependencies {
-    annotationProcessor 'com.synopsys.integration:jenkins-annotation-processor:0.0.1'
+    annotationProcessor 'com.synopsys.integration:jenkins-annotation-processor:0.0.2'
 
-    implementation 'com.synopsys.integration:blackduck-common:49.1.0'
-    implementation 'com.synopsys.integration:jenkins-common:0.3.1'
-    implementation 'org.jvnet.localizer:localizer:1.24'
+    implementation 'com.synopsys.integration:blackduck-common:64.3.2'
+    implementation 'com.synopsys.integration:jenkins-common:0.5.1'
+    implementation 'org.jvnet.localizer:localizer:1.31'
 
     jenkinsPlugins 'org.jenkins-ci.plugins:credentials:2.1.10'
     jenkinsPlugins 'org.jenkins-ci.plugins:plain-credentials:1.0'

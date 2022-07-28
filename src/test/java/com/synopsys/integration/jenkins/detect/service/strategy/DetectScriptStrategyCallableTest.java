@@ -23,6 +23,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import com.google.gson.Gson;
 import com.synopsys.integration.exception.IntegrationException;
 import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
 import com.synopsys.integration.jenkins.wrapper.JenkinsProxyHelper;
@@ -40,7 +41,7 @@ public class DetectScriptStrategyCallableTest {
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         TaskListener mockedTaskListener = Mockito.mock(TaskListener.class);
         Mockito.when(mockedTaskListener.getLogger()).thenReturn(new PrintStream(byteArrayOutputStream));
-        defaultLogger = new JenkinsIntLogger(mockedTaskListener);
+        defaultLogger = JenkinsIntLogger.logToListener(mockedTaskListener);
         defaultProxyHelper = new JenkinsProxyHelper();
 
         try {
@@ -76,7 +77,13 @@ public class DetectScriptStrategyCallableTest {
         assumeTrue(new File(toolsDirectoryPath).setReadOnly(), "Skipping test because we can't modify file permissions.");
         assumeFalse(new File(toolsDirectoryPath).canWrite(), "Skipping as test can still write. Possibly running as root.");
 
-        DetectScriptStrategy detectScriptStrategy = new DetectScriptStrategy(defaultLogger, defaultProxyHelper, OperatingSystemType.determineFromSystem(), toolsDirectoryPath);
+        DetectScriptStrategy detectScriptStrategy = new DetectScriptStrategy(
+            defaultLogger,
+            defaultProxyHelper,
+            OperatingSystemType.determineFromSystem(),
+            toolsDirectoryPath,
+            new Gson()
+        );
 
         try {
             assertThrows(IntegrationException.class, detectScriptStrategy.getSetupCallable()::call);
@@ -103,7 +110,7 @@ public class DetectScriptStrategyCallableTest {
         try {
             String expectedScriptPath = new File(toolsDirectoryPath, DetectScriptStrategy.DETECT_INSTALL_DIRECTORY).getPath();
 
-            DetectScriptStrategy detectScriptStrategy = new DetectScriptStrategy(defaultLogger, defaultProxyHelper, operatingSystemType, toolsDirectoryPath);
+            DetectScriptStrategy detectScriptStrategy = new DetectScriptStrategy(defaultLogger, defaultProxyHelper, operatingSystemType, toolsDirectoryPath, new Gson());
             ArrayList<String> scriptStrategyArgs = detectScriptStrategy.getSetupCallable().call();
             File remoteScriptFile = new File(parseScriptStrategyArgs(scriptStrategyArgs));
 

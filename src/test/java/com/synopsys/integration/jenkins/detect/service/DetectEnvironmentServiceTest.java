@@ -1,5 +1,6 @@
 package com.synopsys.integration.jenkins.detect.service;
 
+import static com.synopsys.integration.blackduck.configuration.BlackDuckServerConfigKeys.KEYS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -9,13 +10,14 @@ import java.io.PrintStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-import com.synopsys.integration.blackduck.configuration.BlackDuckServerConfig;
 import com.synopsys.integration.blackduck.configuration.BlackDuckServerConfigBuilder;
+import com.synopsys.integration.builder.BuilderPropertyKey;
 import com.synopsys.integration.jenkins.detect.extensions.global.DetectGlobalConfig;
 import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
 import com.synopsys.integration.jenkins.service.JenkinsConfigService;
@@ -30,9 +32,9 @@ import hudson.model.TaskListener;
 public class DetectEnvironmentServiceTest {
     private final TaskListener taskListenerMock = Mockito.mock(TaskListener.class);
     private final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-    private final JenkinsIntLogger jenkinsIntLogger = new JenkinsIntLogger(taskListenerMock);
+    private final JenkinsIntLogger jenkinsIntLogger = JenkinsIntLogger.logToListener(taskListenerMock);
 
-    public final BlackDuckServerConfigBuilder blackDuckServerConfigBuilder = BlackDuckServerConfig.newBuilder().setTimeoutInSeconds(120);
+    public final BlackDuckServerConfigBuilder blackDuckServerConfigBuilder = new BlackDuckServerConfigBuilder(KEYS.common).setTimeoutInSeconds(120);
 
     private final String junitKey = "__JUNIT_KEY__";
     private final String junitValue = "__JUNIT_VALUE__";
@@ -53,7 +55,14 @@ public class DetectEnvironmentServiceTest {
         Mockito.when(jenkinsConfigServiceMock.getGlobalConfiguration(DetectGlobalConfig.class)).thenReturn(Optional.of(detectGlobalConfig));
         Mockito.when(detectGlobalConfig.getBlackDuckServerConfigBuilder(jenkinsProxyHelper, synopsysCredentialsHelper)).thenReturn(blackDuckServerConfigBuilder);
 
-        detectEnvironmentService = new DetectEnvironmentService(jenkinsIntLogger, jenkinsProxyHelper, jenkinsVersionHelperMock, synopsysCredentialsHelper, jenkinsConfigServiceMock, new HashMap<>());
+        detectEnvironmentService = new DetectEnvironmentService(
+            jenkinsIntLogger,
+            jenkinsProxyHelper,
+            jenkinsVersionHelperMock,
+            synopsysCredentialsHelper,
+            jenkinsConfigServiceMock,
+            new HashMap<>()
+        );
     }
 
     @Test
@@ -68,19 +77,31 @@ public class DetectEnvironmentServiceTest {
         Mockito.when(jenkinsVersionHelperMock.getPluginVersion("blackduck-detect")).thenReturn(Optional.of(expectedJenkinsPluginVersion));
 
         detectEnvironmentService.createDetectEnvironment();
-        assertTrue(byteArrayOutputStream.toString().contains(String.format("Running Synopsys Detect for Jenkins version: %s", expectedJenkinsPluginVersion)),
-            "Log should contain message with plugin version");
+        assertTrue(
+            byteArrayOutputStream.toString().contains(String.format("Running Synopsys Detect for Jenkins version: %s", expectedJenkinsPluginVersion)),
+            "Log should contain message with plugin version"
+        );
     }
 
     @Test
     public void testNullsInDetectGlobalConfig() {
-        blackDuckServerConfigBuilder.setProperty(junitKey, null);
-        blackDuckServerConfigBuilder.setProperty(null, junitValue);
-        blackDuckServerConfigBuilder.setTimeoutInSeconds(null);
-        assertTrue(blackDuckServerConfigBuilder.getEnvironmentVariableKeys().contains(junitKey), String.format("Should contain key %s", junitKey));
-        assertTrue(blackDuckServerConfigBuilder.getProperties().containsValue(junitValue), String.format("Should contain value %s", junitValue));
-        assertTrue(blackDuckServerConfigBuilder.getProperties().containsKey(BlackDuckServerConfigBuilder.TIMEOUT_KEY), String.format("Should contain %s", BlackDuckServerConfigBuilder.TIMEOUT_KEY));
+        Set<BuilderPropertyKey> blackDuckServerConfigKeys = KEYS.common;
+        blackDuckServerConfigKeys.add(new BuilderPropertyKey(junitKey));
+        blackDuckServerConfigKeys.add(new BuilderPropertyKey(null));
+        BlackDuckServerConfigBuilder bdServerConfigBuilder = new BlackDuckServerConfigBuilder(blackDuckServerConfigKeys);
 
+        bdServerConfigBuilder.setProperty(junitKey, null);
+        bdServerConfigBuilder.setProperty(null, junitValue);
+        bdServerConfigBuilder.setTimeoutInSeconds(null);
+
+        assertTrue(bdServerConfigBuilder.getEnvironmentVariableKeys().contains(junitKey), String.format("Should contain key %s", junitKey));
+        assertTrue(bdServerConfigBuilder.getProperties().containsValue(junitValue), String.format("Should contain value %s", junitValue));
+        assertTrue(
+            bdServerConfigBuilder.getProperties().containsKey(BlackDuckServerConfigBuilder.TIMEOUT_KEY),
+            String.format("Should contain %s", BlackDuckServerConfigBuilder.TIMEOUT_KEY)
+        );
+
+        Mockito.when(detectGlobalConfig.getBlackDuckServerConfigBuilder(jenkinsProxyHelper, synopsysCredentialsHelper)).thenReturn(bdServerConfigBuilder);
         IntEnvironmentVariables intEnvironmentVariables = detectEnvironmentService.createDetectEnvironment();
         assertFalse(intEnvironmentVariables.containsKey(junitKey), String.format("Should NOT contain key %s", junitKey));
         assertFalse(intEnvironmentVariables.getVariables().containsValue(junitValue), String.format("Should contain value %s", junitKey));
@@ -99,7 +120,14 @@ public class DetectEnvironmentServiceTest {
     public void testEnvironmentAdded() {
         Map<String, String> environmentVariables = new HashMap<>();
         environmentVariables.put(junitKey, junitValue);
-        detectEnvironmentService = new DetectEnvironmentService(jenkinsIntLogger, jenkinsProxyHelper, jenkinsVersionHelperMock, synopsysCredentialsHelper, jenkinsConfigServiceMock, environmentVariables);
+        detectEnvironmentService = new DetectEnvironmentService(
+            jenkinsIntLogger,
+            jenkinsProxyHelper,
+            jenkinsVersionHelperMock,
+            synopsysCredentialsHelper,
+            jenkinsConfigServiceMock,
+            environmentVariables
+        );
         IntEnvironmentVariables intEnvironmentVariables = detectEnvironmentService.createDetectEnvironment();
 
         assertTrue(intEnvironmentVariables.containsKey(junitKey), String.format("Should contain key %s", junitKey));
@@ -108,10 +136,16 @@ public class DetectEnvironmentServiceTest {
 
     @Test
     public void testRenameEnvironmentVariable() {
-        assertTrue(blackDuckServerConfigBuilder.getProperties().containsKey(BlackDuckServerConfigBuilder.TIMEOUT_KEY), String.format("Should contain %s", BlackDuckServerConfigBuilder.TIMEOUT_KEY));
+        assertTrue(
+            blackDuckServerConfigBuilder.getProperties().containsKey(BlackDuckServerConfigBuilder.TIMEOUT_KEY),
+            String.format("Should contain %s", BlackDuckServerConfigBuilder.TIMEOUT_KEY)
+        );
 
         IntEnvironmentVariables intEnvironmentVariables = detectEnvironmentService.createDetectEnvironment();
-        assertFalse(intEnvironmentVariables.containsKey(BlackDuckServerConfigBuilder.TIMEOUT_KEY.getKey()), String.format("Should NOT contain %s", BlackDuckServerConfigBuilder.TIMEOUT_KEY));
+        assertFalse(
+            intEnvironmentVariables.containsKey(BlackDuckServerConfigBuilder.TIMEOUT_KEY.getKey()),
+            String.format("Should NOT contain %s", BlackDuckServerConfigBuilder.TIMEOUT_KEY)
+        );
         assertTrue(intEnvironmentVariables.containsKey(DetectEnvironmentService.TIMEOUT), String.format("Should contain key %s", DetectEnvironmentService.TIMEOUT));
     }
 

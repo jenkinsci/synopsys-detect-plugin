@@ -45,10 +45,12 @@ public class DetectJarStrategyTest {
     private ByteArrayOutputStream byteArrayOutputStream;
 
     public static Stream<Arguments> testSetupCallableJavaHomeSource() {
-        return Stream.of(Arguments.of(" ", System.getProperty("user.dir") + File.separator + " " + REMOTE_JAVA_RELATIVE_PATH),
+        return Stream.of(
+            Arguments.of(" ", System.getProperty("user.dir") + File.separator + " " + REMOTE_JAVA_RELATIVE_PATH),
             Arguments.of("", new File(REMOTE_JAVA_RELATIVE_PATH).getAbsolutePath()),
             Arguments.of(null, "java"),
-            Arguments.of(REMOTE_JDK_HOME, EXPECTED_JAVA_FULL_PATH));
+            Arguments.of(REMOTE_JDK_HOME, EXPECTED_JAVA_FULL_PATH)
+        );
     }
 
     @BeforeEach
@@ -60,7 +62,7 @@ public class DetectJarStrategyTest {
         byteArrayOutputStream = new ByteArrayOutputStream();
         Mockito.when(taskListener.getLogger()).thenReturn(new PrintStream(byteArrayOutputStream));
 
-        logger = new JenkinsIntLogger(taskListener);
+        logger = JenkinsIntLogger.logToListener(taskListener);
     }
 
     @Test

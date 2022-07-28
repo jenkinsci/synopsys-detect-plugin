@@ -44,7 +44,7 @@ public class DetectStrategyServiceTest {
         TaskListener taskListener = Mockito.mock(TaskListener.class);
         byteArrayOutputStream = new ByteArrayOutputStream();
         Mockito.when(taskListener.getLogger()).thenReturn(new PrintStream(byteArrayOutputStream));
-        JenkinsIntLogger logger = new JenkinsIntLogger(taskListener);
+        JenkinsIntLogger logger = JenkinsIntLogger.logToListener(taskListener);
 
         jenkinsConfigService = Mockito.mock(JenkinsConfigService.class);
         detectStrategyService = new DetectStrategyService(logger, null, null, jenkinsConfigService);
