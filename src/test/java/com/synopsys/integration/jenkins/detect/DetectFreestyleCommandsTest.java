@@ -76,12 +76,12 @@ public class DetectFreestyleCommandsTest {
         DetectFreestyleCommands detectCommands = new DetectFreestyleCommands(mockedBuildService, mockedDetectRunner);
         detectCommands.runDetect(StringUtils.EMPTY, DOWNLOAD_STRATEGY);
 
-        Mockito.verify(mockedBuildService).markBuildUnstable(Mockito.any());
+        Mockito.verify(mockedBuildService).markBuildFailed(Mockito.any(IntegrationException.class));
 
         Mockito.verify(mockedBuildService, Mockito.never()).markBuildAborted();
         Mockito.verify(mockedBuildService, Mockito.never()).markBuildInterrupted();
+        Mockito.verify(mockedBuildService, Mockito.never()).markBuildUnstable(Mockito.any());
         Mockito.verify(mockedBuildService, Mockito.never()).markBuildFailed(Mockito.any(String.class));
-        Mockito.verify(mockedBuildService, Mockito.never()).markBuildFailed(Mockito.any(Exception.class));
     }
 
     @Test
@@ -114,7 +114,7 @@ public class DetectFreestyleCommandsTest {
         DetectFreestyleCommands detectCommands = new DetectFreestyleCommands(mockedBuildService, mockedDetectRunner);
         detectCommands.runDetect(StringUtils.EMPTY, DOWNLOAD_STRATEGY);
 
-        Mockito.verify(mockedBuildService).markBuildFailed(Mockito.any(Exception.class));
+        Mockito.verify(mockedBuildService).markBuildFailed(Mockito.any(IOException.class));
 
         Mockito.verify(mockedBuildService, Mockito.never()).markBuildAborted();
         Mockito.verify(mockedBuildService, Mockito.never()).markBuildInterrupted();
