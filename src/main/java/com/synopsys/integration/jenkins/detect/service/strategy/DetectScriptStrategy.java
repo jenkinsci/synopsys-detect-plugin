@@ -15,7 +15,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.function.Function;
 
-import com.google.gson.Gson;
 import com.synopsys.integration.IntegrationEscapeUtils;
 import com.synopsys.integration.exception.IntegrationException;
 import com.synopsys.integration.jenkins.detect.exception.DetectJenkinsException;
@@ -44,14 +43,12 @@ public class DetectScriptStrategy extends DetectExecutionStrategy {
     private final OperatingSystemType operatingSystemType;
     private final JenkinsProxyHelper jenkinsProxyHelper;
     private final String toolsDirectory;
-    private final Gson gson;
 
-    public DetectScriptStrategy(JenkinsIntLogger logger, JenkinsProxyHelper jenkinsProxyHelper, OperatingSystemType operatingSystemType, String toolsDirectory, Gson gson) {
+    public DetectScriptStrategy(JenkinsIntLogger logger, JenkinsProxyHelper jenkinsProxyHelper, OperatingSystemType operatingSystemType, String toolsDirectory) {
         this.logger = logger;
         this.jenkinsProxyHelper = jenkinsProxyHelper;
         this.operatingSystemType = operatingSystemType;
         this.toolsDirectory = toolsDirectory;
-        this.gson = gson;
     }
 
     @Override
@@ -101,8 +98,7 @@ public class DetectScriptStrategy extends DetectExecutionStrategy {
             proxyUsername,
             proxyPassword,
             proxyNtlmDomain,
-            proxyNtlmWorkstation,
-            gson
+            proxyNtlmWorkstation
         );
     }
 
@@ -118,11 +114,10 @@ public class DetectScriptStrategy extends DetectExecutionStrategy {
         private final String proxyNtlmDomain;
         private final String proxyNtlmWorkstation;
         private final String scriptFileName;
-        private final Gson gson;
 
         public SetupCallableImpl(
             JenkinsIntLogger logger, String toolsDirectory, String scriptUrl, String scriptFileName, String proxyHost, int proxyPort, String proxyUsername, String proxyPassword,
-            String proxyNtlmDomain, String proxyNtlmWorkstation, Gson gson
+            String proxyNtlmDomain, String proxyNtlmWorkstation
         ) {
             this.logger = logger;
             this.toolsDirectory = toolsDirectory;
@@ -134,7 +129,6 @@ public class DetectScriptStrategy extends DetectExecutionStrategy {
             this.proxyPassword = proxyPassword;
             this.proxyNtlmDomain = proxyNtlmDomain;
             this.proxyNtlmWorkstation = proxyNtlmWorkstation;
-            this.gson = gson;
         }
 
         @Override
@@ -148,7 +142,7 @@ public class DetectScriptStrategy extends DetectExecutionStrategy {
 
                 logger.info(String.format("Downloading Detect script from %s to %s", scriptUrl, detectScriptPath));
 
-                IntHttpClient intHttpClient = new IntHttpClient(logger, gson, 120, false, rebuildProxyInfo());
+                IntHttpClient intHttpClient = new IntHttpClient(logger, null, 120, false, rebuildProxyInfo());
                 Request request = new Request.Builder().url(new HttpUrl(scriptUrl)).build();
 
                 try (Response response = intHttpClient.execute(request)) {

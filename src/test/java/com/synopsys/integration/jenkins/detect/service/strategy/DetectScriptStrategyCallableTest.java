@@ -23,7 +23,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-import com.google.gson.Gson;
 import com.synopsys.integration.exception.IntegrationException;
 import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
 import com.synopsys.integration.jenkins.wrapper.JenkinsProxyHelper;
@@ -81,8 +80,7 @@ public class DetectScriptStrategyCallableTest {
             defaultLogger,
             defaultProxyHelper,
             OperatingSystemType.determineFromSystem(),
-            toolsDirectoryPath,
-            new Gson()
+            toolsDirectoryPath
         );
 
         try {
@@ -110,7 +108,7 @@ public class DetectScriptStrategyCallableTest {
         try {
             String expectedScriptPath = new File(toolsDirectoryPath, DetectScriptStrategy.DETECT_INSTALL_DIRECTORY).getPath();
 
-            DetectScriptStrategy detectScriptStrategy = new DetectScriptStrategy(defaultLogger, defaultProxyHelper, operatingSystemType, toolsDirectoryPath, new Gson());
+            DetectScriptStrategy detectScriptStrategy = new DetectScriptStrategy(defaultLogger, defaultProxyHelper, operatingSystemType, toolsDirectoryPath);
             ArrayList<String> scriptStrategyArgs = detectScriptStrategy.getSetupCallable().call();
             File remoteScriptFile = new File(parseScriptStrategyArgs(scriptStrategyArgs));
 
