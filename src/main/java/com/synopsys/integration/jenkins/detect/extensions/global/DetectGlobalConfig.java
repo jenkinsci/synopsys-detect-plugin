@@ -328,7 +328,7 @@ public class DetectGlobalConfig extends GlobalConfiguration implements Serializa
         ProxyInfo proxyInfo = jenkinsProxyHelper.getProxyInfo(blackDuckUrl);
         String apiToken = synopsysCredentialsHelper.getApiTokenByCredentialsId(credentialsId).orElse(null);
 
-        return BlackDuckServerConfig.newBuilder()
+        return BlackDuckServerConfig.newApiTokenBuilder()
             .setUrl(blackDuckUrl)
             .setTimeoutInSeconds(timeout)
             .setTrustCert(alwaysTrust)
