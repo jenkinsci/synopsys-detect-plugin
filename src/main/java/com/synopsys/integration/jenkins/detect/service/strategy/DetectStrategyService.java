@@ -9,7 +9,6 @@ package com.synopsys.integration.jenkins.detect.service.strategy;
 
 import org.apache.commons.lang3.StringUtils;
 
-import com.google.gson.Gson;
 import com.synopsys.integration.exception.IntegrationException;
 import com.synopsys.integration.jenkins.detect.DetectJenkinsEnvironmentVariable;
 import com.synopsys.integration.jenkins.detect.exception.DetectJenkinsException;
@@ -74,7 +73,7 @@ public class DetectStrategyService {
         } else if (StringUtils.isNotBlank(detectJarPath)) {
             detectExecutionStrategy = new DetectJarStrategy(logger, intEnvironmentVariables, remoteJdkHome, detectJarPath);
         } else {
-            detectExecutionStrategy = new DetectScriptStrategy(logger, jenkinsProxyHelper, operatingSystemType, remoteTempWorkspacePath, new Gson());
+            detectExecutionStrategy = new DetectScriptStrategy(logger, jenkinsProxyHelper, operatingSystemType, remoteTempWorkspacePath);
         }
 
         return detectExecutionStrategy;

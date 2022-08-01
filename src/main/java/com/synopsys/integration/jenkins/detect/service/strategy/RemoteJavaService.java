@@ -9,8 +9,10 @@ package com.synopsys.integration.jenkins.detect.service.strategy;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Objects;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.SystemUtils;
@@ -54,21 +56,30 @@ public class RemoteJavaService {
 
     private void logDebugData(String javaExecutablePath) {
         if (logger.getLogLevel().isLoggable(LogLevel.DEBUG)) {
+            logger.debug("PATH: " + environmentVariables.get("PATH"));
             try {
-                logger.debug("PATH: " + environmentVariables.get("PATH"));
                 ProcessBuilder processBuilder = new ProcessBuilder(Arrays.asList(javaExecutablePath, "-version"));
                 processBuilder.environment().putAll(environmentVariables);
                 Process process = processBuilder.start();
                 process.waitFor();
-                logger.debug("Java version: ");
-                IOUtils.copy(process.getErrorStream(), logger.getTaskListener().getLogger());
-                IOUtils.copy(process.getInputStream(), logger.getTaskListener().getLogger());
+                logJavaVersion(process);
             } catch (IOException e) {
-                logger.debug("Error printing the JAVA version: " + e.getMessage(), e);
+                logger.debug("Error starting process to get Java version: " + e.getMessage(), e);
             } catch (InterruptedException e) {
-                logger.debug("Error printing the JAVA version: " + e.getMessage(), e);
+                logger.debug("Error running process to get Java version: " + e.getMessage(), e);
                 Thread.currentThread().interrupt();
             }
+        }
+    }
+
+    private void logJavaVersion(Process process) {
+        try (InputStream errorStream = Objects.requireNonNull(process).getErrorStream();
+            InputStream inputSteam = Objects.requireNonNull(process).getInputStream()) {
+            logger.debug("Java version: ");
+            IOUtils.copy(errorStream, logger.getTaskListener().getLogger());
+            IOUtils.copy(inputSteam, logger.getTaskListener().getLogger());
+        } catch (IOException e) {
+            logger.debug("Error printing the JAVA version: " + e.getMessage(), e);
         }
     }
 }

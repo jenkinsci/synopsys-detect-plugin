@@ -143,7 +143,7 @@ public class DetectAirGapJarStrategyTest {
             String expectedBadJavaPath = badJavaHome + REMOTE_JAVA_RELATIVE_PATH;
             executeAndValidateSetupCallable(badJavaHome, expectedBadJavaPath, tempJarDirectoryPathName, tempAirGapJar);
 
-            assertTrue(byteArrayOutputStream.toString().contains("Error printing the JAVA version: "), "Log does not contain error for printing Java version.");
+            assertTrue(byteArrayOutputStream.toString().contains("Error starting process to get Java version: "), "Log does not contain error for starting process.");
         } catch (IOException e) {
             fail("Unexpected exception was thrown in test code: ", e);
         }

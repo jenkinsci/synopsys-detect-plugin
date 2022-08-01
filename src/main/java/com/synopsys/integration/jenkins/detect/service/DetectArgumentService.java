@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -80,7 +81,7 @@ public class DetectArgumentService {
             .flatMap(Arrays::stream)
             .map(argument -> Util.replaceMacro(argument, environmentVariables))
             .filter(this::validateExpandedArguments)
-            .filter(argument -> argument != null)
+            .filter(Objects::nonNull)
             .map(argument -> escapeArgument(argument, argumentEscaper))
             .collect(Collectors.toList());
     }
