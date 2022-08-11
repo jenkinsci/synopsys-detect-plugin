@@ -21,6 +21,9 @@ import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
 import com.synopsys.integration.log.LogLevel;
 
 public class RemoteJavaService {
+    public static final String DETECT_JAVA_PATH = "DETECT_JAVA_PATH";
+    public static final String JAVA_HOME = "JAVA_HOME";
+
     private final JenkinsIntLogger logger;
     private final String remoteJdkHome;
     private final Map<String, String> environmentVariables;
@@ -31,27 +34,46 @@ public class RemoteJavaService {
         this.environmentVariables = environmentVariables;
     }
 
-    public String calculateJavaExecutablePath() {
-        String javaExecutablePath = "java";
-        if (remoteJdkHome != null) {
-            File remoteJdkJava = new File(remoteJdkHome);
-            remoteJdkJava = new File(remoteJdkJava, "bin");
-            if (SystemUtils.IS_OS_WINDOWS) {
-                remoteJdkJava = new File(remoteJdkJava, "java.exe");
-            } else {
-                remoteJdkJava = new File(remoteJdkJava, "java");
-            }
-            try {
-                javaExecutablePath = remoteJdkJava.getCanonicalPath();
-            } catch (IOException e) {
-                logger.warn("Detect could not get Java Home from configured JDK, falling back to java on path: " + e.getMessage());
-            }
+    public String getJavaExecutablePath() {
+        String javaExecutableName = "java";
+        if (SystemUtils.IS_OS_WINDOWS) {
+            javaExecutableName = "java.exe";
         }
 
+        String javaExecutablePath = calculateJavaExecutablePath(javaExecutableName);
         logger.info("Running with JAVA: " + javaExecutablePath);
+
         logDebugData(javaExecutablePath);
 
         return javaExecutablePath;
+    }
+
+    private String calculateJavaExecutablePath(String javaExecutableName) {
+        String fullPathToJava = null;
+        String javaPathSourceLogging = "";
+
+        File javaExecutablePath = null;
+        if (remoteJdkHome != null) {
+            javaExecutablePath = new File(remoteJdkHome, "bin");
+            javaExecutablePath = new File(javaExecutablePath, javaExecutableName);
+            javaPathSourceLogging = "Node environment";
+        } else if (environmentVariables.containsKey(DETECT_JAVA_PATH)) {
+            javaExecutablePath = new File(environmentVariables.get(DETECT_JAVA_PATH));
+            javaPathSourceLogging = DETECT_JAVA_PATH + " environment variable";
+        } else if (environmentVariables.containsKey(JAVA_HOME)) {
+            javaExecutablePath = new File(environmentVariables.get(JAVA_HOME), "bin");
+            javaExecutablePath = new File(javaExecutablePath, javaExecutableName);
+            javaPathSourceLogging = JAVA_HOME + " environment variable";
+        }
+
+        try {
+            fullPathToJava = Objects.requireNonNull(javaExecutablePath).getCanonicalPath();
+            logger.debug("Path to Java executable is set based on: " + javaPathSourceLogging);
+        } catch (IOException | NullPointerException e) {
+            logger.warn("Could not set path to Java executable, falling back to PATH.");
+        }
+
+        return (null != fullPathToJava) ? fullPathToJava : javaExecutableName;
     }
 
     private void logDebugData(String javaExecutablePath) {

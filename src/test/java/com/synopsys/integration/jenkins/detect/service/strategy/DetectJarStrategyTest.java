@@ -81,7 +81,10 @@ public class DetectJarStrategyTest {
     @Test
     public void testSetupCallableInvalidJdkHome() {
         this.executeAndValidateSetupCallable("\u0000", "java");
-        assertTrue(byteArrayOutputStream.toString().contains("Detect could not get Java Home from configured JDK,"), "Log does not contain message from IOException.");
+        assertTrue(
+            byteArrayOutputStream.toString().contains("Could not set path to Java executable, falling back to PATH."),
+            "Log does not contain message from IOException."
+        );
         this.validateLogsPresentInfo();
     }
 
@@ -125,7 +128,7 @@ public class DetectJarStrategyTest {
             String expectedBadJavaPath = badJavaHome + REMOTE_JAVA_RELATIVE_PATH;
             this.executeAndValidateSetupCallable(badJavaHome, expectedBadJavaPath);
 
-            assertTrue(byteArrayOutputStream.toString().contains("Error starting process to get Java version: "), "Log does not contain error for starting process.");
+            assertTrue(byteArrayOutputStream.toString().contains("No such file or directory"), "Log does not contain error for starting process.");
         } catch (IOException e) {
             fail("Unexpected exception was thrown in test code: ", e);
         }
