@@ -35,7 +35,13 @@ public class DetectAirGapJarStrategy extends DetectExecutionStrategy {
     private final JenkinsConfigService jenkinsConfigService;
     private final AirGapDownloadStrategy airGapDownloadStrategy;
 
-    public DetectAirGapJarStrategy(JenkinsIntLogger logger, IntEnvironmentVariables intEnvironmentVariables, String remoteJdkHome, JenkinsConfigService jenkinsConfigService, AirGapDownloadStrategy airGapDownloadStrategy) {
+    public DetectAirGapJarStrategy(
+        JenkinsIntLogger logger,
+        IntEnvironmentVariables intEnvironmentVariables,
+        String remoteJdkHome,
+        JenkinsConfigService jenkinsConfigService,
+        AirGapDownloadStrategy airGapDownloadStrategy
+    ) {
         this.logger = logger;
         this.intEnvironmentVariables = intEnvironmentVariables;
         this.remoteJdkHome = remoteJdkHome;
@@ -54,7 +60,10 @@ public class DetectAirGapJarStrategy extends DetectExecutionStrategy {
             String airGapInstallationName = airGapDownloadStrategy.getAirGapInstallationName();
             airGapInstallation = jenkinsConfigService.getInstallationForNodeAndEnvironment(DetectAirGapInstallation.DescriptorImpl.class, airGapInstallationName).orElseThrow(
                 () -> new DetectJenkinsException(
-                    String.format("Problem encountered getting Detect Air Gap tool with the name %s from global tool configuration. Check Jenkins plugin and tool configuration.", airGapInstallationName)));
+                    String.format(
+                        "Problem encountered getting Detect Air Gap tool with the name %s from global tool configuration. Check Jenkins plugin and tool configuration.",
+                        airGapInstallationName
+                    )));
         } catch (IOException e) {
             throw new DetectJenkinsException("Problem encountered while interacting with Jenkins environment. Check Jenkins and environment.", e);
         } catch (InterruptedException e) {
@@ -95,7 +104,7 @@ public class DetectAirGapJarStrategy extends DetectExecutionStrategy {
         public ArrayList<String> call() throws DetectJenkinsException {
             String airGapJar = getAirGapJar(airGapBaseDir);
             RemoteJavaService remoteJavaService = new RemoteJavaService(logger, remoteJdkHome, environmentVariables);
-            String javaExecutablePath = remoteJavaService.calculateJavaExecutablePath();
+            String javaExecutablePath = remoteJavaService.getJavaExecutablePath();
 
             logger.info("Detect AirGap jar configured: " + airGapJar);
 
@@ -107,10 +116,17 @@ public class DetectAirGapJarStrategy extends DetectExecutionStrategy {
             File[] foundAirGapJars = new File(airGapBaseDir).listFiles(fileFilter);
 
             if (foundAirGapJars == null || foundAirGapJars.length == 0) {
-                throw new DetectJenkinsException(String.format("Expected 1 jar from Detect Air Gap tool installation at <%s> and did not find any. Check your Jenkins plugin and tool configuration.", airGapBaseDir));
+                throw new DetectJenkinsException(String.format(
+                    "Expected 1 jar from Detect Air Gap tool installation at <%s> and did not find any. Check your Jenkins plugin and tool configuration.",
+                    airGapBaseDir
+                ));
             } else if (foundAirGapJars.length > 1) {
                 throw new DetectJenkinsException(
-                    String.format("Expected 1 jar from Detect Air Gap tool installation at <%s> and instead found %d jars. Check your Jenkins plugin and tool configuration.", airGapBaseDir, foundAirGapJars.length));
+                    String.format(
+                        "Expected 1 jar from Detect Air Gap tool installation at <%s> and instead found %d jars. Check your Jenkins plugin and tool configuration.",
+                        airGapBaseDir,
+                        foundAirGapJars.length
+                    ));
             } else {
                 return foundAirGapJars[0].toString();
             }

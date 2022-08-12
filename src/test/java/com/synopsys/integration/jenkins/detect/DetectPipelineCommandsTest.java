@@ -79,8 +79,7 @@ public class DetectPipelineCommandsTest {
             detectCommands.runDetect(true, StringUtils.EMPTY, DOWNLOAD_STRATEGY);
 
             Mockito.verify(mockedLogger).error(Mockito.anyString());
-        } catch (
-              Exception e) {
+        } catch (Exception e) {
             fail("An unexpected exception occurred in the test code: ", e);
         }
     }
