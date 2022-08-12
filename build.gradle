@@ -26,9 +26,9 @@ artifactory {
 }
 
 jenkinsPlugin {
-    coreVersion = '2.150.3'
+    coreVersion = '2.248'
     displayName = 'Synopsys Detect plugin'
-    compatibleSinceVersion = '3.0.0'
+    compatibleSinceVersion = '8.0.0'
     url = 'https://wiki.jenkins.io/display/JENKINS/Synopsys+Detect+Plugin'
     gitHubUrl = 'https://github.com/jenkinsci/synopsys-detect-plugin'
 
@@ -36,19 +36,19 @@ jenkinsPlugin {
 }
 
 dependencies {
-    annotationProcessor 'com.synopsys.integration:jenkins-annotation-processor:0.0.2'
+    annotationProcessor 'com.synopsys.integration:jenkins-annotation-processor:0.0.3'
 
     implementation 'com.synopsys.integration:blackduck-common:64.3.2'
-    implementation 'com.synopsys.integration:jenkins-common:0.5.1'
+    implementation 'com.synopsys.integration:jenkins-common:0.5.2'
     implementation 'org.jvnet.localizer:localizer:1.31'
 
-    jenkinsPlugins 'org.jenkins-ci.plugins:credentials:2.1.10'
-    jenkinsPlugins 'org.jenkins-ci.plugins:plain-credentials:1.0'
+    jenkinsPlugins 'org.jenkins-ci.plugins:credentials:2.3.12'
+    jenkinsPlugins 'org.jenkins-ci.plugins:plain-credentials:1.7'
 
-    optionalJenkinsPlugins 'org.jenkins-ci.plugins:job-dsl:1.67'
-    optionalJenkinsPlugins 'org.jenkins-ci.plugins.workflow:workflow-job:2.9'
-    optionalJenkinsPlugins 'org.jenkins-ci.plugins.workflow:workflow-cps:2.23'
-    optionalJenkinsPlugins 'org.jenkins-ci.plugins.workflow:workflow-step-api:2.10'
+    optionalJenkinsPlugins 'org.jenkins-ci.plugins:job-dsl:1.77'
+    optionalJenkinsPlugins 'org.jenkins-ci.plugins.workflow:workflow-job:2.39'
+    optionalJenkinsPlugins 'org.jenkins-ci.plugins.workflow:workflow-cps:2.81'
+    optionalJenkinsPlugins 'org.jenkins-ci.plugins.workflow:workflow-step-api:2.22'
 
     testCompile group: 'org.jenkins-ci.main', name: 'jenkins-test-harness', version: '2.65'
     testCompile group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version: '5.6.2'
