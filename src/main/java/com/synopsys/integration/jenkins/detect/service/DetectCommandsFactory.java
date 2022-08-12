@@ -19,6 +19,7 @@ import com.synopsys.integration.jenkins.service.JenkinsConfigService;
 import com.synopsys.integration.jenkins.service.JenkinsFreestyleServicesFactory;
 import com.synopsys.integration.jenkins.service.JenkinsRemotingService;
 import com.synopsys.integration.jenkins.wrapper.JenkinsWrapper;
+import com.synopsys.integration.util.IntEnvironmentVariables;
 
 import hudson.AbortException;
 import hudson.EnvVars;
@@ -36,6 +37,7 @@ public class DetectCommandsFactory {
     private final TaskListener listener;
     private final EnvVars envVars;
     private final FilePath workspace;
+    private final JenkinsIntLogger jenkinsIntLogger;
 
     private DetectCommandsFactory(JenkinsWrapper jenkinsWrapper, TaskListener listener, EnvVars envVars, FilePath workspace) throws AbortException {
         this.jenkinsWrapper = jenkinsWrapper;
@@ -46,6 +48,7 @@ public class DetectCommandsFactory {
             throw new AbortException(NULL_WORKSPACE);
         }
         this.workspace = workspace;
+        this.jenkinsIntLogger = setLogger();
     }
 
     public static DetectFreestyleCommands fromPostBuild(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws IOException, InterruptedException {
@@ -59,11 +62,11 @@ public class DetectCommandsFactory {
         JenkinsFreestyleServicesFactory jenkinsFreestyleServicesFactory = new JenkinsFreestyleServicesFactory(
             detectCommandsFactory.getLogger(),
             build,
-            build.getEnvironment(listener),
+            detectCommandsFactory.envVars,
             launcher,
             listener,
             build.getBuiltOn(),
-            build.getWorkspace()
+            detectCommandsFactory.workspace
         );
 
         JenkinsBuildService jenkinsBuildService = jenkinsFreestyleServicesFactory.createJenkinsBuildService();
@@ -122,7 +125,15 @@ public class DetectCommandsFactory {
         return new DetectStrategyService(getLogger(), jenkinsWrapper.getProxyHelper(), workspaceTempDir.getRemote(), jenkinsConfigService);
     }
 
+    private JenkinsIntLogger setLogger() {
+        JenkinsIntLogger jenkinsIntLogger = JenkinsIntLogger.logToListener(listener);
+        IntEnvironmentVariables intEnvironmentVariables = IntEnvironmentVariables.empty();
+        intEnvironmentVariables.putAll(envVars);
+        jenkinsIntLogger.setLogLevel(intEnvironmentVariables);
+        return jenkinsIntLogger;
+    }
+
     private JenkinsIntLogger getLogger() {
-        return JenkinsIntLogger.logToListener(listener);
+        return jenkinsIntLogger;
     }
 }
