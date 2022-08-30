@@ -62,7 +62,7 @@ public class DetectAirGapJarStrategyTest {
         return Stream.of(
             Arguments.of(" ", System.getProperty("user.dir") + File.separator + " " + REMOTE_JAVA_RELATIVE_PATH),
             Arguments.of("", new File(REMOTE_JAVA_RELATIVE_PATH).getAbsolutePath()),
-            Arguments.of(null, "java"),
+            Arguments.of(null, JAVA_EXECUTABLE),
             Arguments.of(REMOTE_JDK_HOME, EXPECTED_JAVA_FULL_PATH)
         );
     }
@@ -143,7 +143,8 @@ public class DetectAirGapJarStrategyTest {
             String expectedBadJavaPath = badJavaHome + REMOTE_JAVA_RELATIVE_PATH;
             executeAndValidateSetupCallable(badJavaHome, expectedBadJavaPath, tempJarDirectoryPathName, tempAirGapJar);
 
-            assertTrue(byteArrayOutputStream.toString().contains("No such file or directory"), "Log does not contain error for starting process.");
+            String expectedError = (SystemUtils.IS_OS_WINDOWS) ? "The system cannot find the file specified" : "No such file or directory";
+            assertTrue(byteArrayOutputStream.toString().contains(expectedError), "Log does not contain error for starting process.");
         } catch (IOException e) {
             fail("Unexpected exception was thrown in test code: ", e);
         }
@@ -152,7 +153,7 @@ public class DetectAirGapJarStrategyTest {
     @Test
     public void testDebugLoggingJavaVersionSuccess() {
         logger.setLogLevel(LogLevel.DEBUG);
-        executeAndValidateSetupCallable(null, "java", tempJarDirectoryPathName, tempAirGapJar);
+        executeAndValidateSetupCallable(null, JAVA_EXECUTABLE, tempJarDirectoryPathName, tempAirGapJar);
 
         assertTrue(byteArrayOutputStream.toString().contains("Java version: "), "Log does not contain entry for Java Version heading.");
     }
