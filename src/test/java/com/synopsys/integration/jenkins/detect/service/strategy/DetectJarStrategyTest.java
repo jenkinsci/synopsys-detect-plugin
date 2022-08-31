@@ -48,7 +48,7 @@ public class DetectJarStrategyTest {
         return Stream.of(
             Arguments.of(" ", System.getProperty("user.dir") + File.separator + " " + REMOTE_JAVA_RELATIVE_PATH),
             Arguments.of("", new File(REMOTE_JAVA_RELATIVE_PATH).getAbsolutePath()),
-            Arguments.of(null, "java"),
+            Arguments.of(null, JAVA_EXECUTABLE),
             Arguments.of(REMOTE_JDK_HOME, EXPECTED_JAVA_FULL_PATH)
         );
     }
@@ -80,7 +80,7 @@ public class DetectJarStrategyTest {
 
     @Test
     public void testSetupCallableInvalidJdkHome() {
-        this.executeAndValidateSetupCallable("\u0000", "java");
+        this.executeAndValidateSetupCallable("\u0000", JAVA_EXECUTABLE);
         assertTrue(
             byteArrayOutputStream.toString().contains("Could not set path to Java executable, falling back to PATH."),
             "Log does not contain message from IOException."
@@ -128,7 +128,8 @@ public class DetectJarStrategyTest {
             String expectedBadJavaPath = badJavaHome + REMOTE_JAVA_RELATIVE_PATH;
             this.executeAndValidateSetupCallable(badJavaHome, expectedBadJavaPath);
 
-            assertTrue(byteArrayOutputStream.toString().contains("No such file or directory"), "Log does not contain error for starting process.");
+            String expectedError = (SystemUtils.IS_OS_WINDOWS) ? "The system cannot find the file specified" : "No such file or directory";
+            assertTrue(byteArrayOutputStream.toString().contains(expectedError), "Log does not contain error for starting process.");
         } catch (IOException e) {
             fail("Unexpected exception was thrown in test code: ", e);
         }
@@ -137,7 +138,7 @@ public class DetectJarStrategyTest {
     @Test
     public void testSetupCallableDebugLoggingJavaVersionSuccess() {
         logger.setLogLevel(LogLevel.DEBUG);
-        this.executeAndValidateSetupCallable(null, "java");
+        this.executeAndValidateSetupCallable(null, JAVA_EXECUTABLE);
 
         assertTrue(byteArrayOutputStream.toString().contains("Java version: "), "Log does not contain entry for Java Version heading.");
     }
