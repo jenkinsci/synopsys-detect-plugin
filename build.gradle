@@ -42,16 +42,20 @@ dependencies {
     implementation 'com.synopsys.integration:jenkins-common:0.5.3'
     implementation 'org.jvnet.localizer:localizer:1.31'
 
-    jenkinsPlugins 'org.jenkins-ci.plugins:credentials:2.6.1.1'
-    jenkinsPlugins 'org.jenkins-ci.plugins:plain-credentials:1.7'
+    //jenkinsPlugins 'org.jenkins-ci.plugins:credentials:1139.veb_9579fca_33b_'
+    jenkinsPlugins 'org.jenkins-ci.plugins:credentials:1087.1089.v2f1b_9a_b_040e4'
+    jenkinsPlugins 'org.jenkins-ci.plugins:plain-credentials:139.ved2b_9cf7587b'
 
-    optionalJenkinsPlugins 'org.jenkins-ci.plugins:job-dsl:1.78.1'
-    optionalJenkinsPlugins 'org.jenkins-ci.plugins.workflow:workflow-job:2.39'
-    optionalJenkinsPlugins 'org.jenkins-ci.plugins.workflow:workflow-cps:2.94.4'
-    optionalJenkinsPlugins 'org.jenkins-ci.plugins.workflow:workflow-step-api:2.22'
+    optionalJenkinsPlugins 'org.jenkins-ci.plugins:job-dsl:1.81'
+    //optionalJenkinsPlugins 'org.jenkins-ci.plugins.workflow:workflow-job:1232.v5a_4c994312f1'
+    optionalJenkinsPlugins 'org.jenkins-ci.plugins.workflow:workflow-job:1189.va_d37a_e9e4eda_'
+    //optionalJenkinsPlugins 'org.jenkins-ci.plugins.workflow:workflow-cps:2759.v87459c4eea_ca_'
+    optionalJenkinsPlugins 'org.jenkins-ci.plugins.workflow:workflow-cps:2729.2732.vda_e3f07b_5a_f8'
+    optionalJenkinsPlugins 'org.jenkins-ci.plugins.workflow:workflow-step-api:639.v6eca_cd8c04a_a_'
 
-    testCompile group: 'org.jenkins-ci.main', name: 'jenkins-test-harness', version: '2.65'
-    testCompile group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version: '5.6.2'
-    testCompile group: 'org.junit.jupiter', name: 'junit-jupiter-params', version: '5.6.2'
-    testCompile group: 'org.mockito', name: 'mockito-core', version: '2.23.4'
+    testImplementation group: 'org.jenkins-ci.main', name: 'jenkins-test-harness', version: '1816.v8138d8056949'
+    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version: '5.6.2'
+    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-params', version: '5.6.2'
+    testImplementation group: 'org.mockito', name: 'mockito-core', version: '2.23.4'
+
 }
