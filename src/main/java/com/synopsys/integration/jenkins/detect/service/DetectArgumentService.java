@@ -103,7 +103,8 @@ public class DetectArgumentService {
         String cleanedArg = argument;
         if (argument.startsWith("--") && argument.contains("=")) {
             String[] splitArgument = argument.split("=", 2);
-            cleanedArg = splitArgument[0] + "=" + escaper.apply(splitArgument[1]);
+            String endArg = splitArgument[1].endsWith("==") ? splitArgument[1] : escaper.apply(splitArgument[1]);
+            cleanedArg = splitArgument[0] + "=" + endArg;
         }
 
         return cleanedArg;
