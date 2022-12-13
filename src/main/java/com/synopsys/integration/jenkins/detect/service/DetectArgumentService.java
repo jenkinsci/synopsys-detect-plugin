@@ -103,7 +103,9 @@ public class DetectArgumentService {
         String cleanedArg = argument;
         if (argument.startsWith("--") && argument.contains("=")) {
             String[] splitArgument = argument.split("=", 2);
-            cleanedArg = splitArgument[0] + "=" + escaper.apply(splitArgument[1]);
+            //The api token should not be escaped... if it contains "=" or "==" padding, it would cause probs.
+            String endArg = splitArgument[0].contains("blackduck.api.token") ? splitArgument[1] : escaper.apply(splitArgument[1]);
+            cleanedArg = splitArgument[0] + "=" + endArg;
         }
 
         return cleanedArg;
