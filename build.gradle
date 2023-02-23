@@ -57,7 +57,13 @@ dependencies {
     annotationProcessor 'com.synopsys.integration:jenkins-annotation-processor:0.0.7'
 
     implementation 'com.synopsys.integration:blackduck-common:66.1.2'
-    implementation 'com.synopsys.integration:jenkins-common:0.5.5'
+    implementation ('com.synopsys.integration:jenkins-common:0.5.5') {
+        exclude group: "org.jenkins-ci.main", module: "jenkins-core"
+        exclude group: "org.jenkins-ci.plugins", module: "credentials"
+        exclude group: "org.jenkins-ci.plugins", module: "plain-credentials"
+        exclude group: "org.jenkins-ci.plugins.workflow", module: "workflow-support"
+        exclude group: "org.jenkins-ci.plugins.workflow", module: "workflow-api"
+    }
     implementation 'org.jvnet.localizer:localizer:1.31'
 
     implementation 'org.jenkins-ci.plugins:credentials:1139.veb_9579fca_33b_'
