@@ -11,4 +11,4 @@ Synopsys Detect for Jenkins simplifies running Synopsys Detect in your Jenkins b
 You can download the latest artifact from releases: https://updates.jenkins-ci.org/download/plugins/blackduck-detect/
 
 # Documentation
-Documentation for Synopsys Detect for Jenkins can be found at: https://community.synopsys.com/s/document-item?bundleId=integrations-detect&topicId=integrations%2Fjenkinsplugin%2Fjenkins.html&_LANG=enus
+Documentation for Synopsys Detect for Jenkins can be found [here](https://sig-product-docs.synopsys.com/bundle/integrations-detect/page/integrations/jenkinsplugin/jenkins.html)
