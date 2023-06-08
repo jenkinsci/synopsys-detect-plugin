@@ -53,7 +53,7 @@ public class DetectScriptStrategyTest {
     @Test
     public void testArgumentEscaperLinux() {
         DetectScriptStrategy detectScriptStrategy = new DetectScriptStrategy(defaultLogger, defaultProxyHelper, OperatingSystemType.LINUX, null);
-        String expectedEscapedString = "\\|\\&\\;\\<\\>\\(\\)\\$\\`\\\\\\\"\\'\\ \\\t\\*\\?\\[\\#\\~\\=\\%,";
+        String expectedEscapedString = "\\|\\&\\;\\<\\>\\(\\)\\$\\`\\\\\\\"\\'\\ \\\t*\\?\\[\\#\\~\\=\\%,";
 
         String escapedString = detectScriptStrategy.getArgumentEscaper().apply(unescapedSpecialCharacters);
 
@@ -63,7 +63,7 @@ public class DetectScriptStrategyTest {
     @Test
     public void testArgumentEscaperMac() {
         DetectScriptStrategy detectScriptStrategy = new DetectScriptStrategy(defaultLogger, defaultProxyHelper, OperatingSystemType.MAC, null);
-        String expectedEscapedString = "\\|\\&\\;\\<\\>\\(\\)\\$\\`\\\\\\\"\\'\\ \\\t\\*\\?\\[\\#\\~\\=\\%,";
+        String expectedEscapedString = "\\|\\&\\;\\<\\>\\(\\)\\$\\`\\\\\\\"\\'\\ \\\t*\\?\\[\\#\\~\\=\\%,";
 
         String escapedString = detectScriptStrategy.getArgumentEscaper().apply(unescapedSpecialCharacters);
 
@@ -73,7 +73,7 @@ public class DetectScriptStrategyTest {
     @Test
     public void testArgumentEscaperWindows() {
         DetectScriptStrategy detectScriptStrategy = new DetectScriptStrategy(defaultLogger, defaultProxyHelper, OperatingSystemType.WINDOWS, null);
-        String expectedEscapedString = "`|`&`;`<`>`(`)`$```\\`\"`'` `\t`*`?`[`#`~`=`%`,";
+        String expectedEscapedString = "`|`&`;`<`>`(`)`$```\\`\"`'` `\t*`?`[`#`~`=`%`,";
 
         String escapedString = detectScriptStrategy.getArgumentEscaper().apply(unescapedSpecialCharacters);
 

@@ -57,7 +57,7 @@ public class DetectScriptStrategy extends DetectExecutionStrategy {
         if (operatingSystemType == OperatingSystemType.WINDOWS) {
             return IntegrationEscapeUtils::escapePowerShell;
         }
-        return IntegrationEscapeUtils::escapeXSI;
+        return IntegrationEscapeUtils::escapeXSIMinusAsterisk;
     }
 
     @Override

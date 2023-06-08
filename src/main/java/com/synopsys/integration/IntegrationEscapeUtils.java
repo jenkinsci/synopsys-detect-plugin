@@ -18,6 +18,9 @@ import org.apache.commons.text.translate.LookupTranslator;
 public class IntegrationEscapeUtils extends StringEscapeUtils {
     public static final CharSequenceTranslator ESCAPE_POWERSHELL;
 
+    // same as ESCAPE_XSI without escaping Asterisk '*' so wildcards for excluding directories work again like v7
+    public static final CharSequenceTranslator ESCAPE_XSI_MINUS_A;
+
     static {
         Map<CharSequence, CharSequence> escapePowershellMap = new HashMap<>();
         escapePowershellMap.put("|", "`|");
@@ -36,7 +39,6 @@ public class IntegrationEscapeUtils extends StringEscapeUtils {
         escapePowershellMap.put("\t", "`\t");
         escapePowershellMap.put("\r\n", "");
         escapePowershellMap.put("\n", "");
-        escapePowershellMap.put("*", "`*");
         escapePowershellMap.put("?", "`?");
         escapePowershellMap.put("[", "`[");
         escapePowershellMap.put("#", "`#");
@@ -49,7 +51,38 @@ public class IntegrationEscapeUtils extends StringEscapeUtils {
         );
     }
 
+    static {
+        Map<CharSequence, CharSequence> unescapeJavaMap = new HashMap<>();
+        unescapeJavaMap.put("|", "\\|");
+        unescapeJavaMap.put("&", "\\&");
+        unescapeJavaMap.put(";", "\\;");
+        unescapeJavaMap.put("<", "\\<");
+        unescapeJavaMap.put(">", "\\>");
+        unescapeJavaMap.put("(", "\\(");
+        unescapeJavaMap.put(")", "\\)");
+        unescapeJavaMap.put("$", "\\$");
+        unescapeJavaMap.put("`", "\\`");
+        unescapeJavaMap.put("\\", "\\\\");
+        unescapeJavaMap.put("\"", "\\\"");
+        unescapeJavaMap.put("'", "\\'");
+        unescapeJavaMap.put(" ", "\\ ");
+        unescapeJavaMap.put("\t", "\\\t");
+        unescapeJavaMap.put("\r\n", "");
+        unescapeJavaMap.put("\n", "");
+        unescapeJavaMap.put("?", "\\?");
+        unescapeJavaMap.put("[", "\\[");
+        unescapeJavaMap.put("#", "\\#");
+        unescapeJavaMap.put("~", "\\~");
+        unescapeJavaMap.put("=", "\\=");
+        unescapeJavaMap.put("%", "\\%");
+        ESCAPE_XSI_MINUS_A = new LookupTranslator(Collections.unmodifiableMap(unescapeJavaMap));
+    }
+
     public static String escapePowerShell(String input) {
         return ESCAPE_POWERSHELL.translate(input);
+    }
+
+    public static String escapeXSIMinusAsterisk(String input) {
+        return ESCAPE_XSI_MINUS_A.translate(input);
     }
 }
