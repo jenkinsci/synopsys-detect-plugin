@@ -28,7 +28,7 @@ java {
 project.ext.excludesFromTestCoverage = ['**/DetectDownloadStrategy.java', '**/DetectPipelineStep.java', '**/DetectPostBuildStep.java', '**/DetectAirGapInstallation.java']
 
 group = 'com.blackducksoftware.integration'
-version = '8.0.1-SNAPSHOT'
+version = '9.0.0-SNAPSHOT'
 description = 'Synopsys Detect Plugin for Jenkins'
 
 repositories {
