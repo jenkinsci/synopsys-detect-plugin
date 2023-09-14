@@ -66,7 +66,8 @@ dependencies {
     }
 
     implementation('org.jenkins-ci.main:jenkins-core:2.377') {
-        exclude group: 'org.springframework.security', module: 'spring-security-web'
+        exclude group: "org.springframework.security"
+        exclude group: "org.springframework"
     }
 
     implementation 'org.jvnet.localizer:localizer:1.31'
