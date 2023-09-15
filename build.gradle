@@ -44,7 +44,7 @@ artifactory {
 }
 
 jenkinsPlugin {
-    jenkinsVersion = '2.401.3' // as of version 0.40.0 of jpi, it's jenkinsVersion...
+    jenkinsVersion = '2.414.1' // as of version 0.40.0 of jpi, it's jenkinsVersion...
     displayName = 'Synopsys Detect plugin'
     compatibleSinceVersion = '8.0.0'
     url = 'https://wiki.jenkins.io/display/JENKINS/Synopsys+Detect+Plugin'
@@ -64,6 +64,8 @@ dependencies {
         exclude group: "org.jenkins-ci.plugins.workflow", module: "workflow-support"
         exclude group: "org.jenkins-ci.plugins.workflow", module: "workflow-api"
     }
+
+    implementation 'org.springframework.security:spring-security-web:5.8.5'
 
     implementation 'org.jvnet.localizer:localizer:1.31'
 
