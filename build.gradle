@@ -44,7 +44,7 @@ artifactory {
 }
 
 jenkinsPlugin {
-    jenkinsVersion = '2.416' // as of version 0.40.0 of jpi, it's jenkinsVersion...
+    jenkinsVersion = '2.401.3' // as of version 0.40.0 of jpi, it's jenkinsVersion...
     displayName = 'Synopsys Detect plugin'
     compatibleSinceVersion = '8.0.0'
     url = 'https://wiki.jenkins.io/display/JENKINS/Synopsys+Detect+Plugin'
