@@ -64,12 +64,18 @@ dependencies {
         exclude group: "org.jenkins-ci.plugins.workflow", module: "workflow-support"
         exclude group: "org.jenkins-ci.plugins.workflow", module: "workflow-api"
     }
+
+    configurations.all {
+        exclude group: "org.springframework.security"
+        exclude group: "org.springframework"
+    }
+
     implementation 'org.jvnet.localizer:localizer:1.31'
 
     implementation 'org.jenkins-ci.plugins:credentials:1139.veb_9579fca_33b_'
     implementation 'org.jenkins-ci.plugins:plain-credentials:1.8'
 
-    workflowJobDslApi 'org.jenkins-ci.plugins:job-dsl:1.80'
+    workflowJobDslApi 'org.jenkins-ci.plugins:job-dsl:1.83'
     workflowJobApi 'org.jenkins-ci.plugins.workflow:workflow-job:1203.v7b_7023424efe'
     workflowCpsApi 'org.jenkins-ci.plugins.workflow:workflow-cps:2729.2732.vda_e3f07b_5a_f8'
     workflowStepApiApi 'org.jenkins-ci.plugins.workflow:workflow-step-api:622.vb_8e7c15b_c95a_'
