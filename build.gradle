@@ -54,12 +54,7 @@ jenkinsPlugin {
 }
 
 dependencies {
-    annotationProcessor('com.synopsys.integration:jenkins-annotation-processor:0.0.7') {
-        exclude group: "org.synopsys.integration", module: "jenkins-common"
-        implementation("org.jenkins-ci.main:jenkins-core:2.401.3"){
-            exclude group: "org.springframework.security", module: "spring-security-web"
-        }
-    }
+    annotationProcessor('com.synopsys.integration:jenkins-annotation-processor:0.0.7')
 
     implementation 'com.synopsys.integration:blackduck-common:66.1.2'
     implementation ('com.synopsys.integration:jenkins-common:0.5.5') {
