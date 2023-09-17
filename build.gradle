@@ -55,7 +55,10 @@ jenkinsPlugin {
 
 dependencies {
     annotationProcessor('com.synopsys.integration:jenkins-annotation-processor:0.0.7') {
-        exclude group: "org.jenkins-ci.main", module: "jenkins-core"
+        exclude group: "org.synopsys.integration", module: "jenkins-common"
+        implementation("org.jenkins-ci.main:jenkins-core:2.401.3"){
+            exclude group: "org.springframework.security", module: "spring-security-web"
+        }
     }
 
     implementation 'com.synopsys.integration:blackduck-common:66.1.2'
@@ -65,10 +68,6 @@ dependencies {
         exclude group: "org.jenkins-ci.plugins", module: "plain-credentials"
         exclude group: "org.jenkins-ci.plugins.workflow", module: "workflow-support"
         exclude group: "org.jenkins-ci.plugins.workflow", module: "workflow-api"
-    }
-
-    implementation("org.jenkins-ci.main:jenkins-core:2.401.3"){
-        exclude group: "org.springframework.security", module: "spring-security-web"
     }
 
     implementation 'org.springframework.security:spring-security-web:5.8.5'
