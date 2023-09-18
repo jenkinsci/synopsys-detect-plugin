@@ -54,7 +54,8 @@ jenkinsPlugin {
 }
 
 dependencies {
-    annotationProcessor('com.synopsys.integration:jenkins-annotation-processor:0.0.7')
+    implementation 'org.springframework.security:spring-security-web:5.8.5'
+    annotationProcessor'com.synopsys.integration:jenkins-annotation-processor:0.0.7'
 
     implementation 'com.synopsys.integration:blackduck-common:66.1.2'
     implementation ('com.synopsys.integration:jenkins-common:0.5.5') {
