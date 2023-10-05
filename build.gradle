@@ -28,7 +28,7 @@ java {
 project.ext.excludesFromTestCoverage = ['**/DetectDownloadStrategy.java', '**/DetectPipelineStep.java', '**/DetectPostBuildStep.java', '**/DetectAirGapInstallation.java']
 
 group = 'com.blackducksoftware.integration'
-version = '8.0.1-SNAPSHOT'
+version = '9.0.0-SNAPSHOT'
 description = 'Synopsys Detect Plugin for Jenkins'
 
 repositories {
@@ -44,9 +44,9 @@ artifactory {
 }
 
 jenkinsPlugin {
-    jenkinsVersion = '2.377' // as of version 0.40.0 of jpi, it's jenkinsVersion...
+    jenkinsVersion = '2.401.3' // as of version 0.40.0 of jpi, it's jenkinsVersion...
     displayName = 'Synopsys Detect plugin'
-    compatibleSinceVersion = '8.0.0'
+    compatibleSinceVersion = '9.0.0'
     url = 'https://wiki.jenkins.io/display/JENKINS/Synopsys+Detect+Plugin'
     gitHubUrl = 'https://github.com/jenkinsci/synopsys-detect-plugin'
 
@@ -54,16 +54,23 @@ jenkinsPlugin {
 }
 
 dependencies {
+    implementation 'org.springframework.security:spring-security-web:5.8.5'
     annotationProcessor 'com.synopsys.integration:jenkins-annotation-processor:0.0.7'
 
     implementation 'com.synopsys.integration:blackduck-common:66.1.2'
-    implementation 'com.synopsys.integration:jenkins-common:0.5.5'
+    implementation ('com.synopsys.integration:jenkins-common:0.5.5') {
+        exclude group: "org.jenkins-ci.main", module: "jenkins-core"
+        exclude group: "org.jenkins-ci.plugins", module: "credentials"
+        exclude group: "org.jenkins-ci.plugins", module: "plain-credentials"
+        exclude group: "org.jenkins-ci.plugins.workflow", module: "workflow-support"
+        exclude group: "org.jenkins-ci.plugins.workflow", module: "workflow-api"
+    }
     implementation 'org.jvnet.localizer:localizer:1.31'
 
     implementation 'org.jenkins-ci.plugins:credentials:1139.veb_9579fca_33b_'
     implementation 'org.jenkins-ci.plugins:plain-credentials:1.8'
 
-    workflowJobDslApi 'org.jenkins-ci.plugins:job-dsl:1.80'
+    workflowJobDslApi 'org.jenkins-ci.plugins:job-dsl:1.83'
     workflowJobApi 'org.jenkins-ci.plugins.workflow:workflow-job:1203.v7b_7023424efe'
     workflowCpsApi 'org.jenkins-ci.plugins.workflow:workflow-cps:2729.2732.vda_e3f07b_5a_f8'
     workflowStepApiApi 'org.jenkins-ci.plugins.workflow:workflow-step-api:622.vb_8e7c15b_c95a_'
