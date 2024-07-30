@@ -1,7 +1,24 @@
 buildscript {
     apply from: "https://raw.githubusercontent.com/blackducksoftware/integration-resources/master/gradle_common/buildscript-repositories.gradle", to: buildscript
-    apply from: 'https://raw.githubusercontent.com/blackducksoftware/integration-resources/master/gradle_common/buildscript-dependencies.gradle', to: buildscript
+    apply from: 'https://raw.githubusercontent.com/blackducksoftware/integration-resources/master/gradle_common/buildscript-cgp-version.gradle'
+
+    final def internalRepoHost = System.getenv('SNPS_INTERNAL_ARTIFACTORY')
+
+    repositories {
+        maven { url "https://repo.jenkins-ci.org/releases/" }
+        maven { url "https://sig-artifactory.internal.synopsys.com/artifactory/jcenter" }
+        //        maven { url "${internalRepoHost}/artifactory/jcenter" }
+    }
+
+    ext {
+        javaTargetCompatibility = 8
+        javaSourceCompatibility = 8
+    }
+
+    dependencies { classpath "com.synopsys.integration:common-gradle-plugin:${managedCgpVersion}" }
 }
+
+
 
 plugins {
     // this version (0.43.0 and up) , uses a later version of test-harness eliminating the 
