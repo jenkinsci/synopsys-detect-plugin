@@ -2,11 +2,8 @@ buildscript {
     apply from: "https://raw.githubusercontent.com/blackducksoftware/integration-resources/master/gradle_common/buildscript-repositories.gradle", to: buildscript
     apply from: 'https://raw.githubusercontent.com/blackducksoftware/integration-resources/master/gradle_common/buildscript-cgp-version.gradle'
 
-    final def internalRepoHost = System.getenv('SNPS_INTERNAL_ARTIFACTORY')
-
     repositories {
         maven { url "https://repo.jenkins-ci.org/releases/" }
-        maven { url "${internalRepoHost}/artifactory/jcenter" }
     }
 
     ext {
@@ -23,6 +20,19 @@ plugins {
     id 'org.jenkins-ci.jpi' version '0.43.0'
 }
 
+def internalRepoHost = System.getenv('SNPS_INTERNAL_ARTIFACTORY')
+
+println "hello world"
+println "${System.getenv('SNPS_INTERNAL_ARTIFACTORY')}"
+println "${internalRepoHost}/artifactory/jcenter"
+
+repositories {
+    maven { url "https://sig-repo.synopsys.com/bds-integrations-release" }
+    mavenCentral()
+    maven { url 'https://plugins.gradle.org/m2/' }
+    maven { url "${internalRepoHost}/artifactory/jcenter" }
+}
+
 java {
     registerFeature('workflowJob') {
         usingSourceSet(sourceSets.main)
@@ -36,7 +46,6 @@ java {
     registerFeature('workflowStepApi') {
         usingSourceSet(sourceSets.main)
     }
-    
 }
 
 project.ext.excludesFromTestCoverage = ['**/DetectDownloadStrategy.java', '**/DetectPipelineStep.java', '**/DetectPostBuildStep.java', '**/DetectAirGapInstallation.java']
@@ -44,10 +53,6 @@ project.ext.excludesFromTestCoverage = ['**/DetectDownloadStrategy.java', '**/De
 group = 'com.blackducksoftware.integration'
 version = '9.0.0-SNAPSHOT'
 description = 'Synopsys Detect Plugin for Jenkins'
-
-repositories {
-    maven { url "https://repo.jenkins-ci.org/releases/" }
-}
 
 apply plugin: 'com.synopsys.integration.solution'
 
