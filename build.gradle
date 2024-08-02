@@ -20,11 +20,7 @@ plugins {
     id 'org.jenkins-ci.jpi' version '0.43.0'
 }
 
-def internalRepoHost = System.getenv('SNPS_INTERNAL_ARTIFACTORY')
-
-println "hello world"
-println "${System.getenv('SNPS_INTERNAL_ARTIFACTORY')}"
-println "${internalRepoHost}/artifactory/jcenter"
+def internalRepoHost = System.getenv("SNPS_INTERNAL_ARTIFACTORY")
 
 repositories {
     maven { url "https://sig-repo.synopsys.com/bds-integrations-release" }
