@@ -11,7 +11,7 @@ buildscript {
         javaSourceCompatibility = 8
     }
 
-    dependencies { classpath "com.synopsys.integration:common-gradle-plugin:${managedCgpVersion}" }
+    dependencies { classpath "com.blackduck.integration:common-gradle-plugin:${managedCgpVersion}" }
 }
 
 plugins {
@@ -47,9 +47,9 @@ project.ext.excludesFromTestCoverage = ['**/DetectDownloadStrategy.java', '**/De
 
 group = 'com.blackducksoftware.integration'
 version = '9.0.0-SNAPSHOT'
-description = 'Detect Plugin for Jenkins'
+description = 'Blackduck Detect Plugin for Jenkins'
 
-apply plugin: 'com.synopsys.integration.solution'
+apply plugin: 'com.blackduck.integration.solution'
 
 artifactory {
     publish {
