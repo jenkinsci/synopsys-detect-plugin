@@ -1,15 +1,15 @@
 /*
  * blackduck-detect
  *
- * Copyright (c) 2023 Synopsys, Inc.
+ * Copyright (c) 2024 Black Duck Software, Inc.
  *
- * Use subject to the terms and conditions of the Synopsys End User Software License and Maintenance Agreement. All rights reserved worldwide.
+ * Use subject to the terms and conditions of the Black Duck Software End User Software License and Maintenance Agreement. All rights reserved worldwide.
  */
-package com.blackduck.integration.detect.extensions.global;
+package com.blackduck.integration.jenkins.detect.extensions.global;
 
-import com.blackduck.integration.detect.extensions.AirGapDownloadStrategy;
-import com.blackduck.integration.detect.extensions.DetectDownloadStrategy;
-import com.blackduck.integration.detect.extensions.ScriptOrJarDownloadStrategy;
+import com.blackduck.integration.jenkins.detect.extensions.AirGapDownloadStrategy;
+import com.blackduck.integration.jenkins.detect.extensions.DetectDownloadStrategy;
+import com.blackduck.integration.jenkins.detect.extensions.ScriptOrJarDownloadStrategy;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.cloudbees.plugins.credentials.impl.BaseStandardCredentials;
 import com.synopsys.integration.blackduck.configuration.BlackDuckServerConfig;

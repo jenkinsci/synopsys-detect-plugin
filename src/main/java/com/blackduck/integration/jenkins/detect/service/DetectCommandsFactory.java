@@ -1,16 +1,16 @@
 /*
  * blackduck-detect
  *
- * Copyright (c) 2023 Synopsys, Inc.
+ * Copyright (c) 2024 Black Duck Software, Inc.
  *
- * Use subject to the terms and conditions of the Synopsys End User Software License and Maintenance Agreement. All rights reserved worldwide.
+ * Use subject to the terms and conditions of the Black Duck Software End User Software License and Maintenance Agreement. All rights reserved worldwide.
  */
-package com.blackduck.integration.detect.service;
+package com.blackduck.integration.jenkins.detect.service;
 
-import com.blackduck.integration.detect.DetectFreestyleCommands;
-import com.blackduck.integration.detect.DetectPipelineCommands;
-import com.blackduck.integration.detect.DetectRunner;
-import com.blackduck.integration.detect.service.strategy.DetectStrategyService;
+import com.blackduck.integration.jenkins.detect.DetectFreestyleCommands;
+import com.blackduck.integration.jenkins.detect.DetectPipelineCommands;
+import com.blackduck.integration.jenkins.detect.DetectRunner;
+import com.blackduck.integration.jenkins.detect.service.strategy.DetectStrategyService;
 import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
 import com.synopsys.integration.jenkins.service.JenkinsBuildService;
 import com.synopsys.integration.jenkins.service.JenkinsConfigService;

@@ -27,9 +27,9 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 
 import com.synopsys.integration.exception.IntegrationException;
-import com.synopsys.integration.jenkins.detect.exception.DetectJenkinsException;
-import com.synopsys.integration.jenkins.detect.extensions.AirGapDownloadStrategy;
-import com.synopsys.integration.jenkins.detect.extensions.tool.DetectAirGapInstallation;
+import com.blackduck.integration.jenkins.detect.exception.DetectJenkinsException;
+import com.blackduck.integration.jenkins.detect.extensions.AirGapDownloadStrategy;
+import com.blackduck.integration.jenkins.detect.extensions.tool.DetectAirGapInstallation;
 import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
 import com.synopsys.integration.jenkins.service.JenkinsConfigService;
 import com.synopsys.integration.log.LogLevel;

@@ -1,9 +1,19 @@
 package com.blackduck.integration.jenkins.detect.service;
 
-import static com.synopsys.integration.blackduck.configuration.BlackDuckServerConfigKeys.KEYS;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import com.blackduck.integration.jenkins.detect.extensions.global.DetectGlobalConfig;
+import com.synopsys.integration.blackduck.configuration.BlackDuckServerConfigBuilder;
+import com.synopsys.integration.builder.BuilderPropertyKey;
+import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
+import com.synopsys.integration.jenkins.service.JenkinsConfigService;
+import com.synopsys.integration.jenkins.wrapper.JenkinsProxyHelper;
+import com.synopsys.integration.jenkins.wrapper.JenkinsVersionHelper;
+import com.synopsys.integration.jenkins.wrapper.JenkinsWrapper;
+import com.synopsys.integration.jenkins.wrapper.SynopsysCredentialsHelper;
+import com.synopsys.integration.util.IntEnvironmentVariables;
+import hudson.model.TaskListener;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
@@ -12,22 +22,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
-
-import com.synopsys.integration.blackduck.configuration.BlackDuckServerConfigBuilder;
-import com.synopsys.integration.builder.BuilderPropertyKey;
-import com.synopsys.integration.jenkins.detect.extensions.global.DetectGlobalConfig;
-import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
-import com.synopsys.integration.jenkins.service.JenkinsConfigService;
-import com.synopsys.integration.jenkins.wrapper.JenkinsProxyHelper;
-import com.synopsys.integration.jenkins.wrapper.JenkinsVersionHelper;
-import com.synopsys.integration.jenkins.wrapper.JenkinsWrapper;
-import com.synopsys.integration.jenkins.wrapper.SynopsysCredentialsHelper;
-import com.synopsys.integration.util.IntEnvironmentVariables;
-
-import hudson.model.TaskListener;
+import static com.synopsys.integration.blackduck.configuration.BlackDuckServerConfigKeys.KEYS;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class DetectEnvironmentServiceTest {
     private final TaskListener taskListenerMock = Mockito.mock(TaskListener.class);

@@ -4,15 +4,13 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.IOException;
 
-import com.blackduck.integration.detect.DetectFreestyleCommands;
-import com.blackduck.integration.detect.DetectRunner;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import com.synopsys.integration.exception.IntegrationException;
-import com.blackduck.integration.detect.extensions.ScriptOrJarDownloadStrategy;
+import com.blackduck.integration.jenkins.detect.extensions.ScriptOrJarDownloadStrategy;
 import com.synopsys.integration.jenkins.service.JenkinsBuildService;
 
 public class DetectFreestyleCommandsTest {

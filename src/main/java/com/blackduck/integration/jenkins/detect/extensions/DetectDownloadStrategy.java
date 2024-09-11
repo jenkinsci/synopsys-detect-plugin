@@ -1,11 +1,11 @@
 /*
  * blackduck-detect
  *
- * Copyright (c) 2023 Synopsys, Inc.
+ * Copyright (c) 2024 Black Duck Software, Inc.
  *
- * Use subject to the terms and conditions of the Synopsys End User Software License and Maintenance Agreement. All rights reserved worldwide.
+ * Use subject to the terms and conditions of the Black Duck Software End User Software License and Maintenance Agreement. All rights reserved worldwide.
  */
-package com.blackduck.integration.detect.extensions;
+package com.blackduck.integration.jenkins.detect.extensions;
 
 import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
