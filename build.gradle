@@ -58,7 +58,7 @@ artifactory {
 }
 
 jenkinsPlugin {
-    jenkinsVersion = '2.426.1' // as of version 0.40.0 of jpi, it's jenkinsVersion...
+    jenkinsVersion = '2.426.2' // as of version 0.40.0 of jpi, it's jenkinsVersion...
     displayName = 'Synopsys Detect plugin'
     compatibleSinceVersion = '9.0.0'
     url = 'https://wiki.jenkins.io/display/JENKINS/Synopsys+Detect+Plugin'
@@ -68,7 +68,7 @@ jenkinsPlugin {
 }
 
 dependencies {
-    implementation 'org.springframework.security:spring-security-web:5.8.10'
+    implementation 'org.springframework.security:spring-security-web:5.8.12'
     annotationProcessor 'com.synopsys.integration:jenkins-annotation-processor:0.0.7'
 
     implementation 'com.synopsys.integration:blackduck-common:66.1.2'
