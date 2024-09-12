@@ -58,7 +58,7 @@ artifactory {
 }
 
 jenkinsPlugin {
-    jenkinsVersion = '2.401.3' // as of version 0.40.0 of jpi, it's jenkinsVersion...
+    jenkinsVersion = '2.414.3' // as of version 0.40.0 of jpi, it's jenkinsVersion...
     displayName = 'Synopsys Detect plugin'
     compatibleSinceVersion = '9.0.0'
     url = 'https://wiki.jenkins.io/display/JENKINS/Synopsys+Detect+Plugin'
@@ -68,7 +68,7 @@ jenkinsPlugin {
 }
 
 dependencies {
-    implementation 'org.springframework.security:spring-security-web:5.8.5'
+    implementation 'org.springframework.security:spring-security-web:5.8.6'
     annotationProcessor 'com.synopsys.integration:jenkins-annotation-processor:0.0.7'
 
     implementation 'com.synopsys.integration:blackduck-common:66.1.2'
@@ -89,7 +89,7 @@ dependencies {
     workflowCpsApi 'org.jenkins-ci.plugins.workflow:workflow-cps:2729.2732.vda_e3f07b_5a_f8'
     workflowStepApiApi 'org.jenkins-ci.plugins.workflow:workflow-step-api:622.vb_8e7c15b_c95a_'
 
-    testImplementation group: 'org.jenkins-ci.main', name: 'jenkins-test-harness', version: '1812.v6d4e97d91fd8'
+    testImplementation group: 'org.jenkins-ci.main', name: 'jenkins-test-harness', version: '1912.v0cdf15450b_fb'
     testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version: '5.6.2'
     testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-params', version: '5.6.2'
     testImplementation group: 'org.mockito', name: 'mockito-core', version: '2.23.4'
