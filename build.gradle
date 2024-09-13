@@ -12,6 +12,14 @@ buildscript {
     }
 
     dependencies { classpath("com.synopsys.integration:common-gradle-plugin:${managedCgpVersion}") }
+
+    configurations {
+        all {
+            exclude group: 'org.apache.ant', module: 'ant'
+            exclude group: 'org.eclipse.jgit', module: 'org.eclipse.jgit'
+            exclude group: 'org.jenkins-ci.main', module: 'jenkins-test-harness'
+        }
+    }
 }
 
 plugins {
