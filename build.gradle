@@ -11,13 +11,17 @@ buildscript {
         javaSourceCompatibility = 8
     }
 
-    dependencies { classpath "com.synopsys.integration:common-gradle-plugin:${managedCgpVersion}" }
+    dependencies { classpath("com.synopsys.integration:common-gradle-plugin:${managedCgpVersion}") }
+
+    configurations.all {
+        resolutionStrategy.force 'com.google.guava:guava:32.1.2-jre'
+    }
 }
 
 plugins {
     // this version (0.43.0 and up) , uses a later version of test-harness eliminating the 
     // dependency on a compromised version of apache commons-text.  Shows as a red-herring in scans
-    id 'org.jenkins-ci.jpi' version '0.43.0'
+    id 'org.jenkins-ci.jpi' version '0.46.0'
 }
 
 def internalRepoHost = System.getenv("SNPS_INTERNAL_ARTIFACTORY")
@@ -58,7 +62,7 @@ artifactory {
 }
 
 jenkinsPlugin {
-    jenkinsVersion = '2.426.2' // as of version 0.40.0 of jpi, it's jenkinsVersion...
+    jenkinsVersion = '2.426.3' // as of version 0.40.0 of jpi, it's jenkinsVersion...
     displayName = 'Synopsys Detect plugin'
     compatibleSinceVersion = '9.0.0'
     url = 'https://wiki.jenkins.io/display/JENKINS/Synopsys+Detect+Plugin'
@@ -89,7 +93,7 @@ dependencies {
     workflowCpsApi 'org.jenkins-ci.plugins.workflow:workflow-cps:2729.2732.vda_e3f07b_5a_f8'
     workflowStepApiApi 'org.jenkins-ci.plugins.workflow:workflow-step-api:622.vb_8e7c15b_c95a_'
 
-    implementation group: 'org.jenkins-ci.main', name: 'jenkins-test-harness', version: '1912.v0cdf15450b_fb'
+    implementation 'org.jenkins-ci.main:jenkins-test-harness:2148.v80482520b_d2c'
     testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version: '5.6.2'
     testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-params', version: '5.6.2'
     testImplementation group: 'org.mockito', name: 'mockito-core', version: '2.23.4'
