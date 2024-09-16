@@ -20,7 +20,7 @@ buildscript {
 //            exclude group: 'org.jenkins-ci.main', module: 'jenkins-test-harness'
 //            exclude group: 'org.codehaus.plexus', module: 'plexus-archiver'
 //        }
-    }
+//    }
 }
 
 plugins {
