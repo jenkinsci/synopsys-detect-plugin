@@ -13,14 +13,11 @@ buildscript {
 
     dependencies { classpath("com.synopsys.integration:common-gradle-plugin:${managedCgpVersion}") }
 
-//    configurations {
-//        all {
-//            exclude group: 'org.apache.ant', module: 'ant'
-//            exclude group: 'org.eclipse.jgit', module: 'org.eclipse.jgit'
-//            exclude group: 'org.jenkins-ci.main', module: 'jenkins-test-harness'
-//            exclude group: 'org.codehaus.plexus', module: 'plexus-archiver'
-//        }
-//    }
+    configurations {
+        all {
+            exclude group: 'org.jenkins-ci.main', module: 'jenkins-test-harness'
+        }
+    }
 }
 
 plugins {
@@ -83,7 +80,6 @@ dependencies {
     implementation('org.jenkins-ci.main:jenkins-core:2.426.3') {
         exclude group: 'org.apache.ant', module: 'ant'
         exclude group: 'org.eclipse.jgit', module: 'org.eclipse.jgit'
-        exclude group: 'org.jenkins-ci.main', module: 'jenkins-test-harness'
         exclude group: 'org.codehaus.plexus', module: 'plexus-archiver'
     }
 
