@@ -27,8 +27,10 @@ import javax.xml.transform.TransformerException;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 
+import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.impl.EnglishReasonPhraseCatalog;
+import org.jenkinsci.plugins.plaincredentials.StringCredentials;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
@@ -178,7 +180,7 @@ public class DetectGlobalConfig extends GlobalConfiguration implements Serializa
         jenkins.checkPermission(Jenkins.ADMINISTER);
         return new StandardListBoxModel()
             .includeEmptyValue()
-            .includeMatchingAs(ACL.SYSTEM, jenkins, BaseStandardCredentials.class, Collections.emptyList(), SynopsysCredentialsHelper.API_TOKEN_CREDENTIALS);
+            .includeMatchingAs(ACL.SYSTEM, jenkins, StringCredentials.class, Collections.emptyList(), CredentialsMatchers.always());
     }
 
     @POST
