@@ -16,6 +16,7 @@ buildscript {
     configurations {
         all {
             exclude group: 'org.checkerframework', module:'checker-qual'
+            resolutionStrategy.force 'org.jenkins-ci.main:jenkins-test-harness:1837.vb_6efb_1790942 '
         }
     }
 }
