@@ -16,7 +16,9 @@ buildscript {
     configurations {
         all {
             exclude group: 'org.checkerframework', module:'checker-qual'
-            resolutionStrategy.force 'org.jenkins-ci.main:jenkins-test-harness:1837.vb_6efb_1790942 '
+            resolutionStrategy.force 'org.jenkins-ci.main:jenkins-test-harness:1837.vb_6efb_1790942'
+            resolutionStrategy.force 'org.apache.ant:ant:1.10.4'
+            resolutionStrategy.force 'org.codehaus.plexus:plexus-archiver:4.8.0'
         }
     }
 }
@@ -52,9 +54,9 @@ java {
 
 project.ext.excludesFromTestCoverage = ['**/DetectDownloadStrategy.java', '**/DetectPipelineStep.java', '**/DetectPostBuildStep.java', '**/DetectAirGapInstallation.java']
 
-group = 'com.blackducksoftware.integration'
+group = 'com.blackduck.integration'
 version = '10.0.0-SNAPSHOT'
-description = 'Blackduck Detect Plugin for Jenkins'
+description = 'Black Duck Detect Plugin for Jenkins'
 
 apply plugin: 'com.blackduck.integration.solution'
 
