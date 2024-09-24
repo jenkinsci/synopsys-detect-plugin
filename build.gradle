@@ -16,7 +16,7 @@ buildscript {
     configurations {
         all {
             exclude group: 'org.checkerframework', module:'checker-qual'
-            resolutionStrategy.force 'org.jenkins-ci.main:jenkins-test-harness:1837.vb_6efb_1790942'
+            resolutionStrategy.force 'org.jenkins-ci.main:jenkins-test-harness:2241.v44c8128f7cc1'
             resolutionStrategy.force 'org.apache.ant:ant:1.10.4'
             resolutionStrategy.force 'org.codehaus.plexus:plexus-archiver:4.8.0'
         }
