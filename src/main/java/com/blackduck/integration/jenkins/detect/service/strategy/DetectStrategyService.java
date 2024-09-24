@@ -13,12 +13,12 @@ import com.blackduck.integration.jenkins.detect.DetectJenkinsEnvironmentVariable
 import com.blackduck.integration.jenkins.detect.exception.DetectJenkinsException;
 import com.blackduck.integration.jenkins.detect.extensions.DetectDownloadStrategy;
 import com.blackduck.integration.jenkins.detect.extensions.global.DetectGlobalConfig;
-import com.synopsys.integration.exception.IntegrationException;
-import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
-import com.synopsys.integration.jenkins.service.JenkinsConfigService;
-import com.synopsys.integration.jenkins.wrapper.JenkinsProxyHelper;
-import com.synopsys.integration.util.IntEnvironmentVariables;
-import com.synopsys.integration.util.OperatingSystemType;
+import com.blackduck.integration.exception.IntegrationException;
+import com.blackduck.integration.jenkins.extensions.JenkinsIntLogger;
+import com.blackduck.integration.jenkins.service.JenkinsConfigService;
+import com.blackduck.integration.jenkins.wrapper.JenkinsProxyHelper;
+import com.blackduck.integration.util.IntEnvironmentVariables;
+import com.blackduck.integration.util.OperatingSystemType;
 import org.apache.commons.lang3.StringUtils;
 
 public class DetectStrategyService {

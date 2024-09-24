@@ -8,13 +8,14 @@
 package com.blackduck.integration.jenkins.detect.service;
 
 import com.blackduck.integration.jenkins.detect.extensions.global.DetectGlobalConfig;
-import com.synopsys.integration.blackduck.configuration.BlackDuckServerConfigBuilder;
-import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
-import com.synopsys.integration.jenkins.service.JenkinsConfigService;
-import com.synopsys.integration.jenkins.wrapper.JenkinsProxyHelper;
-import com.synopsys.integration.jenkins.wrapper.JenkinsVersionHelper;
-import com.synopsys.integration.jenkins.wrapper.SynopsysCredentialsHelper;
-import com.synopsys.integration.util.IntEnvironmentVariables;
+import com.blackduck.integration.blackduck.configuration.BlackDuckServerConfigBuilder;
+import com.blackduck.integration.jenkins.extensions.JenkinsIntLogger;
+import com.blackduck.integration.jenkins.service.JenkinsConfigService;
+import com.blackduck.integration.jenkins.wrapper.BlackduckCredentialsHelper;
+import com.blackduck.integration.jenkins.wrapper.JenkinsProxyHelper;
+import com.blackduck.integration.jenkins.wrapper.JenkinsVersionHelper;
+import com.blackduck.integration.jenkins.wrapper.BlackduckCredentialsHelper;
+import com.blackduck.integration.util.IntEnvironmentVariables;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.Map;
@@ -27,7 +28,7 @@ public class DetectEnvironmentService {
     private final JenkinsIntLogger logger;
     private final JenkinsProxyHelper jenkinsProxyHelper;
     private final JenkinsVersionHelper jenkinsVersionHelper;
-    private final SynopsysCredentialsHelper synopsysCredentialsHelper;
+    private final BlackduckCredentialsHelper blackduckCredentialsHelper;
     private final Map<String, String> environmentVariables;
     private final JenkinsConfigService jenkinsConfigService;
 
@@ -35,7 +36,7 @@ public class DetectEnvironmentService {
         JenkinsIntLogger logger,
         JenkinsProxyHelper jenkinsProxyHelper,
         JenkinsVersionHelper jenkinsVersionHelper,
-        SynopsysCredentialsHelper synopsysCredentialsHelper,
+        BlackduckCredentialsHelper blackduckCredentialsHelper,
         JenkinsConfigService jenkinsConfigService,
         Map<String, String> environmentVariables
     ) {
@@ -43,7 +44,7 @@ public class DetectEnvironmentService {
         this.jenkinsProxyHelper = jenkinsProxyHelper;
         this.jenkinsVersionHelper = jenkinsVersionHelper;
         this.jenkinsConfigService = jenkinsConfigService;
-        this.synopsysCredentialsHelper = synopsysCredentialsHelper;
+        this.blackduckCredentialsHelper = blackduckCredentialsHelper;
         this.environmentVariables = environmentVariables;
     }
 
@@ -56,9 +57,9 @@ public class DetectEnvironmentService {
 
         Optional<String> pluginVersion = jenkinsVersionHelper.getPluginVersion("blackduck-detect");
         if (pluginVersion.isPresent()) {
-            logger.info("Running Synopsys Detect Plugin for Jenkins version: " + pluginVersion.get());
+            logger.info("Running Black Duck Detect Plugin for Jenkins version: " + pluginVersion.get());
         } else {
-            logger.info("Running Synopsys Detect Plugin for Jenkins");
+            logger.info("Running Black Duck Detect Plugin for Jenkins");
         }
 
         return intEnvironmentVariables;
@@ -70,7 +71,7 @@ public class DetectEnvironmentService {
             return;
         }
 
-        BlackDuckServerConfigBuilder blackDuckServerConfigBuilder = detectGlobalConfig.get().getBlackDuckServerConfigBuilder(jenkinsProxyHelper, synopsysCredentialsHelper);
+        BlackDuckServerConfigBuilder blackDuckServerConfigBuilder = detectGlobalConfig.get().getBlackDuckServerConfigBuilder(jenkinsProxyHelper, blackduckCredentialsHelper);
 
         blackDuckServerConfigBuilder.getProperties()
             .forEach((builderPropertyKey, propertyValue) -> updateAndFilterVariables(environmentPutter, builderPropertyKey.getKey(), propertyValue));

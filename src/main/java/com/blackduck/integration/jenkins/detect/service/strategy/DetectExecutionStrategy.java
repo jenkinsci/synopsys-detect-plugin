@@ -7,7 +7,7 @@
  */
 package com.blackduck.integration.jenkins.detect.service.strategy;
 
-import com.synopsys.integration.exception.IntegrationException;
+import com.blackduck.integration.exception.IntegrationException;
 import jenkins.security.MasterToSlaveCallable;
 
 import java.io.IOException;

@@ -12,12 +12,18 @@ buildscript {
     }
 
     dependencies { classpath "com.blackduck.integration:common-gradle-plugin:${managedCgpVersion}" }
+
+    configurations {
+        all {
+            exclude group: 'org.checkerframework', module:'checker-qual'
+        }
+    }
 }
 
 plugins {
     // this version (0.43.0 and up) , uses a later version of test-harness eliminating the 
     // dependency on a compromised version of apache commons-text.  Shows as a red-herring in scans
-    id 'org.jenkins-ci.jpi' version '0.43.0'
+    id 'org.jenkins-ci.jpi' version '0.46.0'
 }
 
 def internalRepoHost = System.getenv("SNPS_INTERNAL_ARTIFACTORY")
@@ -46,7 +52,7 @@ java {
 project.ext.excludesFromTestCoverage = ['**/DetectDownloadStrategy.java', '**/DetectPipelineStep.java', '**/DetectPostBuildStep.java', '**/DetectAirGapInstallation.java']
 
 group = 'com.blackducksoftware.integration'
-version = '9.0.0-SNAPSHOT'
+version = '10.0.0-SNAPSHOT'
 description = 'Blackduck Detect Plugin for Jenkins'
 
 apply plugin: 'com.blackduck.integration.solution'
@@ -58,7 +64,7 @@ artifactory {
 }
 
 jenkinsPlugin {
-    jenkinsVersion = '2.401.3' // as of version 0.40.0 of jpi, it's jenkinsVersion...
+    jenkinsVersion = '2.426.3' // as of version 0.40.0 of jpi, it's jenkinsVersion...
     displayName = 'Detect plugin'
     compatibleSinceVersion = '9.0.0'
     url = 'https://wiki.jenkins.io/display/JENKINS/Synopsys+Detect+Plugin'
@@ -69,10 +75,19 @@ jenkinsPlugin {
 
 dependencies {
     implementation 'org.springframework.security:spring-security-web:5.8.5'
-    annotationProcessor 'com.blackduck.integration:jenkins-annotation-processor:0.0.7'
+    annotationProcessor 'com.blackduck.integration:jenkins-annotation-processor:1.0.0'
 
-    implementation 'com.blackduck.integration:blackduck-common:66.1.2'
-    implementation ('com.blackduck.integration:jenkins-common:0.5.5') {
+    implementation('org.jenkins-ci.main:jenkins-core:2.426.3') {
+        exclude group: 'org.apache.ant', module: 'ant'
+        exclude group: 'org.eclipse.jgit', module: 'org.eclipse.jgit'
+        exclude group: 'org.codehaus.plexus', module: 'plexus-archiver'
+    }
+
+    implementation 'org.checkerframework:checker-qual:3.33.0'
+    implementation 'com.google.j2objc:j2objc-annotations:2.8'
+
+    implementation 'com.blackduck.integration:blackduck-common:67.0.1'
+    implementation('com.blackduck.integration:jenkins-common:1.0.0'){
         exclude group: "org.jenkins-ci.main", module: "jenkins-core"
         exclude group: "org.jenkins-ci.plugins", module: "credentials"
         exclude group: "org.jenkins-ci.plugins", module: "plain-credentials"

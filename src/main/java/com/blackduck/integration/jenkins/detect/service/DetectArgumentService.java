@@ -8,10 +8,10 @@
 package com.blackduck.integration.jenkins.detect.service;
 
 import com.blackduck.integration.jenkins.detect.DetectJenkinsEnvironmentVariable;
-import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
-import com.synopsys.integration.jenkins.wrapper.JenkinsVersionHelper;
-import com.synopsys.integration.phonehome.request.PhoneHomeRequestBody;
-import com.synopsys.integration.util.IntEnvironmentVariables;
+import com.blackduck.integration.jenkins.extensions.JenkinsIntLogger;
+import com.blackduck.integration.jenkins.wrapper.JenkinsVersionHelper;
+import com.blackduck.integration.phonehome.request.PhoneHomeRequestBody;
+import com.blackduck.integration.util.IntEnvironmentVariables;
 import hudson.Util;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tools.ant.types.Commandline;
@@ -21,7 +21,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class DetectArgumentService {
-    private static final String DETECT_LOGLEVEL_ARGUMENT = "logging.level.com.synopsys.integration";
+    private static final String DETECT_LOGLEVEL_ARGUMENT = "logging.level.detect";
     private static final String DETECT_PHONEHOME_JENKINS_VERSION_ARGUMENT = "detect.phone.home.passthrough.jenkins.version";
     private static final String DETECT_PHONEHOME_PLUGIN_VERSION_ARGUMENT = "detect.phone.home.passthrough.jenkins.plugin.version";
     private final JenkinsIntLogger logger;

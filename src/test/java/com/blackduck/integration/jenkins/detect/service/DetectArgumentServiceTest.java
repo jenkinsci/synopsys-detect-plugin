@@ -17,10 +17,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
-import com.synopsys.integration.jenkins.wrapper.JenkinsVersionHelper;
-import com.synopsys.integration.log.LogLevel;
-import com.synopsys.integration.util.IntEnvironmentVariables;
+import com.blackduck.integration.jenkins.extensions.JenkinsIntLogger;
+import com.blackduck.integration.jenkins.wrapper.JenkinsVersionHelper;
+import com.blackduck.integration.log.LogLevel;
+import com.blackduck.integration.util.IntEnvironmentVariables;
 
 import hudson.model.TaskListener;
 
@@ -28,7 +28,7 @@ public class DetectArgumentServiceTest {
     private final JenkinsVersionHelper jenkinsVersionHelper = Mockito.mock(JenkinsVersionHelper.class);
 
     private static final String errorMessage = "Output Detect Command does not contain: ";
-    private static final String loggingLevelKey = "--logging.level.com.synopsys.integration";
+    private static final String loggingLevelKey = "--logging.level.detect";
     private static final String expectedTestInvocationParameter = "TestInvocationParameter";
     private static final String expectedJenkinsVersion = "JenkinsVersion";
     private static final String pluginName = "blackduck-detect";

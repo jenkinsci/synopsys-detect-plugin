@@ -12,7 +12,7 @@ import org.mockito.Mockito;
 
 import com.blackduck.integration.jenkins.detect.exception.DetectJenkinsException;
 import com.blackduck.integration.jenkins.detect.extensions.ScriptOrJarDownloadStrategy;
-import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
+import com.blackduck.integration.jenkins.extensions.JenkinsIntLogger;
 
 public class DetectPipelineCommandsTest {
     private JenkinsIntLogger mockedLogger;

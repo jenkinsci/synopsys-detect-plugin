@@ -13,12 +13,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import com.blackduck.integration.jenkins.wrapper.BlackduckCredentialsHelper;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
-import com.synopsys.integration.blackduck.configuration.BlackDuckServerConfigBuilder;
-import com.synopsys.integration.builder.BuilderPropertyKey;
+import com.blackduck.integration.blackduck.configuration.BlackDuckServerConfigBuilder;
+import com.blackduck.integration.builder.BuilderPropertyKey;
 import com.blackduck.integration.jenkins.detect.extensions.AirGapDownloadStrategy;
 import com.blackduck.integration.jenkins.detect.extensions.DetectDownloadStrategy;
 import com.blackduck.integration.jenkins.detect.extensions.ScriptOrJarDownloadStrategy;
@@ -30,14 +31,14 @@ import com.blackduck.integration.jenkins.detect.service.strategy.DetectAirGapJar
 import com.blackduck.integration.jenkins.detect.service.strategy.DetectJarStrategy;
 import com.blackduck.integration.jenkins.detect.service.strategy.DetectScriptStrategy;
 import com.blackduck.integration.jenkins.detect.service.strategy.DetectStrategyService;
-import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
-import com.synopsys.integration.jenkins.service.JenkinsConfigService;
-import com.synopsys.integration.jenkins.service.JenkinsRemotingService;
-import com.synopsys.integration.jenkins.wrapper.JenkinsProxyHelper;
-import com.synopsys.integration.jenkins.wrapper.JenkinsVersionHelper;
-import com.synopsys.integration.jenkins.wrapper.SynopsysCredentialsHelper;
-import com.synopsys.integration.util.IntEnvironmentVariables;
-import com.synopsys.integration.util.OperatingSystemType;
+import com.blackduck.integration.jenkins.extensions.JenkinsIntLogger;
+import com.blackduck.integration.jenkins.service.JenkinsConfigService;
+import com.blackduck.integration.jenkins.service.JenkinsRemotingService;
+import com.blackduck.integration.jenkins.wrapper.JenkinsProxyHelper;
+import com.blackduck.integration.jenkins.wrapper.JenkinsVersionHelper;
+import com.blackduck.integration.jenkins.wrapper.BlackduckCredentialsHelper;
+import com.blackduck.integration.util.IntEnvironmentVariables;
+import com.blackduck.integration.util.OperatingSystemType;
 
 public class DetectRunnerTest {
     private static final String DETECT_PROPERTY_INPUT = "--detect.docker.passthrough.service.timeout=$DETECT_TIMEOUT --detect.cleanup=false --detect.project.name=\"Test Project'\" --detect.project.tags=alpha,beta,gamma,delta,epsilon";
@@ -68,7 +69,7 @@ public class DetectRunnerTest {
         assertEquals("--detect.cleanup=false", actualCommand.get(i++));
         assertEquals("--detect.project.name=Test Project'", actualCommand.get(i++));
         assertEquals("--detect.project.tags=alpha,beta,gamma,delta,epsilon", actualCommand.get(i++));
-        assertEquals("--logging.level.com.synopsys.integration=INFO", actualCommand.get(i++));
+        assertEquals("--logging.level.detect=INFO", actualCommand.get(i++));
         assertTrue(actualCommand.get(i++).startsWith("--detect.phone.home.passthrough.jenkins.version="));
         assertTrue(actualCommand.get(i).startsWith("--detect.phone.home.passthrough.jenkins.plugin.version="));
     }
@@ -87,7 +88,7 @@ public class DetectRunnerTest {
         assertEquals("--detect.cleanup=false", actualCommand.get(i++));
         assertEquals("--detect.project.name=Test\\ Project\\'", actualCommand.get(i++));
         assertEquals("--detect.project.tags=alpha,beta,gamma,delta,epsilon", actualCommand.get(i++));
-        assertEquals("--logging.level.com.synopsys.integration=INFO", actualCommand.get(i++));
+        assertEquals("--logging.level.detect=INFO", actualCommand.get(i++));
         assertTrue(actualCommand.get(i++).startsWith("--detect.phone.home.passthrough.jenkins.version="));
         assertTrue(actualCommand.get(i).startsWith("--detect.phone.home.passthrough.jenkins.plugin.version="));
     }
@@ -106,7 +107,7 @@ public class DetectRunnerTest {
         assertEquals("--detect.cleanup=false", actualCommand.get(i++));
         assertEquals("--detect.project.name=Test` Project`'", actualCommand.get(i++));
         assertEquals("--detect.project.tags=alpha`,beta`,gamma`,delta`,epsilon", actualCommand.get(i++));
-        assertEquals("--logging.level.com.synopsys.integration=INFO", actualCommand.get(i++));
+        assertEquals("--logging.level.detect=INFO", actualCommand.get(i++));
         assertTrue(actualCommand.get(i++).startsWith("--detect.phone.home.passthrough.jenkins.version="));
         assertTrue(actualCommand.get(i).startsWith("--detect.phone.home.passthrough.jenkins.plugin.version="));
     }
@@ -128,7 +129,7 @@ public class DetectRunnerTest {
         assertEquals("--detect.cleanup=false", actualCommand.get(i++));
         assertEquals("--detect.project.name=Test Project'", actualCommand.get(i++));
         assertEquals("--detect.project.tags=alpha,beta,gamma,delta,epsilon", actualCommand.get(i++));
-        assertEquals("--logging.level.com.synopsys.integration=INFO", actualCommand.get(i++));
+        assertEquals("--logging.level.detect=INFO", actualCommand.get(i++));
         assertTrue(actualCommand.get(i++).startsWith("--detect.phone.home.passthrough.jenkins.version="));
         assertTrue(actualCommand.get(i).startsWith("--detect.phone.home.passthrough.jenkins.plugin.version="));
     }
@@ -185,7 +186,7 @@ public class DetectRunnerTest {
 
             JenkinsVersionHelper mockedVersionHelper = Mockito.mock(JenkinsVersionHelper.class);
 
-            SynopsysCredentialsHelper mockedCredentialsHelper = Mockito.mock(SynopsysCredentialsHelper.class);
+            BlackduckCredentialsHelper mockedCredentialsHelper = Mockito.mock(BlackduckCredentialsHelper.class);
 
             JenkinsProxyHelper blankProxyHelper = new JenkinsProxyHelper();
 

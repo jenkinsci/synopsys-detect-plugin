@@ -10,7 +10,7 @@ package com.blackduck.integration.jenkins.detect.extensions.postbuild;
 import com.blackduck.integration.jenkins.detect.extensions.DetectDownloadStrategy;
 import com.blackduck.integration.jenkins.detect.extensions.InheritFromGlobalDownloadStrategy;
 import com.blackduck.integration.jenkins.detect.service.DetectCommandsFactory;
-import com.synopsys.integration.jenkins.annotations.HelpMarkdown;
+import com.blackduck.integration.jenkins.annotations.HelpMarkdown;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;

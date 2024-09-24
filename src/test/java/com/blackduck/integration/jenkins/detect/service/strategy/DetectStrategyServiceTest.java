@@ -22,9 +22,9 @@ import com.blackduck.integration.jenkins.detect.extensions.DetectDownloadStrateg
 import com.blackduck.integration.jenkins.detect.extensions.InheritFromGlobalDownloadStrategy;
 import com.blackduck.integration.jenkins.detect.extensions.ScriptOrJarDownloadStrategy;
 import com.blackduck.integration.jenkins.detect.extensions.global.DetectGlobalConfig;
-import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
-import com.synopsys.integration.jenkins.service.JenkinsConfigService;
-import com.synopsys.integration.util.IntEnvironmentVariables;
+import com.blackduck.integration.jenkins.extensions.JenkinsIntLogger;
+import com.blackduck.integration.jenkins.service.JenkinsConfigService;
+import com.blackduck.integration.util.IntEnvironmentVariables;
 
 import hudson.model.TaskListener;
 

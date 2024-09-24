@@ -26,14 +26,14 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 
-import com.synopsys.integration.exception.IntegrationException;
+import com.blackduck.integration.exception.IntegrationException;
 import com.blackduck.integration.jenkins.detect.exception.DetectJenkinsException;
 import com.blackduck.integration.jenkins.detect.extensions.AirGapDownloadStrategy;
 import com.blackduck.integration.jenkins.detect.extensions.tool.DetectAirGapInstallation;
-import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
-import com.synopsys.integration.jenkins.service.JenkinsConfigService;
-import com.synopsys.integration.log.LogLevel;
-import com.synopsys.integration.util.IntEnvironmentVariables;
+import com.blackduck.integration.jenkins.extensions.JenkinsIntLogger;
+import com.blackduck.integration.jenkins.service.JenkinsConfigService;
+import com.blackduck.integration.log.LogLevel;
+import com.blackduck.integration.util.IntEnvironmentVariables;
 
 import hudson.model.TaskListener;
 import jenkins.security.MasterToSlaveCallable;
