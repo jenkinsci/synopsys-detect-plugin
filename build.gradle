@@ -81,9 +81,7 @@ dependencies {
     annotationProcessor 'com.blackduck.integration:jenkins-annotation-processor:1.0.0'
 
     implementation('org.jenkins-ci.main:jenkins-core:2.426.3') {
-        exclude group: 'org.apache.ant', module: 'ant'
         exclude group: 'org.eclipse.jgit', module: 'org.eclipse.jgit'
-        exclude group: 'org.codehaus.plexus', module: 'plexus-archiver'
     }
 
     implementation 'org.checkerframework:checker-qual:3.33.0'
