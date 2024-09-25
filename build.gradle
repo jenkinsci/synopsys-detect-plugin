@@ -105,7 +105,6 @@ dependencies {
     workflowCpsApi 'org.jenkins-ci.plugins.workflow:workflow-cps:2729.2732.vda_e3f07b_5a_f8'
     workflowStepApiApi 'org.jenkins-ci.plugins.workflow:workflow-step-api:622.vb_8e7c15b_c95a_'
 
-    testImplementation group: 'org.jenkins-ci.main', name: 'jenkins-test-harness', version: '1812.v6d4e97d91fd8'
     testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version: '5.6.2'
     testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-params', version: '5.6.2'
     testImplementation group: 'org.mockito', name: 'mockito-core', version: '2.23.4'
