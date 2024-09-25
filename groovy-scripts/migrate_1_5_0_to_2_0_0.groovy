@@ -7,12 +7,12 @@ jenkins = Jenkins.getInstance()
 plugin = jenkins.getPluginManager().getPlugins().find { it.getShortName() == 'blackduck-detect' }
 
 if (plugin == null || !plugin.isActive() || plugin.isOlderThan(new VersionNumber('2.0.0'))) {
-  System.err.println('Version 2.0.0 or later of Blackduck Detect for Jenkins is either not installed or not activated.')
+  System.err.println('Version 2.0.0 or later of Synopsys Detect for Jenkins is either not installed or not activated.')
   System.err.println('Please upgrade and activate version 2.0.0 or later before running this script.')
   return
 }
 
-oldGlobalConfigXmlPath = new FilePath(jenkins.getRootPath(), 'com.blackduck.integration.detect.jenkins.post.DetectPostBuildStep.xml')
+oldGlobalConfigXmlPath = new FilePath(jenkins.getRootPath(), 'com.blackducksoftware.integration.detect.jenkins.post.DetectPostBuildStep.xml')
 
 if (oldGlobalConfigXmlPath && oldGlobalConfigXmlPath.exists()) {
     print('Attempting to migrate Synopsys Detect global config... ')

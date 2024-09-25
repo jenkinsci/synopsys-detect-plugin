@@ -69,7 +69,7 @@ public class DetectRunnerTest {
         assertEquals("--detect.cleanup=false", actualCommand.get(i++));
         assertEquals("--detect.project.name=Test Project'", actualCommand.get(i++));
         assertEquals("--detect.project.tags=alpha,beta,gamma,delta,epsilon", actualCommand.get(i++));
-        assertEquals("--logging.level.detect=INFO", actualCommand.get(i++));
+        assertEquals("--logging.level.com.synopsys.integration=INFO", actualCommand.get(i++));
         assertTrue(actualCommand.get(i++).startsWith("--detect.phone.home.passthrough.jenkins.version="));
         assertTrue(actualCommand.get(i).startsWith("--detect.phone.home.passthrough.jenkins.plugin.version="));
     }
@@ -88,7 +88,7 @@ public class DetectRunnerTest {
         assertEquals("--detect.cleanup=false", actualCommand.get(i++));
         assertEquals("--detect.project.name=Test\\ Project\\'", actualCommand.get(i++));
         assertEquals("--detect.project.tags=alpha,beta,gamma,delta,epsilon", actualCommand.get(i++));
-        assertEquals("--logging.level.detect=INFO", actualCommand.get(i++));
+        assertEquals("--logging.level.com.synopsys.integration=INFO", actualCommand.get(i++));
         assertTrue(actualCommand.get(i++).startsWith("--detect.phone.home.passthrough.jenkins.version="));
         assertTrue(actualCommand.get(i).startsWith("--detect.phone.home.passthrough.jenkins.plugin.version="));
     }
@@ -107,7 +107,7 @@ public class DetectRunnerTest {
         assertEquals("--detect.cleanup=false", actualCommand.get(i++));
         assertEquals("--detect.project.name=Test` Project`'", actualCommand.get(i++));
         assertEquals("--detect.project.tags=alpha`,beta`,gamma`,delta`,epsilon", actualCommand.get(i++));
-        assertEquals("--logging.level.detect=INFO", actualCommand.get(i++));
+        assertEquals("--logging.level.com.synopsys.integration=INFO", actualCommand.get(i++));
         assertTrue(actualCommand.get(i++).startsWith("--detect.phone.home.passthrough.jenkins.version="));
         assertTrue(actualCommand.get(i).startsWith("--detect.phone.home.passthrough.jenkins.plugin.version="));
     }
@@ -129,7 +129,7 @@ public class DetectRunnerTest {
         assertEquals("--detect.cleanup=false", actualCommand.get(i++));
         assertEquals("--detect.project.name=Test Project'", actualCommand.get(i++));
         assertEquals("--detect.project.tags=alpha,beta,gamma,delta,epsilon", actualCommand.get(i++));
-        assertEquals("--logging.level.detect=INFO", actualCommand.get(i++));
+        assertEquals("--logging.level.com.synopsys.integration=INFO", actualCommand.get(i++));
         assertTrue(actualCommand.get(i++).startsWith("--detect.phone.home.passthrough.jenkins.version="));
         assertTrue(actualCommand.get(i).startsWith("--detect.phone.home.passthrough.jenkins.plugin.version="));
     }
