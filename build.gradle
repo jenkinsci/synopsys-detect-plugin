@@ -69,7 +69,7 @@ artifactory {
 jenkinsPlugin {
     jenkinsVersion = '2.426.3' // as of version 0.40.0 of jpi, it's jenkinsVersion...
     displayName = 'Detect plugin'
-    compatibleSinceVersion = '9.0.0'
+    compatibleSinceVersion = '10.0.0'
     url = 'https://wiki.jenkins.io/display/JENKINS/Synopsys+Detect+Plugin'
     gitHubUrl = 'https://github.com/jenkinsci/synopsys-detect-plugin'
 
@@ -101,9 +101,9 @@ dependencies {
     implementation 'org.jenkins-ci.plugins:plain-credentials:1.8'
 
     workflowJobDslApi 'org.jenkins-ci.plugins:job-dsl:1.83'
-    workflowJobApi 'org.jenkins-ci.plugins.workflow:workflow-job:1203.v7b_7023424efe'
-    workflowCpsApi 'org.jenkins-ci.plugins.workflow:workflow-cps:2729.2732.vda_e3f07b_5a_f8'
-    workflowStepApiApi 'org.jenkins-ci.plugins.workflow:workflow-step-api:622.vb_8e7c15b_c95a_'
+    workflowJobApi 'org.jenkins-ci.plugins.workflow:workflow-job:1207.ve6191ff089f8'
+    workflowCpsApi 'org.jenkins-ci.plugins.workflow:workflow-cps:2746.v0da_83a_332669'
+    workflowStepApiApi 'org.jenkins-ci.plugins.workflow:workflow-step-api:639.v6eca_cd8c04a_a_'
 
     testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version: '5.6.2'
     testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-params', version: '5.6.2'
