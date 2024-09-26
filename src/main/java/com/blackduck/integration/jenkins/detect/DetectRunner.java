@@ -12,11 +12,11 @@ import com.blackduck.integration.jenkins.detect.service.DetectArgumentService;
 import com.blackduck.integration.jenkins.detect.service.DetectEnvironmentService;
 import com.blackduck.integration.jenkins.detect.service.strategy.DetectExecutionStrategy;
 import com.blackduck.integration.jenkins.detect.service.strategy.DetectStrategyService;
-import com.synopsys.integration.exception.IntegrationException;
-import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
-import com.synopsys.integration.jenkins.service.JenkinsRemotingService;
-import com.synopsys.integration.util.IntEnvironmentVariables;
-import com.synopsys.integration.util.OperatingSystemType;
+import com.blackduck.integration.exception.IntegrationException;
+import com.blackduck.integration.jenkins.extensions.JenkinsIntLogger;
+import com.blackduck.integration.jenkins.service.JenkinsRemotingService;
+import com.blackduck.integration.util.IntEnvironmentVariables;
+import com.blackduck.integration.util.OperatingSystemType;
 
 import java.io.IOException;
 import java.util.List;

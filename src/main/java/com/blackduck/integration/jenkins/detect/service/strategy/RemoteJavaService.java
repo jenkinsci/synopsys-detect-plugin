@@ -7,8 +7,8 @@
  */
 package com.blackduck.integration.jenkins.detect.service.strategy;
 
-import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
-import com.synopsys.integration.log.LogLevel;
+import com.blackduck.integration.jenkins.extensions.JenkinsIntLogger;
+import com.blackduck.integration.log.LogLevel;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.SystemUtils;
 

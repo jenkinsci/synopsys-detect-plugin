@@ -9,9 +9,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-import com.synopsys.integration.exception.IntegrationException;
+import com.blackduck.integration.exception.IntegrationException;
 import com.blackduck.integration.jenkins.detect.extensions.ScriptOrJarDownloadStrategy;
-import com.synopsys.integration.jenkins.service.JenkinsBuildService;
+import com.blackduck.integration.jenkins.service.JenkinsBuildService;
 
 public class DetectFreestyleCommandsTest {
     private JenkinsBuildService mockedBuildService;

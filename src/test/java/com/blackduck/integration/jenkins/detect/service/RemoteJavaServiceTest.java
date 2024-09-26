@@ -12,9 +12,9 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import com.blackduck.integration.jenkins.detect.service.strategy.RemoteJavaService;
-import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
-import com.synopsys.integration.log.LogLevel;
-import com.synopsys.integration.util.IntEnvironmentVariables;
+import com.blackduck.integration.jenkins.extensions.JenkinsIntLogger;
+import com.blackduck.integration.log.LogLevel;
+import com.blackduck.integration.util.IntEnvironmentVariables;
 
 import hudson.model.TaskListener;
 

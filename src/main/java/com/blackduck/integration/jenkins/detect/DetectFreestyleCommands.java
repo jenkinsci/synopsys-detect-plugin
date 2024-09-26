@@ -8,7 +8,7 @@
 package com.blackduck.integration.jenkins.detect;
 
 import com.blackduck.integration.jenkins.detect.extensions.DetectDownloadStrategy;
-import com.synopsys.integration.jenkins.service.JenkinsBuildService;
+import com.blackduck.integration.jenkins.service.JenkinsBuildService;
 
 public class DetectFreestyleCommands {
     private final JenkinsBuildService jenkinsBuildService;

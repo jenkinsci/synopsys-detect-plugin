@@ -9,8 +9,8 @@ package com.blackduck.integration.jenkins.detect;
 
 import com.blackduck.integration.jenkins.detect.exception.DetectJenkinsException;
 import com.blackduck.integration.jenkins.detect.extensions.DetectDownloadStrategy;
-import com.synopsys.integration.exception.IntegrationException;
-import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
+import com.blackduck.integration.exception.IntegrationException;
+import com.blackduck.integration.jenkins.extensions.JenkinsIntLogger;
 
 import java.io.IOException;
 

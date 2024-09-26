@@ -7,7 +7,7 @@
  */
 package com.blackduck.integration.jenkins.detect.exception;
 
-import com.synopsys.integration.exception.IntegrationException;
+import com.blackduck.integration.exception.IntegrationException;
 
 public class DetectJenkinsException extends IntegrationException {
     private static final long serialVersionUID = -1172941819259598247L;

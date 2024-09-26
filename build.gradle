@@ -12,12 +12,21 @@ buildscript {
     }
 
     dependencies { classpath "com.blackduck.integration:common-gradle-plugin:${managedCgpVersion}" }
+
+    configurations {
+        all {
+            exclude group: 'org.checkerframework', module:'checker-qual'
+            resolutionStrategy.force 'org.jenkins-ci.main:jenkins-test-harness:2110.v71145c2d8157'
+            resolutionStrategy.force 'org.apache.ant:ant:1.10.4'
+            resolutionStrategy.force 'org.codehaus.plexus:plexus-archiver:4.8.0'
+        }
+    }
 }
 
 plugins {
     // this version (0.43.0 and up) , uses a later version of test-harness eliminating the 
     // dependency on a compromised version of apache commons-text.  Shows as a red-herring in scans
-    id 'org.jenkins-ci.jpi' version '0.43.0'
+    id 'org.jenkins-ci.jpi' version '0.46.0'
 }
 
 def internalRepoHost = System.getenv("SNPS_INTERNAL_ARTIFACTORY")
@@ -46,8 +55,8 @@ java {
 project.ext.excludesFromTestCoverage = ['**/DetectDownloadStrategy.java', '**/DetectPipelineStep.java', '**/DetectPostBuildStep.java', '**/DetectAirGapInstallation.java']
 
 group = 'com.blackducksoftware.integration'
-version = '9.0.0-SNAPSHOT'
-description = 'Blackduck Detect Plugin for Jenkins'
+version = '10.0.0-SNAPSHOT'
+description = 'Black Duck Detect Plugin for Jenkins'
 
 apply plugin: 'com.blackduck.integration.solution'
 
@@ -58,9 +67,9 @@ artifactory {
 }
 
 jenkinsPlugin {
-    jenkinsVersion = '2.401.3' // as of version 0.40.0 of jpi, it's jenkinsVersion...
+    jenkinsVersion = '2.426.3' // as of version 0.40.0 of jpi, it's jenkinsVersion...
     displayName = 'Detect plugin'
-    compatibleSinceVersion = '9.0.0'
+    compatibleSinceVersion = '10.0.0'
     url = 'https://wiki.jenkins.io/display/JENKINS/Synopsys+Detect+Plugin'
     gitHubUrl = 'https://github.com/jenkinsci/synopsys-detect-plugin'
 
@@ -68,11 +77,18 @@ jenkinsPlugin {
 }
 
 dependencies {
-    implementation 'org.springframework.security:spring-security-web:5.8.5'
-    annotationProcessor 'com.blackduck.integration:jenkins-annotation-processor:0.0.7'
+    implementation 'org.springframework.security:spring-security-web:5.8.12'
+    annotationProcessor 'com.blackduck.integration:jenkins-annotation-processor:1.0.0'
 
-    implementation 'com.blackduck.integration:blackduck-common:66.1.2'
-    implementation ('com.blackduck.integration:jenkins-common:0.5.5') {
+    implementation('org.jenkins-ci.main:jenkins-core:2.426.3') {
+        exclude group: 'org.eclipse.jgit', module: 'org.eclipse.jgit'
+    }
+
+    implementation 'org.checkerframework:checker-qual:3.33.0'
+    implementation 'com.google.j2objc:j2objc-annotations:2.8'
+
+    implementation 'com.blackduck.integration:blackduck-common:67.0.1'
+    implementation('com.blackduck.integration:jenkins-common:1.0.0'){
         exclude group: "org.jenkins-ci.main", module: "jenkins-core"
         exclude group: "org.jenkins-ci.plugins", module: "credentials"
         exclude group: "org.jenkins-ci.plugins", module: "plain-credentials"
@@ -85,11 +101,10 @@ dependencies {
     implementation 'org.jenkins-ci.plugins:plain-credentials:1.8'
 
     workflowJobDslApi 'org.jenkins-ci.plugins:job-dsl:1.83'
-    workflowJobApi 'org.jenkins-ci.plugins.workflow:workflow-job:1203.v7b_7023424efe'
-    workflowCpsApi 'org.jenkins-ci.plugins.workflow:workflow-cps:2729.2732.vda_e3f07b_5a_f8'
-    workflowStepApiApi 'org.jenkins-ci.plugins.workflow:workflow-step-api:622.vb_8e7c15b_c95a_'
+    workflowJobApi 'org.jenkins-ci.plugins.workflow:workflow-job:1207.ve6191ff089f8'
+    workflowCpsApi 'org.jenkins-ci.plugins.workflow:workflow-cps:2746.v0da_83a_332669'
+    workflowStepApiApi 'org.jenkins-ci.plugins.workflow:workflow-step-api:639.v6eca_cd8c04a_a_'
 
-    testImplementation group: 'org.jenkins-ci.main', name: 'jenkins-test-harness', version: '1812.v6d4e97d91fd8'
     testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version: '5.6.2'
     testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-params', version: '5.6.2'
     testImplementation group: 'org.mockito', name: 'mockito-core', version: '2.23.4'

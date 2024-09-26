@@ -8,8 +8,7 @@ jdk:
 notifications:
   email:
     recipients:
-      - rotte@synopsys.com
-      - billings@synopsys.com
+      - starlabs@blackduck.com
 
 script:
   - "./gradlew clean build jpi"

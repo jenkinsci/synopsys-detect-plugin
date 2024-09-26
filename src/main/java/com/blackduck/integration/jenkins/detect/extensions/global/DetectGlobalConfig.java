@@ -10,19 +10,20 @@ package com.blackduck.integration.jenkins.detect.extensions.global;
 import com.blackduck.integration.jenkins.detect.extensions.AirGapDownloadStrategy;
 import com.blackduck.integration.jenkins.detect.extensions.DetectDownloadStrategy;
 import com.blackduck.integration.jenkins.detect.extensions.ScriptOrJarDownloadStrategy;
+import com.blackduck.integration.jenkins.wrapper.BlackduckCredentialsHelper;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.cloudbees.plugins.credentials.impl.BaseStandardCredentials;
-import com.synopsys.integration.blackduck.configuration.BlackDuckServerConfig;
-import com.synopsys.integration.blackduck.configuration.BlackDuckServerConfigBuilder;
-import com.synopsys.integration.exception.IntegrationException;
-import com.synopsys.integration.jenkins.annotations.HelpMarkdown;
-import com.synopsys.integration.jenkins.wrapper.JenkinsProxyHelper;
-import com.synopsys.integration.jenkins.wrapper.JenkinsWrapper;
-import com.synopsys.integration.jenkins.wrapper.SynopsysCredentialsHelper;
-import com.synopsys.integration.log.LogLevel;
-import com.synopsys.integration.log.PrintStreamIntLogger;
-import com.synopsys.integration.rest.proxy.ProxyInfo;
-import com.synopsys.integration.rest.response.Response;
+import com.blackduck.integration.blackduck.configuration.BlackDuckServerConfig;
+import com.blackduck.integration.blackduck.configuration.BlackDuckServerConfigBuilder;
+import com.blackduck.integration.exception.IntegrationException;
+import com.blackduck.integration.jenkins.annotations.HelpMarkdown;
+import com.blackduck.integration.jenkins.wrapper.JenkinsProxyHelper;
+import com.blackduck.integration.jenkins.wrapper.JenkinsWrapper;
+import com.blackduck.integration.jenkins.wrapper.BlackduckCredentialsHelper;
+import com.blackduck.integration.log.LogLevel;
+import com.blackduck.integration.log.PrintStreamIntLogger;
+import com.blackduck.integration.rest.proxy.ProxyInfo;
+import com.blackduck.integration.rest.response.Response;
 import hudson.Extension;
 import hudson.Functions;
 import hudson.Util;
@@ -143,14 +144,14 @@ public class DetectGlobalConfig extends GlobalConfiguration implements Serializa
         return Arrays.asList(jenkins.getDescriptor(AirGapDownloadStrategy.class), jenkins.getDescriptor(ScriptOrJarDownloadStrategy.class));
     }
 
-    public BlackDuckServerConfig getBlackDuckServerConfig(JenkinsProxyHelper jenkinsProxyHelper, SynopsysCredentialsHelper synopsysCredentialsHelper) {
-        return getBlackDuckServerConfigBuilder(jenkinsProxyHelper, synopsysCredentialsHelper).build();
+    public BlackDuckServerConfig getBlackDuckServerConfig(JenkinsProxyHelper jenkinsProxyHelper, BlackduckCredentialsHelper blackduckCredentialsHelper) {
+        return getBlackDuckServerConfigBuilder(jenkinsProxyHelper, blackduckCredentialsHelper).build();
     }
 
-    public BlackDuckServerConfigBuilder getBlackDuckServerConfigBuilder(JenkinsProxyHelper jenkinsProxyHelper, SynopsysCredentialsHelper synopsysCredentialsHelper) {
+    public BlackDuckServerConfigBuilder getBlackDuckServerConfigBuilder(JenkinsProxyHelper jenkinsProxyHelper, BlackduckCredentialsHelper blackduckCredentialsHelper) {
         return createBlackDuckServerConfigBuilder(
             jenkinsProxyHelper,
-            synopsysCredentialsHelper,
+            blackduckCredentialsHelper,
             blackDuckUrl,
             blackDuckCredentialsId,
             blackDuckTimeout,
@@ -166,7 +167,7 @@ public class DetectGlobalConfig extends GlobalConfiguration implements Serializa
         jenkins.checkPermission(Jenkins.ADMINISTER);
         return new StandardListBoxModel()
             .includeEmptyValue()
-            .includeMatchingAs(ACL.SYSTEM, jenkins, BaseStandardCredentials.class, Collections.emptyList(), SynopsysCredentialsHelper.API_TOKEN_CREDENTIALS);
+            .includeMatchingAs(ACL.SYSTEM, jenkins, BaseStandardCredentials.class, Collections.emptyList(), BlackduckCredentialsHelper.API_TOKEN_CREDENTIALS);
     }
 
     @POST
@@ -183,13 +184,13 @@ public class DetectGlobalConfig extends GlobalConfiguration implements Serializa
         }
         jenkinsWrapper.getJenkins().get().checkPermission(Jenkins.ADMINISTER);
 
-        SynopsysCredentialsHelper synopsysCredentialsHelper = jenkinsWrapper.getCredentialsHelper();
+        BlackduckCredentialsHelper blackduckCredentialsHelper = jenkinsWrapper.getCredentialsHelper();
         JenkinsProxyHelper jenkinsProxyHelper = jenkinsWrapper.getProxyHelper();
 
         try {
             BlackDuckServerConfig blackDuckServerConfig = createBlackDuckServerConfigBuilder(
                 jenkinsProxyHelper,
-                synopsysCredentialsHelper,
+                blackduckCredentialsHelper,
                 blackDuckUrl,
                 blackDuckCredentialsId,
                 Integer.parseInt(blackDuckTimeout),
@@ -310,11 +311,11 @@ public class DetectGlobalConfig extends GlobalConfiguration implements Serializa
     }
 
     private BlackDuckServerConfigBuilder createBlackDuckServerConfigBuilder(
-        JenkinsProxyHelper jenkinsProxyHelper, SynopsysCredentialsHelper synopsysCredentialsHelper,
+        JenkinsProxyHelper jenkinsProxyHelper, BlackduckCredentialsHelper blackduckCredentialsHelper,
         String blackDuckUrl, String credentialsId, int timeout, boolean alwaysTrust
     ) {
         ProxyInfo proxyInfo = jenkinsProxyHelper.getProxyInfo(blackDuckUrl);
-        String apiToken = synopsysCredentialsHelper.getApiTokenByCredentialsId(credentialsId).orElse(null);
+        String apiToken = blackduckCredentialsHelper.getApiTokenByCredentialsId(credentialsId).orElse(null);
 
         return BlackDuckServerConfig.newApiTokenBuilder()
             .setUrl(blackDuckUrl)

@@ -7,9 +7,9 @@
  */
 package com.blackduck.integration.jenkins.detect.service.strategy;
 
-import com.synopsys.integration.exception.IntegrationException;
-import com.synopsys.integration.jenkins.extensions.JenkinsIntLogger;
-import com.synopsys.integration.util.IntEnvironmentVariables;
+import com.blackduck.integration.exception.IntegrationException;
+import com.blackduck.integration.jenkins.extensions.JenkinsIntLogger;
+import com.blackduck.integration.util.IntEnvironmentVariables;
 import jenkins.security.MasterToSlaveCallable;
 
 import java.util.ArrayList;
