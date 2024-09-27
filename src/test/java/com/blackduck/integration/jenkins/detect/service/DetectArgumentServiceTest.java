@@ -28,7 +28,7 @@ public class DetectArgumentServiceTest {
     private final JenkinsVersionHelper jenkinsVersionHelper = Mockito.mock(JenkinsVersionHelper.class);
 
     private static final String errorMessage = "Output Detect Command does not contain: ";
-    private static final String loggingLevelKey = "--logging.level.com.synopsys.integration";
+    private static final String loggingLevelKey = "--logging.level.detect";
     private static final String expectedTestInvocationParameter = "TestInvocationParameter";
     private static final String expectedJenkinsVersion = "JenkinsVersion";
     private static final String pluginName = "blackduck-detect";

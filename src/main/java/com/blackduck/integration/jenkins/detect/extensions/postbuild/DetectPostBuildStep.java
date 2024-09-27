@@ -29,9 +29,9 @@ import java.io.IOException;
 import java.io.Serializable;
 
 public class DetectPostBuildStep extends Recorder {
-    public static final String DISPLAY_NAME = "Synopsys Detect";
+    public static final String DISPLAY_NAME = "Black Duck Detect";
 
-    @HelpMarkdown("The command line options to pass to Synopsys Detect")
+    @HelpMarkdown("The command line options to pass to Black Duck Detect")
     private final String detectProperties;
 
     @Nullable

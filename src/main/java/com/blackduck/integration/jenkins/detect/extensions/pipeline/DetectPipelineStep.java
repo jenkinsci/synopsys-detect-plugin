@@ -30,11 +30,11 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class DetectPipelineStep extends Step implements Serializable {
-    public static final String DISPLAY_NAME = "Synopsys Detect";
-    public static final String PIPELINE_NAME = "synopsys_detect";
+    public static final String DISPLAY_NAME = "Black Duck Detect";
+    public static final String PIPELINE_NAME = "blackduck_detect";
     private static final long serialVersionUID = 8126672300843832671L;
 
-    @HelpMarkdown("The command line options to pass to Synopsys Detect")
+    @HelpMarkdown("The command line options to pass to Black Duck Detect")
     private final String detectProperties;
 
     @HelpMarkdown("If true (checked), returns the status code of the Detect run instead of throwing an exception")

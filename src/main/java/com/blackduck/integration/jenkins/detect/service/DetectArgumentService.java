@@ -21,7 +21,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class DetectArgumentService {
-    private static final String DETECT_LOGLEVEL_ARGUMENT = "logging.level.com.synopsys.integration";
+    private static final String DETECT_LOGLEVEL_ARGUMENT = "logging.level.detect";
     private static final String DETECT_PHONEHOME_JENKINS_VERSION_ARGUMENT = "detect.phone.home.passthrough.jenkins.version";
     private static final String DETECT_PHONEHOME_PLUGIN_VERSION_ARGUMENT = "detect.phone.home.passthrough.jenkins.plugin.version";
     private final JenkinsIntLogger logger;

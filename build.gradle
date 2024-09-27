@@ -68,7 +68,7 @@ artifactory {
 
 jenkinsPlugin {
     jenkinsVersion = '2.426.3' // as of version 0.40.0 of jpi, it's jenkinsVersion...
-    displayName = 'Detect plugin'
+    displayName = 'Black Duck Detect'
     compatibleSinceVersion = '10.0.0'
     url = 'https://wiki.jenkins.io/display/JENKINS/Synopsys+Detect+Plugin'
     gitHubUrl = 'https://github.com/jenkinsci/synopsys-detect-plugin'

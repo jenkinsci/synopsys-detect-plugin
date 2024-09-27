@@ -76,7 +76,7 @@ public class DetectScriptStrategy extends DetectExecutionStrategy {
         try {
             proxyInfo = jenkinsProxyHelper.getProxyInfo(scriptUrl);
         } catch (IllegalArgumentException e) {
-            logger.warn("Synopsys Detect for Jenkins could not resolve proxy info from Jenkins because: " + e.getMessage());
+            logger.warn("Black Duck Detect for Jenkins could not resolve proxy info from Jenkins because: " + e.getMessage());
             logger.warn("Continuing without proxy...");
             logger.trace("Stack trace:", e);
             proxyInfo = ProxyInfo.NO_PROXY_INFO;
