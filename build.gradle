@@ -56,7 +56,7 @@ project.ext.excludesFromTestCoverage = ['**/DetectDownloadStrategy.java', '**/De
 
 group = 'com.blackducksoftware.integration'
 version = '10.0.0-SNAPSHOT'
-description = 'Black Duck Detect Plugin for Jenkins'
+description = 'Black Duck Detect for Jenkins'
 
 apply plugin: 'com.blackduck.integration.solution'
 
