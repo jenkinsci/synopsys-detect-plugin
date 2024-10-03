@@ -25,7 +25,7 @@ import java.util.Map;
 import java.util.function.Function;
 
 public class DetectAirGapJarStrategy extends DetectExecutionStrategy {
-    public static final String DETECT_JAR_PREFIX = "synopsys-detect-";
+    public static final String DETECT_JAR_PREFIX = "detect-";
     public static final String DETECT_JAR_SUFFIX = ".jar";
 
     private final JenkinsIntLogger logger;
