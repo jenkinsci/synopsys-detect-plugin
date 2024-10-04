@@ -1,5 +1,5 @@
 # Overview
-Detect for Jenkins simplifies running Detect in your Jenkins builds.
+Black Duck Detect for Jenkins simplifies running Detect in your Jenkins builds.
 
 # Build
 [![Build Status](https://travis-ci.org/jenkinsci/blackduck-detect-plugin.svg?branch=master)](https://travis-ci.org/jenkinsci/blackduck-detect-plugin)
@@ -11,4 +11,4 @@ Detect for Jenkins simplifies running Detect in your Jenkins builds.
 You can download the latest artifact from releases: https://updates.jenkins-ci.org/download/plugins/blackduck-detect/
 
 # Documentation
-Documentation for Detect for Jenkins can be found [here](https://documentation.blackduck.com/bundle/integrations-detect/page/integrations/jenkinsplugin/jenkins.html)
+Documentation for Black Duck Detect for Jenkins can be found [here](https://documentation.blackduck.com/bundle/integrations-detect/page/integrations/jenkinsplugin/jenkins.html)
