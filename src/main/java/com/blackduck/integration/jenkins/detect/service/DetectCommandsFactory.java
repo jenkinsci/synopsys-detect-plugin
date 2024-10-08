@@ -122,13 +122,12 @@ public class DetectCommandsFactory {
         FilePath workspaceTempDir = WorkspaceList.tempDir(this.workspace);
         String workSpaceTempDirPath;
 
-        try {
+        if(workspaceTempDir != null) {
             workSpaceTempDirPath = workspaceTempDir.getRemote();
-        } catch (NullPointerException e) {
-            throw new RuntimeException("Work Space Directory Path returned null.", e);
+            return new DetectStrategyService(getLogger(), jenkinsWrapper.getProxyHelper(), workSpaceTempDirPath, jenkinsConfigService);
+        } else {
+            throw new RuntimeException("Work Space Directory Path returned null.");
         }
-
-        return new DetectStrategyService(getLogger(), jenkinsWrapper.getProxyHelper(), workSpaceTempDirPath, jenkinsConfigService);
     }
 
     private JenkinsIntLogger setLogger() {
