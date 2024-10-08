@@ -10,9 +10,9 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 public class DetectJenkinsExceptionTest {
 
-    private static final String genMessage = "Test Message #1";
-    private static final String throwableMessage = "Test Message #2";
-    private static final Throwable throwable = new Throwable(throwableMessage);
+    private static final String GEN_MESSAGE = "Test Message #1";
+    private static final String THROWABLE_MESSAGE = "Test Message #2";
+    private static final Throwable throwable = new Throwable(THROWABLE_MESSAGE);
 
     @Test
     public void testEmptyConstructor() {
@@ -29,7 +29,7 @@ public class DetectJenkinsExceptionTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = { "", " ", genMessage })
+    @ValueSource(strings = { "", " ", GEN_MESSAGE })
     public void testMessageConstructor(String message) {
         DetectJenkinsException detectJenkinsException = new DetectJenkinsException(message);
         assertEquals(message, detectJenkinsException.getMessage());
@@ -40,16 +40,16 @@ public class DetectJenkinsExceptionTest {
     public void testThrowableConstructor() {
         DetectJenkinsException detectJenkinsException = new DetectJenkinsException(throwable);
         assertNotNull(detectJenkinsException.getMessage());
-        assertEquals(throwableMessage, detectJenkinsException.getCause().getMessage());
+        assertEquals(THROWABLE_MESSAGE, detectJenkinsException.getCause().getMessage());
         assertEquals(throwable, detectJenkinsException.getCause());
     }
 
     @ParameterizedTest
-    @ValueSource(strings = { "", " ", genMessage })
+    @ValueSource(strings = { "", " ", GEN_MESSAGE })
     public void testMessageAndThrowableConstructor(String message) {
         DetectJenkinsException detectJenkinsException = new DetectJenkinsException(message, throwable);
         assertEquals(message, detectJenkinsException.getMessage());
-        assertEquals(throwableMessage, detectJenkinsException.getCause().getMessage());
+        assertEquals(THROWABLE_MESSAGE, detectJenkinsException.getCause().getMessage());
         assertEquals(throwable, detectJenkinsException.getCause());
     }
 

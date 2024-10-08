@@ -27,17 +27,17 @@ import hudson.model.TaskListener;
 public class DetectArgumentServiceTest {
     private final JenkinsVersionHelper jenkinsVersionHelper = Mockito.mock(JenkinsVersionHelper.class);
 
-    private static final String errorMessage = "Output Detect Command does not contain: ";
-    private static final String loggingLevelKey = "--logging.level.detect";
-    private static final String expectedTestInvocationParameter = "TestInvocationParameter";
-    private static final String expectedJenkinsVersion = "JenkinsVersion";
-    private static final String pluginName = "blackduck-detect";
-    private static final String expectedJenkinsPluginVersion = "JenkinsPluginVersion";
-    private static final String jenkinsVersionParam = "--detect.phone.home.passthrough.jenkins.version";
-    private static final String pluginVersionParam = "--detect.phone.home.passthrough.jenkins.plugin.version";
+    private static final String ERROR_MESSAGE = "Output Detect Command does not contain: ";
+    private static final String LOGGING_LEVEL_KEY = "--logging.level.detect";
+    private static final String EXPECTED_TEST_INVOCATION_PARAMETER = "TestInvocationParameter";
+    private static final String EXPECTED_JENKINS_VERSION = "JenkinsVersion";
+    private static final String PLUGIN_NAME = "blackduck-detect";
+    private static final String EXPECTED_JENKINS_PLUGIN_VERSION = "JenkinsPluginVersion";
+    private static final String JENKINS_VERSION_PARAM = "--detect.phone.home.passthrough.jenkins.version";
+    private static final String PLUGIN_VERSION_PARAM = "--detect.phone.home.passthrough.jenkins.plugin.version";
 
     private final Function<String, String> strategyEscaper = Function.identity();
-    private final List<String> invocationParameters = Collections.singletonList(expectedTestInvocationParameter);
+    private final List<String> invocationParameters = Collections.singletonList(EXPECTED_TEST_INVOCATION_PARAMETER);
 
     private IntEnvironmentVariables intEnvironmentVariables;
     private ByteArrayOutputStream byteArrayOutputStream;
@@ -60,8 +60,8 @@ public class DetectArgumentServiceTest {
         // Set default expected values. Tests will apply different if needed
         byteArrayOutputStream = new ByteArrayOutputStream();
         Mockito.when(taskListener.getLogger()).thenReturn(new PrintStream(byteArrayOutputStream));
-        Mockito.when(jenkinsVersionHelper.getJenkinsVersion()).thenReturn(Optional.of(expectedJenkinsVersion));
-        Mockito.when(jenkinsVersionHelper.getPluginVersion(pluginName)).thenReturn(Optional.of(expectedJenkinsPluginVersion));
+        Mockito.when(jenkinsVersionHelper.getJenkinsVersion()).thenReturn(Optional.of(EXPECTED_JENKINS_VERSION));
+        Mockito.when(jenkinsVersionHelper.getPluginVersion(PLUGIN_NAME)).thenReturn(Optional.of(EXPECTED_JENKINS_PLUGIN_VERSION));
 
         // These are the standard input detect properties
         inputDetectProperties = new LinkedHashMap<>();
@@ -74,9 +74,9 @@ public class DetectArgumentServiceTest {
 
         // These are the automatically appended detect properties added by DetectArgumentService(). Tests will update if needed.
         expectedArgsFromPlugin = new LinkedHashMap<>();
-        expectedArgsFromPlugin.put(jenkinsVersionParam, expectedJenkinsVersion);
-        expectedArgsFromPlugin.put(pluginVersionParam, expectedJenkinsPluginVersion);
-        expectedArgsFromPlugin.put(loggingLevelKey, jenkinsIntLogger.getLogLevel().toString());
+        expectedArgsFromPlugin.put(JENKINS_VERSION_PARAM, EXPECTED_JENKINS_VERSION);
+        expectedArgsFromPlugin.put(PLUGIN_VERSION_PARAM, EXPECTED_JENKINS_PLUGIN_VERSION);
+        expectedArgsFromPlugin.put(LOGGING_LEVEL_KEY, jenkinsIntLogger.getLogLevel().toString());
 
         // Create object in test
         detectArgumentService = new DetectArgumentService(jenkinsIntLogger, jenkinsVersionHelper);
@@ -160,8 +160,8 @@ public class DetectArgumentServiceTest {
     @Test
     public void testCustomLogLevel() {
         String expectedCustomLogLevel = "TestLogLevel";
-        inputDetectProperties.put(loggingLevelKey, expectedCustomLogLevel);
-        expectedArgsFromPlugin.replace(loggingLevelKey, expectedCustomLogLevel);
+        inputDetectProperties.put(LOGGING_LEVEL_KEY, expectedCustomLogLevel);
+        expectedArgsFromPlugin.replace(LOGGING_LEVEL_KEY, expectedCustomLogLevel);
 
         List<String> detectCommandLine = detectArgumentService.getDetectArguments(
             intEnvironmentVariables,
@@ -187,9 +187,9 @@ public class DetectArgumentServiceTest {
     @Test
     public void testUnknownJenkinsVersion() {
         Mockito.when(jenkinsVersionHelper.getJenkinsVersion()).thenReturn(Optional.empty());
-        Mockito.when(jenkinsVersionHelper.getPluginVersion(pluginName)).thenReturn(Optional.empty());
-        expectedArgsFromPlugin.replace(jenkinsVersionParam, expectedJenkinsVersion, "<unknown>");
-        expectedArgsFromPlugin.replace(pluginVersionParam, expectedJenkinsPluginVersion, "<unknown>");
+        Mockito.when(jenkinsVersionHelper.getPluginVersion(PLUGIN_NAME)).thenReturn(Optional.empty());
+        expectedArgsFromPlugin.replace(JENKINS_VERSION_PARAM, EXPECTED_JENKINS_VERSION, "<unknown>");
+        expectedArgsFromPlugin.replace(PLUGIN_VERSION_PARAM, EXPECTED_JENKINS_PLUGIN_VERSION, "<unknown>");
 
         List<String> detectCommandLine = detectArgumentService.getDetectArguments(
             intEnvironmentVariables,
@@ -220,7 +220,7 @@ public class DetectArgumentServiceTest {
     }
 
     private void commonValidation(List<String> detectCommandLine, Map<String, String> expectedPropertiesFromEnvironment, Map<String, String> expectedPropertiesFromPlugin) {
-        assertEquals(expectedTestInvocationParameter, detectCommandLine.get(0));
+        assertEquals(EXPECTED_TEST_INVOCATION_PARAMETER, detectCommandLine.get(0));
 
         // Validate that detectCommandLine DOES contain all the expected properties
         validateMapProperties(expectedPropertiesFromEnvironment, detectCommandLine);
@@ -229,8 +229,8 @@ public class DetectArgumentServiceTest {
 
     private void validateMapProperties(Map<String, String> detectProperties, List<String> detectCommandLine) {
         detectProperties.forEach((key, value) -> {
-            assertTrue(detectCommandLine.stream().anyMatch(argument -> argument.contains(key)), errorMessage + key);
-            assertTrue(detectCommandLine.stream().anyMatch(argument -> argument.contains("=" + value)), errorMessage + "=" + value);
+            assertTrue(detectCommandLine.stream().anyMatch(argument -> argument.contains(key)), ERROR_MESSAGE + key);
+            assertTrue(detectCommandLine.stream().anyMatch(argument -> argument.contains("=" + value)), ERROR_MESSAGE + "=" + value);
         });
     }
 
